@@ -5,6 +5,7 @@ CREATE TABLE game(
     game_id         INTEGER     PRIMARY KEY     NOT NULL,
     scheduled_time  TEXT        NOT NULL,
     completed       INTEGER     DEFAULT 0,
+    shootout        INTEGER     DEFAULT 0,
     rink            TEXT        NOT NULL,
     level           TEXT        NOT NULL,
     home_team_id    INTEGER     NOT NULL,
@@ -17,12 +18,14 @@ CREATE TABLE game(
 );
 
 CREATE TABLE team(
-    team_id         INTEGER     PRIMARY KEY     AUTOINCREMENT,
+    --sqlite: team_id         INTEGER     PRIMARY KEY   AUTOINCREMENT,
+    team_id         SERIAL     PRIMARY KEY,
     name            TEXT        NOT NULL
 );
 
 CREATE TABLE player(
-    player_id       INTEGER     PRIMARY KEY     AUTOINCREMENT,
+    --sqlite: player_id         INTEGER     PRIMARY KEY   AUTOINCREMENT,
+    player_id       SERIAL     PRIMARY KEY,
     name            TEXT        NOT NULL
 );
 

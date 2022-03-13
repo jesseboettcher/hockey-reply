@@ -19,13 +19,11 @@ class Synchronizer:
     TEAM_ENDPOINT = 'display-schedule'
     TEST_FILE_PATH = 'test/team.html'
 
-    SQLITE_DB_PATH = 'database/hockey.db'
-
     def __init__(self):
         pass
 
     def sync(self):
-        db = Database(self.SQLITE_DB_PATH)
+        db = Database(False)
 
         source, soup = self.open_season_page()
         for link in soup.find_all('a'):
@@ -50,7 +48,7 @@ class Synchronizer:
         print(f'Synchronization complete')
 
     def sync_local_file(self):
-        db = Database(self.SQLITE_DB_PATH)
+        db = Database(True)
 
         source, soup = self.open_test_file()
         team_parser = website_parsers.TeamPageParser(source, soup)
@@ -88,5 +86,5 @@ class Synchronizer:
         return url, soup
 
 synchronizer = Synchronizer()
-# synchronizer.sync()
-synchronizer.sync_local_file()
+synchronizer.sync()
+# synchronizer.sync_local_file()

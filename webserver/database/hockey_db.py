@@ -1,3 +1,5 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import sqlite3
@@ -5,8 +7,15 @@ import sqlite3
 from database.alchemy_models import Game, Team
 
 class Database:
-    def __init__(self, db_path):
-        engine = create_engine(f"sqlite:///{db_path}")
+    SQLITE_DB_PATH = 'database/hockey.db'
+
+    def __init__(self, local):
+
+        connect_string = f'postgresql://postgres:{os.getenv("POSTGRES_PASSWORD")}@hockey-data.cb53hszvt88d.us-west-2.rds.amazonaws.com/hockeydata'
+        if local:
+            connect_string = f"sqlite:///{self.SQLITE_DB_PATH}"
+
+        engine = create_engine(connect_string)
         Session = sessionmaker()
         Session.configure(bind=engine)
         self.session = Session()

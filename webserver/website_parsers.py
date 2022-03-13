@@ -150,8 +150,9 @@ class BaseParser:
 class GameParser(BaseParser):
 
     def __init__(self, game_dict):
-        self.id = int(game_dict['Game'].replace('*', ''))
-        self.completed = False if game_dict['Game'].find('*') == -1 else True
+
+        self.id = self.parse_id(game_dict['Game'])
+        self.completed = 0 if game_dict['Game'].find('*') == -1 else 1
 
         # Wed Jan 19
         # 9:45 PM
@@ -165,9 +166,25 @@ class GameParser(BaseParser):
         self.level = game_dict['Level']
         self.home_team = game_dict['Home']
         self.away_team = game_dict['Away']
-        self.home_goals = game_dict['Home Goals']
-        self.away_goals = game_dict['Away Goals']
         self.type = game_dict['Type']
+        self.home_goals = 0
+        self.away_goals = 0
+        self.shootout = 0
+
+        try:
+            self.home_goals = int(game_dict['Home Goals'].replace('S', ''))
+            self.away_goals = int(game_dict['Away Goals'].replace('S', ''))
+
+            if game_dict['Home Goals'].find('S') != -1 or game_dict['Away Goals'].find('S') != -1:
+                self.shootout = 1
+        except:
+            pass
+
+    def parse_id(self, id_str):
+        id_str = id_str.replace('*', '') # completed games
+        id_str = id_str.replace('^', '') # in progress games
+
+        return int(id_str)
 
     def calculate_year(self, date_str, season_num):
         # dt = datetime.strptime(f'{date_str}', f'%a %b %d')
