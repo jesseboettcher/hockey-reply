@@ -11,6 +11,6 @@ Using python version 3.9.5:
   * `brew install openssl`
 
 # running
-* `export POSTGRES_PASSWORD`
-* `cd webserver`
-* `python data_synchronizer.py`
+* `export POSTGRES_PASSWORD=[insert password here]`
+* `export FLASK_APP=webserver`
+* `python -m flask run`

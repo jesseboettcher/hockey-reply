@@ -9,8 +9,8 @@ import requests
 
 from bs4 import BeautifulSoup
 
-from database.hockey_db import Database
-import website_parsers
+from webserver.database.hockey_db import Database
+from webserver.website_parsers import TeamPageParser
 
 class Synchronizer:
 
@@ -35,23 +35,24 @@ class Synchronizer:
 
             print(f'Parsing {link}')
             team_source, team_soup = self.open_team_page(href)
-            team_parser = website_parsers.TeamPageParser(team_source, team_soup)
+            team_parser = TeamPageParser(team_source, team_soup)
             success = team_parser.parse()
 
             if not success:
                 print(f'Failed synchronization of website')
-                return
+                return False
 
             for game in team_parser.games:
                 db.add_game(game)
 
         print(f'Synchronization complete')
+        return True
 
     def sync_local_file(self):
         db = Database(True)
 
         source, soup = self.open_test_file()
-        team_parser = website_parsers.TeamPageParser(source, soup)
+        team_parser = TeamPageParser(source, soup)
         success = team_parser.parse()
 
         if not success:
@@ -84,7 +85,3 @@ class Synchronizer:
         soup = BeautifulSoup(data, 'html.parser')
 
         return url, soup
-
-synchronizer = Synchronizer()
-synchronizer.sync()
-# synchronizer.sync_local_file()

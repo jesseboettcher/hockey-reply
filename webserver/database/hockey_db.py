@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import sqlite3
 
-from database.alchemy_models import Game, Team
+from webserver.database.alchemy_models import Game, Team
 
 class Database:
     SQLITE_DB_PATH = 'database/hockey.db'
