@@ -21,3 +21,7 @@ Using python version 3.9.5:
 
 # issue tracking
 * https://hockey-reply.youtrack.cloud/issues
+
+# deployments
+* database: `hockey-data.cb53hszvt88d.us-west-2.rds.amazonaws.com` (aws account jesse.boettcher@gmail.com)
+* logging: Google Cloud Logging. `hockey-reply` project (google account jesse.boettcher@gmail.com)
