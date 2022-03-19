@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, DateTime
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import UniqueConstraint
@@ -7,33 +7,26 @@ import uuid
 
 Base = declarative_base()
 
-player_team = Table(
-    "player_team",
+team_player = Table(
+    "team_player",
     Base.metadata,
-    Column("player_id", Integer, ForeignKey("player.player_id")),
     Column("team_id", Integer, ForeignKey("team.team_id")),
+    Column("user_id", Integer, ForeignKey("users.user_id")),
+    Column("role", String)
 )
-
-class Player(Base):
-    __tablename__ = "player"
-    player_id = Column(Integer, primary_key=True)
-    name = Column(String)
-    teams = relationship (
-        "Team", secondary=player_team, back_populates="players"
-    )
 
 class Team(Base):
     __tablename__ = "team"
     team_id = Column(Integer, primary_key=True)
     name = Column(String)
     players = relationship (
-        "Player", secondary=player_team, back_populates="teams"
+        "User", secondary=team_player, back_populates="teams"
     )
 
 class Game(Base):
     __tablename__ = "game"
     game_id = Column(Integer, primary_key=True)
-    scheduled_time = Column(String)
+    scheduled_at = Column(DateTime)
     completed = Column(Integer)
     rink = Column(String)
     level = Column(String)
@@ -44,6 +37,15 @@ class Game(Base):
     game_type = Column(String)
     scoresheet_html_url = Column(String)
     scoresheet_pdf_url = Column(String)
+
+class GameReply(Base):
+    __tablename__ = "game_reply"
+    reply_id = Column(Integer, primary_key=True)
+    game_id = Column(Integer, ForeignKey("game.game_id"))
+    user_id = Column(Integer, ForeignKey("user.user_id"))
+    response = Column(String)
+    message = Column(String)
+    modified_at = Column(DateTime)
 
 class User(Base):
     __tablename__ = "users"
@@ -61,6 +63,13 @@ class User(Base):
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
+
+    created_at = Column(DateTime)
+    logged_in_at = Column(DateTime)
+
+    teams = relationship (
+        "Team", secondary=team_player, back_populates="players"
+    )
 
     @property
     def password(self):

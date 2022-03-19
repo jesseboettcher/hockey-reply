@@ -102,7 +102,9 @@ def new_user():
     # create new user
     user = User(email=user_email.strip().lower(),
                 first_name=request.json['first_name'],
-                last_name=request.json['last_name'] if 'last_name' in request.json else ''
+                last_name=request.json['last_name'] if 'last_name' in request.json else '',
+                created_at=datetime.now(),
+                logged_in_at=datetime.now()
                 )
     user.password = request.json['password']
 
@@ -141,6 +143,9 @@ def sign_in():
         # Sign in failed
         write_log('INFO', f'api/sign-in: {user_email} password verification failed')
         return {'result': 'bad login'}, 400
+
+    user.logged_in_at = datetime.now()
+    get_db().commit_changes()
 
     response = make_response({ 'result' : 'success' })
     response.set_cookie('user', create_cookie(user.external_id))
