@@ -9,7 +9,7 @@ import requests
 
 from bs4 import BeautifulSoup
 
-from webserver.database.hockey_db import Database
+from webserver.database.hockey_db import Database, get_db
 from webserver.website_parsers import TeamPageParser
 
 class Synchronizer:
@@ -23,7 +23,7 @@ class Synchronizer:
         pass
 
     def sync(self):
-        db = Database(False)
+        db = get_db()
 
         source, soup = self.open_season_page()
         for link in soup.find_all('a'):

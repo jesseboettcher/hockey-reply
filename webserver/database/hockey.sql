@@ -1,5 +1,5 @@
 PRAGMA foreign_keys=OFF;
-BEGIN TRANSACTION;
+BEGIN;
 
 CREATE TABLE game(
     game_id         INTEGER     PRIMARY KEY     NOT NULL,
@@ -32,6 +32,21 @@ CREATE TABLE player(
 CREATE TABLE player_team(
     player_id       INTEGER,
     team_id         INTEGER
+);
+
+CREATE TABLE users(
+    user_id         SERIAL     PRIMARY KEY,
+
+    external_id     TEXT,
+
+    google_id       TEXT,
+    activated       BOOL,
+
+    _password       TEXT,
+
+    first_name      TEXT,
+    last_name       TEXT,
+    email           TEXT
 );
 
 -- sample data

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
   ChakraProvider,
   Box,
@@ -9,9 +9,27 @@ import {
   Grid,
   theme,
 } from '@chakra-ui/react';
+import { useNavigate } from "react-router-dom";
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
+import { checkLogin } from '../utils';
 
-function About() {
+function delete_cookie(name) {
+  document.cookie = name+'=; Max-Age=-99999999;';
+}
+
+function Games() {
+
+  let navigate = useNavigate();
+
+  useEffect(() => {
+    checkLogin(navigate);
+  });
+
+  const logout = async event => {
+    delete_cookie('user');
+    navigate('/', {replace: true})
+  }
+
   return (
     <ChakraProvider theme={theme}>
       <Box textAlign="center" fontSize="xl">
@@ -22,23 +40,15 @@ function About() {
               Welcome to <Code fontSize="xl">HockeyReply</Code>!
             </Text>
             <Text>
-              Marketing, marketing...
+              Here are your games
             </Text>
             <Link
               color="green.500"
-              href="/games"
               fontSize="2xl"
               rel="noopener noreferrer"
+              onClick={logout}>
             >
-              My Games
-            </Link>
-            <Link
-              color="green.500"
-              href="/sign-in"
-              fontSize="2xl"
-              rel="noopener noreferrer"
-            >
-              Sign In
+              Log out
             </Link>
           </VStack>
         </Grid>
@@ -47,4 +57,4 @@ function About() {
   );
 }
 
-export default About;
+export default Games;

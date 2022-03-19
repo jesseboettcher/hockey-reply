@@ -1,10 +1,17 @@
 import os
 
-from sqlalchemy import create_engine
+from flask import current_app, g
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
 import sqlite3
 
-from webserver.database.alchemy_models import Game, Team
+from webserver.database.alchemy_models import Game, Team, User
+
+def get_db():
+    if 'db' not in g:
+        g.db = Database(False)
+
+    return g.db
 
 class Database:
     SQLITE_DB_PATH = 'database/hockey.db'
@@ -19,6 +26,18 @@ class Database:
         Session = sessionmaker()
         Session.configure(bind=engine)
         self.session = Session()
+
+    def get_user(self, email):
+        return self.session.query(User).filter(func.lower(User.email) == email.strip().lower()).first()
+
+    def get_user_by_id(self, external_id):
+        return self.session.query(User).filter(func.lower(User.external_id) == external_id).first()
+
+    def add_user(self, user):
+        self.session.add(user)
+        self.session.commit()
+
+        return user;
 
     def get_teams(self):
         return self.session.query(Team).all()
