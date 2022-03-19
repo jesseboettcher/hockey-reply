@@ -3,7 +3,7 @@ BEGIN;
 
 CREATE TABLE game(
     game_id         INTEGER     PRIMARY KEY     NOT NULL,
-    scheduled_time  TEXT        NOT NULL,
+    scheduled_at    TIMESTAMP WITH TIME ZONE    NOT NULL,
     completed       INTEGER     DEFAULT 0,
     shootout        INTEGER     DEFAULT 0,
     rink            TEXT        NOT NULL,
@@ -17,21 +17,29 @@ CREATE TABLE game(
     scoresheet_pdf_url TEXT
 );
 
+CREATE TABLE game_reply(
+    reply_id        SERIAL,
+    game_id         INTEGER,
+    user_id         INTEGER,
+    response        TEXT,
+    message         TEXT,
+    modified_at     TIMESTAMP WITH TIME ZONE
+);
+
 CREATE TABLE team(
-    --sqlite: team_id         INTEGER     PRIMARY KEY   AUTOINCREMENT,
     team_id         SERIAL     PRIMARY KEY,
     name            TEXT        NOT NULL
 );
 
-CREATE TABLE player(
-    --sqlite: player_id         INTEGER     PRIMARY KEY   AUTOINCREMENT,
-    player_id       SERIAL     PRIMARY KEY,
-    name            TEXT        NOT NULL
-);
+-- CREATE TABLE player(
+--     player_id       SERIAL     PRIMARY KEY,
+--     name            TEXT        NOT NULL
+-- );
 
-CREATE TABLE player_team(
-    player_id       INTEGER,
-    team_id         INTEGER
+CREATE TABLE team_player(
+    user_id         INTEGER,
+    team_id         INTEGER,
+    role            TEXT
 );
 
 CREATE TABLE users(
@@ -46,7 +54,10 @@ CREATE TABLE users(
 
     first_name      TEXT,
     last_name       TEXT,
-    email           TEXT
+    email           TEXT,
+
+    created_at      TIMESTAMP WITH TIME ZONE,
+    logged_in_at     TIMESTAMP WITH TIME ZONE
 );
 
 -- sample data

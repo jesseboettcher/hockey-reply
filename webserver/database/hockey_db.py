@@ -27,6 +27,9 @@ class Database:
         Session.configure(bind=engine)
         self.session = Session()
 
+    def commit_changes(self):
+        self.session.commit()
+
     def get_user(self, email):
         return self.session.query(User).filter(func.lower(User.email) == email.strip().lower()).first()
 
