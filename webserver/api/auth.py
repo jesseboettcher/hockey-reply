@@ -9,6 +9,7 @@ from webserver import app
 from webserver.data_synchronizer import Synchronizer
 from webserver.database.alchemy_models import User
 from webserver.database.hockey_db import get_db
+from webserver.logging import write_log
 
 def decode_cookie():
     cookie = request.cookies.get('user')
@@ -110,6 +111,7 @@ def new_user():
 
     response = make_response({ 'result' : 'success' })
     response.set_cookie('user', create_cookie(user.external_id))
+    write_log('INFO', f'api/sign-up: new user: {user_email}')
     return response
 
 
@@ -137,11 +139,12 @@ def sign_in():
 
     if not user.verify_password(request.json['password']):
         # Sign in failed
-        print(f'api/sign-in: {user_email} failed', flush=True)
+        write_log('INFO', f'api/sign-in: {user_email} password verification failed')
         return {'result': 'bad login'}, 400
 
     response = make_response({ 'result' : 'success' })
     response.set_cookie('user', create_cookie(user.external_id))
+    write_log('INFO', f'api/sign-in: {user_email} success')
     return response
 
 

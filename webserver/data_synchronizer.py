@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 
 from webserver.database.hockey_db import Database, get_db
 from webserver.website_parsers import TeamPageParser
+from webserver.logging import write_log
 
 class Synchronizer:
 
@@ -45,7 +46,7 @@ class Synchronizer:
             for game in team_parser.games:
                 db.add_game(game)
 
-        print(f'Synchronization complete')
+        write_log('INFO', f'Synchronization complete')
         return True
 
     def sync_local_file(self):
