@@ -26,6 +26,28 @@ def find_player(team, user_id):
 
     return None
 
+@app.route('/api/team/<team_id>', methods=['GET'])
+def get_team(team_id):
+
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
+    db = get_db()
+    team = db.get_team_by_id(team_id)
+
+    if not team:
+        write_log('ERROR', f'/api/team/<team_id>: team {request.json["team_id"]} not found')
+        return {'result': 'error'}, 400
+
+    result = { 'teams': [] }
+    team_dict = {
+        'team_id': team.team_id,
+        'name': team.name,
+        'player_count': len(team.players)
+    }
+    result['teams'].append(team_dict)
+
+    return make_response(result)
 
 @app.route('/api/teams', methods=['GET'])
 def get_teams():

@@ -13,6 +13,7 @@ import Home from './components/Home';
 import ForgotPassword from './components/auth/ForgotPassword'
 import SignIn from './components/auth/SignIn';
 import SignUp from './components/auth/SignUp'
+import Team from './components/Team'
 
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
           <Route path='/forgot-password' element={<ForgotPassword />} />
           <Route path='/sign-in' element={<SignIn />} />
           <Route path='/sign-up' element={<SignUp />} />
+          <Route path='/team/:team_id' element={<Team />} />
+          <Route path='/team/' element={<Team />} />
         </Routes>
       </Router>
     </ChakraProvider>
