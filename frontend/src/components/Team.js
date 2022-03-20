@@ -16,29 +16,32 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { checkLogin } from '../utils';
 
+function getData(url, arrayName, setFn) {
+    fetch(url, {credentials: 'include'})
+    .then(r =>  r.json().then(data => ({status: r.status, body: data})))
+      .then(obj => { return setFn(obj.body[arrayName]) });
+}
+
 function Team() {
 
   let { team_id } = useParams();
   let navigate = useNavigate();
   const [teams, setTeams] = useState([]);
+  const [joinRequests, setJoinRequests] = useState([]);
   const fetchedData = useRef(false);
 
   useEffect(() => {
     checkLogin(navigate);
 
-    let url;
-    if (team_id === undefined) {
-      url = `/api/teams?all=1`;
-    }
-    else {
-      url = `/api/team/${team_id}`;
-    }
-
     if (!fetchedData.current) {
-      fetch(url, {credentials: 'include'})
-      .then(r =>  r.json().then(data => ({status: r.status, body: data})))
-        .then(obj => { setTeams( obj.body['teams']) });
-
+      if (team_id === undefined) {
+        getData('/api/team/', 'teams', setTeams);
+        getData('/api/join-requests/', 'join_requests', setJoinRequests);
+      }
+      else {
+        getData(`/api/team/${team_id}`, 'teams', setTeams);
+        getData(`/api/join-requests/${team_id}`, 'join_requests', setJoinRequests);
+      }
       fetchedData.current = true;
     }
   });
@@ -58,6 +61,16 @@ function Team() {
                ))
               }
             </List>
+            <List spacing={3}>
+              { joinRequests.map((request) => (
+                <ListItem key={request.email}>
+                  <ListIcon  color='green.500' />
+                  {request.email} ({request.requested_at})
+                </ListItem>
+               ))
+              }
+            </List>
+
 
         </Grid>
       </Box>

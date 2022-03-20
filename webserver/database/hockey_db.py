@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
 import sqlite3
 
-from webserver.database.alchemy_models import Game, Team, User
+from webserver.database.alchemy_models import Game, Team, User, TeamPlayer
 
 def get_db():
     if 'db' not in g:
@@ -67,7 +67,7 @@ class Database:
         return team;
 
     def get_team_players(self):
-        return self.session.query(TeamPlayers).all()
+        return self.session.query(TeamPlayer).all()
 
     def add_game(self, game_parser):
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()

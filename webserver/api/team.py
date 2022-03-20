@@ -26,32 +26,10 @@ def find_player(team, user_id):
 
     return None
 
+@app.route('/api/team/', methods=['GET'])
 @app.route('/api/team/<team_id>', methods=['GET'])
-def get_team(team_id):
-
-    if not check_login():
-        return { 'result' : 'needs login' }, 400
-
-    db = get_db()
-    team = db.get_team_by_id(team_id)
-
-    if not team:
-        write_log('ERROR', f'/api/team/<team_id>: team {request.json["team_id"]} not found')
-        return {'result': 'error'}, 400
-
-    result = { 'teams': [] }
-    team_dict = {
-        'team_id': team.team_id,
-        'name': team.name,
-        'player_count': len(team.players)
-    }
-    result['teams'].append(team_dict)
-
-    return make_response(result)
-
-@app.route('/api/teams', methods=['GET'])
-def get_teams():
-
+def get_teams(team_id=None):
+    print('api/team/{team_id}', flush=True)
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
@@ -68,7 +46,7 @@ def get_teams():
                 'player_count': len(team.players)
             }
             result['teams'].append(team_dict)
-    else:
+    elif team_id is None:
         for player_team in g.user.teams:
             team = db.get_team_by_id(player_team.team_id)
             team_dict = {
@@ -77,32 +55,36 @@ def get_teams():
                 'player_count': len(team.players)
             }
             result['teams'].append(team_dict)
+    else:
+        team = db.get_team_by_id(team_id)
+
+        if not team:
+            write_log('ERROR', f'/api/team/<team_id>: team {team_id} not found')
+            return {'result': 'error'}, 400
+
+        result = { 'teams': [] }
+        team_dict = {
+            'team_id': team.team_id,
+            'name': team.name,
+            'player_count': len(team.players)
+        }
+        result['teams'].append(team_dict)
 
     return make_response(result)
 
 
-@app.route('/api/join-requests', methods=['GET'])
-def get_join_requests():
+@app.route('/api/join-requests/', methods=['GET'])
+@app.route('/api/join-requests/<team_id>', methods=['GET'])
+def get_join_requests(team_id=None):
 
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
     db = get_db()
 
-    # check for required fields
-    if 'team_id' not in request.json:
-        write_log('ERROR', f'api/join-team: missing request fields')
-        return {'result': 'error'}, 400
-
-    team = db.get_team_by_id(request.json['team_id'])
-
-    if not team:
-        write_log('ERROR', f'api/join-team: team {request.json["team_id"]} not found')
-        return {'result': 'error'}, 400
-
     result = { 'join_requests': [] }
 
-    if request.args.get('all') and g.user.admin:
+    if g.user.admin and team_id is None:
         for player in db.get_team_players():
             if not player.pending_status:
                 continue
@@ -111,6 +93,8 @@ def get_join_requests():
             player_name = requesting_player.first_name
             if requesting_player.last_name:
                 player_name += f' {requesting_player.last_name}'
+
+            team = db.get_team_by_id(player.team_id)
 
             request_dict = {
                 'team' : team.name,
@@ -124,6 +108,12 @@ def get_join_requests():
             }
             result['join_requests'].append(request_dict)
     else:
+        team = db.get_team_by_id(team_id)
+
+        if not team:
+            write_log('ERROR', f'api/join-team: team {team_id} not found')
+            return {'result': 'error'}, 400
+
         for player in team.players:
             if not player.pending_status:
                 continue
