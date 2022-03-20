@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, DateTime, Boolean
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import UniqueConstraint
@@ -7,21 +7,21 @@ import uuid
 
 Base = declarative_base()
 
-team_player = Table(
-    "team_player",
-    Base.metadata,
-    Column("team_id", Integer, ForeignKey("team.team_id")),
-    Column("user_id", Integer, ForeignKey("users.user_id")),
-    Column("role", String)
-)
+class TeamPlayer(Base):
+    __tablename__ = 'team_player'
+    team_id = Column(ForeignKey('team.team_id'), primary_key=True)
+    user_id = Column(ForeignKey('users.user_id'), primary_key=True)
+    role = Column(String)
+    pending_status = Column(Boolean)
+    joined_at = Column(DateTime)
+    player = relationship("User", back_populates="teams")
+    team = relationship("Team", back_populates="players")
 
 class Team(Base):
     __tablename__ = "team"
     team_id = Column(Integer, primary_key=True)
     name = Column(String)
-    players = relationship (
-        "User", secondary=team_player, back_populates="teams"
-    )
+    players = relationship ("TeamPlayer", back_populates="team", cascade="all, delete-orphan")
 
 class Game(Base):
     __tablename__ = "game"
@@ -67,9 +67,9 @@ class User(Base):
     created_at = Column(DateTime)
     logged_in_at = Column(DateTime)
 
-    teams = relationship (
-        "Team", secondary=team_player, back_populates="players"
-    )
+    teams = relationship ("TeamPlayer", back_populates="player")
+
+    admin = Column(Boolean)
 
     @property
     def password(self):

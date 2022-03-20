@@ -40,6 +40,8 @@ CREATE TABLE team_player(
     user_id         INTEGER,
     team_id         INTEGER,
     role            TEXT
+    pending_status  BOOLEAN,
+    joined_at       TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE users(
@@ -57,7 +59,9 @@ CREATE TABLE users(
     email           TEXT,
 
     created_at      TIMESTAMP WITH TIME ZONE,
-    logged_in_at     TIMESTAMP WITH TIME ZONE
+    logged_in_at    TIMESTAMP WITH TIME ZONE,
+
+    admin           BOOL
 );
 
 -- sample data

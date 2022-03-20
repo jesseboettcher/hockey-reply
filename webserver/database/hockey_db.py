@@ -33,13 +33,15 @@ class Database:
     def get_user(self, email):
         return self.session.query(User).filter(func.lower(User.email) == email.strip().lower()).first()
 
-    def get_user_by_id(self, external_id):
+    def get_user_by_id(self, user_id):
+        return self.session.query(User).filter_by(user_id=user_id).first()
+
+    def get_user_by_external_id(self, external_id):
         return self.session.query(User).filter(func.lower(User.external_id) == external_id).first()
 
     def add_user(self, user):
         self.session.add(user)
         self.session.commit()
-
         return user;
 
     def get_teams(self):
@@ -47,6 +49,9 @@ class Database:
 
     def get_team(self, name):
         return self.session.query(Team).filter(Team.name == name).one_or_none()
+
+    def get_team_by_id(self, team_id):
+        return self.session.query(Team).filter(Team.team_id == team_id).one_or_none()
 
     def add_team(self, team_name):
         team = self.session.query(Team).filter(Team.name == team_name).one_or_none()
@@ -60,6 +65,9 @@ class Database:
         self.session.commit()
 
         return team;
+
+    def get_team_players(self):
+        return self.session.query(TeamPlayers).all()
 
     def add_game(self, game_parser):
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()

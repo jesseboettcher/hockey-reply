@@ -40,7 +40,7 @@ def require_login(func):
             print('No authorization provided', flush=True)
             abort(401)
 
-        g.user = get_db().get_user_by_id(g.cookie['external_id'])
+        g.user = get_db().get_user_by_external_id(g.cookie['external_id'])
 
         if not g.user:
             response = make_response('', 401)
@@ -59,7 +59,7 @@ def check_login():
         print('no cookie!', flush=True)
         return False
 
-    g.user = get_db().get_user_by_id(g.cookie['external_id'])
+    g.user = get_db().get_user_by_external_id(g.cookie['external_id'])
 
     if not g.user:
         return False
@@ -104,7 +104,8 @@ def new_user():
                 first_name=request.json['first_name'],
                 last_name=request.json['last_name'] if 'last_name' in request.json else '',
                 created_at=datetime.now(),
-                logged_in_at=datetime.now()
+                logged_in_at=datetime.now(),
+                admin=False
                 )
     user.password = request.json['password']
 
