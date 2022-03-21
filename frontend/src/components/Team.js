@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   ChakraProvider,
   Box,
+  Button,
   Text,
   Link,
   List,
@@ -11,7 +12,10 @@ import {
   Code,
   Grid,
   theme,
+  Select,
+  useToast
 } from '@chakra-ui/react';
+import { ArrowForwardIcon } from '@chakra-ui/icons'
 import { useNavigate, useParams } from "react-router-dom";
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { checkLogin } from '../utils';
@@ -22,13 +26,61 @@ function getData(url, arrayName, setFn) {
       .then(obj => { return setFn(obj.body[arrayName]) });
 }
 
+function respondToJoinRequest(request, requestRoles, toast) {
+
+  if (requestRoles[request.email] == undefined) {
+    toast({
+        title: `Must select a role before adding player to team`,
+        status: 'error', isClosable: true,
+    });
+    return;
+  }
+
+  let data = {
+    team_id: request.team_id,
+    user_id: request.user_id,
+    role: requestRoles[request.email]
+  };
+
+  fetch("/api/accept-join", {
+    method: "POST",
+    credentials: 'include',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  })
+  .then(response => {
+    if (response.status == 200) {
+      // TODO refresh
+      return;
+    }
+    toast({
+        title: `Accept failed`,
+        status: 'error', isClosable: true,
+    });
+  });
+}
+
 function Team() {
 
   let { team_id } = useParams();
   let navigate = useNavigate();
   const [teams, setTeams] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
+  const [requestRoles, setRequestRoles] = useState({});
   const fetchedData = useRef(false);
+  const toast = useToast();
+
+  const acceptRequest = async event => {
+
+  };
+
+  function roleSelectionChange(request, role) {
+
+    requestRoles[request.email] = role;
+    console.log(request)
+    console.log(role)
+
+  };
 
   useEffect(() => {
     checkLogin(navigate);
@@ -66,6 +118,18 @@ function Team() {
                 <ListItem key={request.email}>
                   <ListIcon  color='green.500' />
                   {request.email} ({request.requested_at})
+                  <Select placeholder='Role' onChange={e => roleSelectionChange(request, e.target.value)}>
+                    <option value='full'>Full Time</option>
+                    <option value='half'>Half Time</option>
+                    <option value='sub'>Sub</option>
+                    <option value='captain'>Captain</option>
+                  </Select>
+                    <Button rightIcon={<ArrowForwardIcon />}
+                            colorScheme='teal'
+                            variant='outline'
+                            onClick={() => respondToJoinRequest(request, requestRoles, toast)}>
+                    Accept
+                  </Button>
                 </ListItem>
                ))
               }

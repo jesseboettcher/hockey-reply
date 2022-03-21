@@ -29,7 +29,7 @@ def find_player(team, user_id):
 @app.route('/api/team/', methods=['GET'])
 @app.route('/api/team/<team_id>', methods=['GET'])
 def get_teams(team_id=None):
-    print('api/team/{team_id}', flush=True)
+
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
