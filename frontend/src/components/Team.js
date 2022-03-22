@@ -92,7 +92,7 @@ function Team() {
       }
       else {
         getData(`/api/team/${team_id}`, 'teams', setTeams);
-        getData(`/api/join-requests/${team_id}`, 'join_requests', setJoinRequests);
+        getData(`/api/team-players/${team_id}`, 'players', setJoinRequests);
       }
       fetchedData.current = true;
     }
@@ -118,7 +118,7 @@ function Team() {
                 <ListItem key={request.email}>
                   <ListIcon  color='green.500' />
                   {request.email} ({request.requested_at})
-                  <Select placeholder='Role' onChange={e => roleSelectionChange(request, e.target.value)}>
+                  <Select placeholder='Role' defaultValue={request.role} onChange={e => roleSelectionChange(request, e.target.value)}>
                     <option value='full'>Full Time</option>
                     <option value='half'>Half Time</option>
                     <option value='sub'>Sub</option>

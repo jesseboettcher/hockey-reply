@@ -73,6 +73,44 @@ def get_teams(team_id=None):
     return make_response(result)
 
 
+@app.route('/api/team-players/<team_id>', methods=['GET'])
+def get_team_players(team_id=None):
+
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
+    db = get_db()
+
+    team = db.get_team_by_id(team_id)
+
+    if not team:
+        write_log('ERROR', f'/api/team/<team_id>: team {team_id} not found')
+        return {'result': 'error'}, 400
+
+    result = { 'players': [] }
+
+    for player in team.players:
+
+        requesting_player = db.get_user_by_id(player.user_id)
+        player_name = requesting_player.first_name
+        if requesting_player.last_name:
+            player_name += f' {requesting_player.last_name}'
+
+        request_dict = {
+            'team' : team.name,
+            'team_id': team.team_id,
+            'user_id': player.user_id,
+            'name': player_name,
+            'email': requesting_player.email,
+            'role': player.role,
+            'requested_at': player.joined_at,
+            'player_count': len(team.players)
+        }
+        result['players'].append(request_dict)
+
+    return make_response(result)
+
+
 @app.route('/api/join-requests/', methods=['GET'])
 @app.route('/api/join-requests/<team_id>', methods=['GET'])
 def get_join_requests(team_id=None):
