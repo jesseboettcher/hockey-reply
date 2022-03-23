@@ -1,11 +1,12 @@
+import datetime
 import os
 
 from flask import current_app, g
-from sqlalchemy import create_engine, func, or_
+from sqlalchemy import create_engine, func, and_, or_
 from sqlalchemy.orm import sessionmaker
 import sqlite3
 
-from webserver.database.alchemy_models import Game, Team, User, TeamPlayer
+from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamPlayer
 
 global_db_instance = None
 
@@ -24,7 +25,7 @@ class Database:
     SQLITE_DB_PATH = 'database/hockey.db'
 
     def __init__(self, local):
-
+        print("Database__init__")
         connect_string = f'postgresql://postgres:{os.getenv("POSTGRES_PASSWORD")}@hockey-data.cb53hszvt88d.us-west-2.rds.amazonaws.com/hockeydata'
         if local:
             connect_string = f"sqlite:///{self.SQLITE_DB_PATH}"
@@ -85,6 +86,9 @@ class Database:
     def get_team_players(self):
         return self.session.query(TeamPlayer).all()
 
+    def get_team_player(self, team_id, user_id):
+        return self.session.query(TeamPlayer).filter(and_(TeamPlayer.team_id == team_id, TeamPlayer.user_id == user_id)).one_or_none()
+
     ### Game methods
     def get_games(self):
         return self.session.query(Game).all()
@@ -122,4 +126,34 @@ class Database:
                     game_type=game_parser.type)
 
         self.session.add(game)
+        self.session.commit()
+
+    def add_game_object(self, game):
+        self.session.add(game)
+        self.session.commit()
+
+    ### Reply methods
+    def game_replies_for_game(self, game_id, team_id):
+        return self.session.query(GameReply).filter(and_(GameReply.game_id == game_id, GameReply.team_id == team_id)).all()
+
+    def game_reply_for_game_and_user(self, game_id, team_id, user_id):
+        return self.session.query(GameReply).filter(and_(GameReply.game_id == game_id, GameReply.team_id == team_id, GameReply.user_id == user_id)).one_or_none()
+
+    def set_game_reply(self, game_id, team_id, user_id, reply, message):
+        db_reply = self.session.query(GameReply).filter(and_(GameReply.game_id == game_id, GameReply.user_id == user_id)).one_or_none()
+
+        if db_reply is None:
+            db_reply = GameReply(game_id=game_id,
+                                 team_id=team_id,
+                                 user_id=user_id,
+                                 response=reply,
+                                 message=message
+                                )
+            self.session.add(db_reply)
+        else:
+            db_reply.reply = reply
+            db_reply.message = message
+
+        db_reply.modified_at = datetime.datetime.now()
+
         self.session.commit()

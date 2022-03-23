@@ -20,6 +20,7 @@ CREATE TABLE game(
 CREATE TABLE game_reply(
     reply_id        SERIAL,
     game_id         INTEGER,
+    team_id         INTEGER,
     user_id         INTEGER,
     response        TEXT,
     message         TEXT,

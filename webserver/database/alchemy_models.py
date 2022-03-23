@@ -42,7 +42,8 @@ class GameReply(Base):
     __tablename__ = "game_reply"
     reply_id = Column(Integer, primary_key=True)
     game_id = Column(Integer, ForeignKey("game.game_id"))
-    user_id = Column(Integer, ForeignKey("user.user_id"))
+    team_id = Column(Integer)
+    user_id = Column(Integer, ForeignKey("users.user_id"))
     response = Column(String)
     message = Column(String)
     modified_at = Column(DateTime)

@@ -4,7 +4,7 @@ import sys
 
 from flask import Blueprint, current_app, g, make_response, request
 
-from webserver.database.alchemy_models import User, Team
+from webserver.database.alchemy_models import GameReply, User, Team
 from webserver.database.hockey_db import get_db
 from webserver.logging import write_log
 from webserver.api.auth import check_login
@@ -49,7 +49,7 @@ def get_games(team_id):
 @blueprint.route('/game/<game_id>', methods=['GET'])
 def get_game(game_id):
     '''
-    Returns the details for the specified game: game date/time, rink, home/away, vs, player replies
+    Returns the details for the specified game: game date/time, rink, home/away, vs
     '''
     if not check_login():
         return { 'result' : 'needs login' }, 400
@@ -79,10 +79,68 @@ def get_game(game_id):
     return make_response(result)
 
 
-@blueprint.route('/game/reply', methods=['GET', 'POST'])
-def game_reply(team_id):
+@blueprint.route('/game/reply/<game_id>/for-team/<team_id>', methods=['POST', 'GET'])
+def game_reply(game_id, team_id):
     '''
     POST with game_id, response (yes|no|maybe), message
-    GET for replies from email links with url params containing the same fields
+    GET list of replies for a game
     '''
-    return make_response({'result': 'success'})
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
+    db = get_db()
+
+    if request.method == 'GET':
+        replies = db.game_replies_for_game(game_id, team_id)
+
+        result = { 'replies': [] }
+
+        for reply in replies:
+            reply_dict = {
+                'reply_id': reply.reply_id,
+                'game_id': reply.game_id,
+                'user_id': reply.user_id,
+                'response': reply.response,
+                'message': reply.message
+            }
+            result['replies'].append(reply_dict)
+
+        return make_response(result)
+
+    if request.method == 'POST':
+        # check for required fields
+        if 'user_id' not in request.json or \
+           'response' not in request.json:
+            write_log('ERROR', f'api/reply: missing request fields')
+            return {'result': 'error'}, 400
+
+        # check if logged in user == user_id || loged in user == captain on team
+        team_player = db.get_team_player(team_id, request.json['user_id'])
+        if team_player is None:
+            write_log('ERROR', f'api/reply: player is not on team')
+            return {'result': 'error'}, 400
+
+        if not current_app.config['TESTING'] and user_id != g.user.id:
+
+            logged_in_player = db.get_team_player(team_id, g.user.user_id)
+            if logged_in_player is None:
+                write_log('ERROR', f'api/reply: player is not on team')
+                return {'result': 'error'}, 400
+
+            if logged_in_player and logged_in_player.role == 'captain':
+                # this is ok
+                pass
+            elif g.user.admin:
+                # this is ok
+                pass
+            else:
+                write_log('ERROR', f'api/reply: {g.user.user_id} does not have access to edit reply for {response.json["user_id"]}')
+                return {'result': 'error'}, 400
+
+        db.set_game_reply(game_id, team_id,
+                          request.json['user_id'],
+                          request.json['response'],
+                          request.json['message'])
+
+        write_log('INFO', f'api/game/reply: {request.json["user_id"]} says {request.json["response"]} for game {game_id}')
+        return make_response({ 'result' : 'success' })

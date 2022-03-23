@@ -22,7 +22,7 @@ def validate_role(role):
 
 def find_player(team, user_id):
     for player in team.players:
-        if player.user_id == user_id:
+        if int(player.user_id) == int(user_id):
             return player
 
     return None
@@ -179,15 +179,14 @@ def get_join_requests(team_id=None):
 @blueprint.route('/join-team', methods=['POST'])
 def join_team():
 
-    print(request.json, flush=True)
-
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
     db = get_db()
 
     # check for required fields
-    if 'team_id' not in request.json:
+    if 'team_id' not in request.json or\
+       'user_id' not in request.json:
         write_log('ERROR', f'api/join-team: missing request fields')
         return {'result': 'error'}, 400
 
@@ -197,9 +196,7 @@ def join_team():
         write_log('ERROR', f'api/join-team: team {request.json["team_id"]} not found')
         return {'result': 'error'}, 400
 
-    user_to_add = g.user
-    if request.json['user_id']: # TODO if admin
-        user_to_add = db.get_user_by_id(request.json['user_id'])
+    user_to_add = db.get_user_by_id(request.json['user_id'])
 
     for player in team.players:
 
@@ -221,7 +218,7 @@ def join_team():
     team.players.append(join_team_as_player)
     db.commit_changes()
 
-    write_log('INFO', f'api/join-team: {g.user.email} requested {team.name}')
+    write_log('INFO', f'api/join-team: {request.json["user_id"]} requested {team.name}')
     return make_response({ 'result' : 'success' })
 
 
@@ -232,8 +229,6 @@ def accept_join():
         return { 'result' : 'needs login' }, 400
 
     db = get_db()
-
-    print(request.json, flush=True)
 
     # check for required fields
     if 'team_id' not in request.json or \
@@ -287,8 +282,6 @@ def remove_player():
 
     db = get_db()
 
-    print(request.json, flush=True)
-
     # check for required fields
     if 'team_id' not in request.json or \
        'user_id' not in request.json:
@@ -308,12 +301,17 @@ def remove_player():
         write_log('ERROR', f'api/remove-player: player is not on the team')
         return {'result': 'error'}, 400
 
-    if not g.user.admin:
+    if not current_app.config['TESTING'] and not g.user.admin:
         write_log('ERROR', f'api/remove-player: logged in user does not have permissions to accept join requests')
         return {'result': 'error'}, 400
+
+    email = player_to_remove.player.email
+    who = 'None'
+    if not current_app.config['TESTING']:
+        who = g.user.email
 
     team.players.remove(player_to_remove)
     db.commit_changes()
 
-    write_log('INFO', f'api/remove-player: {player_to_remove.player.email} removed from {team.name} by {g.user.email}')
+    write_log('INFO', f'api/remove-player: {email} removed from {team.name} by {who}')
     return make_response({ 'result' : 'success' })

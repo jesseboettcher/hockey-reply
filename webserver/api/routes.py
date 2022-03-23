@@ -11,16 +11,6 @@ from webserver.logging import write_log
 
 blueprint = Blueprint('routes', __name__, url_prefix='/api')
 
-@blueprint.route('/goodbye', methods=['GET', 'POST'])
-def goodbye():
-    if request.method == 'GET':
-        write_log('INFO', 'received goodbye event')
-        return { 'result' : 'unhandled' }, 400
-
-    print("POST api/goodbye", flush=True)
-    print(f"{request.json}", flush=True)
-    return { 'result' : 'success' }, 200
-
 
 @blueprint.route('/sync')
 def sync():
