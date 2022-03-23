@@ -21,10 +21,11 @@ class Synchronizer:
     TEST_FILE_PATH = 'test/team.html'
 
     def __init__(self):
-        pass
+        self.db = None
 
     def sync(self):
-        db = get_db()
+        write_log('INFO', f'Synchronization started')
+        self.db = Database(False)
 
         source, soup = self.open_season_page()
         for link in soup.find_all('a'):
@@ -44,13 +45,13 @@ class Synchronizer:
                 return False
 
             for game in team_parser.games:
-                db.add_game(game)
+                self.db.add_game(game)
 
         write_log('INFO', f'Synchronization complete')
         return True
 
     def sync_local_file(self):
-        db = Database(True)
+        self.db = Database(True)
 
         source, soup = self.open_test_file()
         team_parser = TeamPageParser(source, soup)
@@ -61,7 +62,7 @@ class Synchronizer:
             return
 
         for game in team_parser.games:
-            db.add_game(game)
+            self.db.add_game(game)
 
         print(f'Synchronization complete')
 
