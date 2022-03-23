@@ -2,14 +2,15 @@ from datetime import datetime
 import os
 import sys
 
-from flask import current_app, g, make_response, request
+from flask import Blueprint, current_app, g, make_response, request
 import jwt
 
-from webserver import app
 from webserver.data_synchronizer import Synchronizer
 from webserver.database.alchemy_models import User
 from webserver.database.hockey_db import get_db
 from webserver.logging import write_log
+
+blueprint = Blueprint('auth', __name__, url_prefix='/api')
 
 def decode_cookie():
     cookie = request.cookies.get('user')
@@ -67,7 +68,7 @@ def check_login():
     return True
 
 
-@app.route('/api/hello')
+@blueprint.route('/hello')
 def hello_world():
 
     if not check_login():
@@ -76,7 +77,7 @@ def hello_world():
     return { 'result' : 'success' }
 
 
-@app.route('/api/new-user', methods=['POST'])
+@blueprint.route('/new-user', methods=['POST'])
 def new_user():
     db = get_db()
 
@@ -118,7 +119,7 @@ def new_user():
     return response
 
 
-@app.route('/api/sign-in', methods=['POST'])
+@blueprint.route('/sign-in', methods=['POST'])
 def sign_in():
     db = get_db()
 
@@ -154,6 +155,6 @@ def sign_in():
     return response
 
 
-@app.route('/api/forgot-password')
+@blueprint.route('/forgot-password')
 def forgot_password():
     return { 'result' : 'unhandled' }, 400

@@ -2,9 +2,8 @@ from datetime import datetime
 import os
 import sys
 
-from flask import current_app, g, make_response, request
+from flask import Blueprint, current_app, g, make_response, request
 
-from webserver import app
 from webserver.database.alchemy_models import User, Team, TeamPlayer
 from webserver.database.hockey_db import get_db
 from webserver.logging import write_log
@@ -13,6 +12,8 @@ from webserver.api.auth import check_login
 '''
 APIs for managing team membership
 '''
+blueprint = Blueprint('team', __name__, url_prefix='/api')
+
 def validate_role(role):
     if role != 'captain' and role != 'full' and role != 'half' and role != 'sub':
         return False
@@ -26,8 +27,8 @@ def find_player(team, user_id):
 
     return None
 
-@app.route('/api/team/', methods=['GET'])
-@app.route('/api/team/<team_id>', methods=['GET'])
+@blueprint.route('/team/', methods=['GET'])
+@blueprint.route('/team/<team_id>', methods=['GET'])
 def get_teams(team_id=None):
 
     if not check_login():
@@ -73,7 +74,7 @@ def get_teams(team_id=None):
     return make_response(result)
 
 
-@app.route('/api/team-players/<team_id>', methods=['GET'])
+@blueprint.route('/team-players/<team_id>', methods=['GET'])
 def get_team_players(team_id=None):
 
     if not check_login():
@@ -111,8 +112,8 @@ def get_team_players(team_id=None):
     return make_response(result)
 
 
-@app.route('/api/join-requests/', methods=['GET'])
-@app.route('/api/join-requests/<team_id>', methods=['GET'])
+@blueprint.route('/join-requests/', methods=['GET'])
+@blueprint.route('/join-requests/<team_id>', methods=['GET'])
 def get_join_requests(team_id=None):
 
     if not check_login():
@@ -175,7 +176,7 @@ def get_join_requests(team_id=None):
     return make_response(result)
 
 
-@app.route('/api/join-team', methods=['POST'])
+@blueprint.route('/join-team', methods=['POST'])
 def join_team():
 
     print(request.json, flush=True)
@@ -224,7 +225,7 @@ def join_team():
     return make_response({ 'result' : 'success' })
 
 
-@app.route('/api/accept-join', methods=['POST'])
+@blueprint.route('/accept-join', methods=['POST'])
 def accept_join():
 
     if not check_login():
@@ -278,7 +279,7 @@ def accept_join():
     return {'result': 'error'}, 400
 
 
-@app.route('/api/remove-player', methods=['POST'])
+@blueprint.route('/remove-player', methods=['POST'])
 def remove_player():
 
     if not check_login():

@@ -1,7 +1,18 @@
 from flask import Flask
 
-app = Flask(__name__)
-import webserver.api.auth
-import webserver.api.game
-import webserver.api.routes
-import webserver.api.team
+def create_app():
+	app = Flask(__name__)
+
+	from webserver.api import auth
+	from webserver.api import game
+	from webserver.api import routes
+	from webserver.api import team
+
+	from webserver.database import hockey_db
+
+	app.register_blueprint(auth.blueprint)
+	app.register_blueprint(game.blueprint)
+	app.register_blueprint(routes.blueprint)
+	app.register_blueprint(team.blueprint)
+
+	return app

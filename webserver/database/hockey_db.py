@@ -7,11 +7,18 @@ import sqlite3
 
 from webserver.database.alchemy_models import Game, Team, User, TeamPlayer
 
-def get_db():
-    if 'db' not in g:
-        g.db = Database(False)
+global_db_instance = None
 
-    return g.db
+def get_db():
+    global global_db_instance
+    if global_db_instance is None:
+        global_db_instance = Database(False)
+
+    return global_db_instance
+
+def close_db(e=None):
+    if global_db_instance is not None:
+        global_db_instance.close()
 
 class Database:
     SQLITE_DB_PATH = 'database/hockey.db'
@@ -22,10 +29,17 @@ class Database:
         if local:
             connect_string = f"sqlite:///{self.SQLITE_DB_PATH}"
 
-        engine = create_engine(connect_string)
+        self.engine = create_engine(connect_string)
         Session = sessionmaker()
-        Session.configure(bind=engine)
+        Session.configure(bind=self.engine)
         self.session = Session()
+
+    def __del__(self):
+        self.close();
+
+    def close():
+        self.session.close()
+        self.engine.dispose()
 
     def commit_changes(self):
         self.session.commit()

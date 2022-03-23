@@ -2,9 +2,8 @@ from datetime import datetime
 import os
 import sys
 
-from flask import current_app, g, make_response, request
+from flask import Blueprint, current_app, g, make_response, request
 
-from webserver import app
 from webserver.database.alchemy_models import User, Team
 from webserver.database.hockey_db import get_db
 from webserver.logging import write_log
@@ -13,8 +12,9 @@ from webserver.logging import write_log
 '''
 APIs for managing updates to games
 '''
+blueprint = Blueprint('game', __name__, url_prefix='/api')
 
-@app.route('/api/games/<team_id>', methods=['GET'])
+@blueprint.route('/games/<team_id>', methods=['GET'])
 def get_games(team_id):
     '''
     Returns all games for the specified team. Includes flag for whether the game was completed.
@@ -22,7 +22,7 @@ def get_games(team_id):
     return make_response({'result': 'success'})
 
 
-@app.route('/api/game/<game_id>', methods=['GET'])
+@blueprint.route('/game/<game_id>', methods=['GET'])
 def get_game(team_id):
     '''
     Returns the details for the specified game: game date/time, rink, home/away, vs, player replies
@@ -30,7 +30,7 @@ def get_game(team_id):
     return make_response({'result': 'success'})
 
 
-@app.route('/api/game/reply', methods=['GET', 'POST'])
+@blueprint.route('/game/reply', methods=['GET', 'POST'])
 def game_reply(team_id):
     '''
     POST with game_id, response (yes|no|maybe), message
