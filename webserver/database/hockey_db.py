@@ -1,7 +1,7 @@
 import os
 
 from flask import current_app, g
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, func, or_
 from sqlalchemy.orm import sessionmaker
 import sqlite3
 
@@ -37,13 +37,14 @@ class Database:
     def __del__(self):
         self.close();
 
-    def close():
+    def close(self):
         self.session.close()
         self.engine.dispose()
 
     def commit_changes(self):
         self.session.commit()
 
+    ### User methods
     def get_user(self, email):
         return self.session.query(User).filter(func.lower(User.email) == email.strip().lower()).first()
 
@@ -58,6 +59,7 @@ class Database:
         self.session.commit()
         return user;
 
+    ### Teams methods
     def get_teams(self):
         return self.session.query(Team).all()
 
@@ -83,6 +85,13 @@ class Database:
     def get_team_players(self):
         return self.session.query(TeamPlayer).all()
 
+    ### Game methods
+    def get_games(self):
+        return self.session.query(Game).all()
+
+    def get_games_for_team(self, team_id):
+        return self.session.query(Game).filter(or_(Game.home_team_id == team_id, Game.away_team_id == team_id)).all()
+
     def add_game(self, game_parser):
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()
 
@@ -99,7 +108,7 @@ class Database:
             away_team = self.add_team(game_parser.away_team)
 
         game = Game(game_id=game_parser.id,
-                    scheduled_time=game_parser.datetime,
+                    scheduled_at=game_parser.datetime,
                     completed=game_parser.completed,
                     rink=game_parser.rink,
                     level=game_parser.level,

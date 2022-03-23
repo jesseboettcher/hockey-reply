@@ -19,7 +19,31 @@ def get_games(team_id):
     '''
     Returns all games for the specified team. Includes flag for whether the game was completed.
     '''
-    return make_response({'result': 'success'})
+    db = get_db()
+    games = db.get_games_for_team(team_id)
+
+    result = { 'games': [] }
+    print(len(games), flush=True)
+    print(team_id, flush=True)
+
+    for game in games:
+
+        print(game.game_id, flush=True)
+        game_dict = {
+            'game_id' : game.game_id,
+            'scheduled_at': game.scheduled_at,
+            'completed': game.completed,
+            'rink': game.rink,
+            'level': game.level,
+            'home_team_id': game.home_team_id,
+            'away_team_id': game.away_team_id,
+            'home_goals': game.home_goals,
+            'away_goals': game.away_goals,
+            'game_type': game.game_type
+        }
+        result['games'].append(game_dict)
+
+    return make_response(result)
 
 
 @blueprint.route('/game/<game_id>', methods=['GET'])
