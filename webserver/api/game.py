@@ -7,6 +7,7 @@ from flask import Blueprint, current_app, g, make_response, request
 from webserver.database.alchemy_models import User, Team
 from webserver.database.hockey_db import get_db
 from webserver.logging import write_log
+from webserver.api.auth import check_login
 
 
 '''
@@ -19,6 +20,9 @@ def get_games(team_id):
     '''
     Returns all games for the specified team. Includes flag for whether the game was completed.
     '''
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
     db = get_db()
     games = db.get_games_for_team(team_id)
 

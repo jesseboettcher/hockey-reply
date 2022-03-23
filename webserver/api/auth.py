@@ -54,6 +54,9 @@ def require_login(func):
 
 
 def check_login():
+    if current_app.config['TESTING']:#g.unittest:#os.environ.has_key('UNITTEST'):
+        return True;
+
     decode_cookie()
 
     if not 'cookie' in g or 'external_id' not in g.cookie:

@@ -1,6 +1,6 @@
-from flask import Flask
+from flask import Flask, g
 
-def create_app():
+def create_app(testing=False):
 	app = Flask(__name__)
 
 	from webserver.api import auth
@@ -14,5 +14,7 @@ def create_app():
 	app.register_blueprint(game.blueprint)
 	app.register_blueprint(routes.blueprint)
 	app.register_blueprint(team.blueprint)
+
+	app.config['TESTING'] = testing
 
 	return app
