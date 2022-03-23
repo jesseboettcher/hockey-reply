@@ -27,12 +27,8 @@ def get_games(team_id):
     games = db.get_games_for_team(team_id)
 
     result = { 'games': [] }
-    print(len(games), flush=True)
-    print(team_id, flush=True)
-
     for game in games:
 
-        print(game.game_id, flush=True)
         game_dict = {
             'game_id' : game.game_id,
             'scheduled_at': game.scheduled_at,
@@ -51,11 +47,36 @@ def get_games(team_id):
 
 
 @blueprint.route('/game/<game_id>', methods=['GET'])
-def get_game(team_id):
+def get_game(game_id):
     '''
     Returns the details for the specified game: game date/time, rink, home/away, vs, player replies
     '''
-    return make_response({'result': 'success'})
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
+    db = get_db()
+    game = db.get_game_by_id(game_id)
+
+    if not game:
+        write_log('ERROR', f'/api/game/<game>: game {game_id} not found')
+        return {'result': 'error'}, 400
+
+    result = { 'games': [] }
+    game_dict = {
+        'game_id' : game.game_id,
+        'scheduled_at': game.scheduled_at,
+        'completed': game.completed,
+        'rink': game.rink,
+        'level': game.level,
+        'home_team_id': game.home_team_id,
+        'away_team_id': game.away_team_id,
+        'home_goals': game.home_goals,
+        'away_goals': game.away_goals,
+        'game_type': game.game_type
+    }
+    result['games'].append(game_dict)
+
+    return make_response(result)
 
 
 @blueprint.route('/game/reply', methods=['GET', 'POST'])

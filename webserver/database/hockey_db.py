@@ -92,6 +92,9 @@ class Database:
     def get_games_for_team(self, team_id):
         return self.session.query(Game).filter(or_(Game.home_team_id == team_id, Game.away_team_id == team_id)).all()
 
+    def get_game_by_id(self, game_id):
+        return self.session.query(Game).filter(Game.game_id == game_id).one_or_none()
+
     def add_game(self, game_parser):
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()
 
