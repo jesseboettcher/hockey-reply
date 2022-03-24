@@ -1,4 +1,5 @@
 import os
+
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
@@ -22,7 +23,32 @@ def send_forgot_password(token):
     pass
 
 def send_game_coming_soon():
-    pass
+
+    message = Mail(
+        from_email='hockey.reply@ourano.com',
+        to_emails='jesse.boettcher@gmail.com')
+
+    message.dynamic_template_data = {
+                "name" : "Jesse",
+                "team" : "PileOns",
+                "days_until": "2 days",
+                "date": "Sun Mar 01 08:00 PM",
+                "rink": "San Jose Center",
+                "vs": "Shenanigans",
+                "reply": "Maybe",
+                "confirmed_players": "9",
+                "goalie": "Richard"
+            }
+    message.template_id = "d-b94dc2cebcec407caf3c8e03789d4c34" # Game coming soon
+
+    try:
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        print(e)
 
 def send_game_schedule_change():
     pass

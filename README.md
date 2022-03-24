@@ -25,6 +25,7 @@ Using python version 3.9.5:
 # deployments
 * database: `hockey-data.cb53hszvt88d.us-west-2.rds.amazonaws.com`
 * logging: Google Cloud Logging. `hockey-reply` project
+* email: SendGrid. `hockey.reply@ourano.com` replies linked to `hockey.reply@gmail.com`
 
 # testing
 * run backend tests: `python -m unittest`
