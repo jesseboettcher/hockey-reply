@@ -162,7 +162,10 @@ def sign_in():
 
 @blueprint.route('/forgot-password', methods=['POST'])
 def forgot_password():
-
+    '''
+    Generates a 10min expiring token and sends it out to specified email address.
+    Tested via postman, not covered in unit tests.
+    '''
     if 'email' not in request.json:
         print(f'api/forgot-password: missing request fields', flush=True)
         return {'result': 'error'}, 400
@@ -181,4 +184,40 @@ def forgot_password():
 
     webserver.email.send_forgot_password(request.json['email'], user.password_reset_token)
 
+    return { 'result' : 'success' }, 200
+
+
+@blueprint.route('/reset-password', methods=['POST'])
+def reset_password():
+    '''
+    Generates a 10min expiring token and sends it out to specified email address.
+    Tested via postman, not covered in unit tests.
+    '''
+    if 'token' not in request.json or \
+       'password' not in request.json:
+        print(f'api/reset-password: missing request fields', flush=True)
+        return {'result': 'error'}, 400
+
+    db = get_db()
+    user = db.get_user_by_password_reset_token(request.json['token'])
+
+    if not user:
+        write_log('ERROR', f'api/reset-password: Error user for {request.json["token"]} not found')
+        return {'result': 'failed'}, 400
+
+    if datetime.datetime.now() > user.password_reset_token_expires_at:
+
+        user.password_reset_token = None
+        user.password_reset_token_expires_at = None
+        db.commit_changes()
+
+        write_log('ERROR', f'api/reset-password: {request.json["token"]} is expired for {user.email}')
+        return {'result': 'expired token'}, 400
+
+    user.password = request.json['password']
+    user.password_reset_token = None
+    user.password_reset_token_expires_at = None
+    db.commit_changes()
+
+    write_log('INFO', f'api/reset-password: Updated password for {user.email}')
     return { 'result' : 'success' }, 200

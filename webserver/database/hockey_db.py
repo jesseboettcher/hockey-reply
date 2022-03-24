@@ -54,6 +54,9 @@ class Database:
     def get_user_by_external_id(self, external_id):
         return self.session.query(User).filter(func.lower(User.external_id) == external_id).first()
 
+    def get_user_by_password_reset_token(self, token):
+        return self.session.query(User).filter(User.password_reset_token == token).one_or_none()
+
     def add_user(self, user):
         self.session.add(user)
         self.session.commit()
