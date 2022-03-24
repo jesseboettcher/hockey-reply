@@ -1,5 +1,6 @@
-from datetime import datetime
+import datetime
 import os
+import secrets
 import sys
 
 from flask import Blueprint, current_app, g, make_response, request
@@ -8,6 +9,7 @@ import jwt
 from webserver.data_synchronizer import Synchronizer
 from webserver.database.alchemy_models import User
 from webserver.database.hockey_db import get_db
+import webserver.email
 from webserver.logging import write_log
 
 blueprint = Blueprint('auth', __name__, url_prefix='/api')
@@ -29,7 +31,7 @@ def decode_cookie():
 
 
 def create_cookie(external_id):
-    token = jwt.encode({ 'external_id': external_id, 'date': datetime.now().isoformat() },
+    token = jwt.encode({ 'external_id': external_id, 'date': datetime.datetime.now().isoformat() },
                        os.environ.get("SECRET_KEY", "placeholder_key"),
                        algorithm='HS256')
     return token
@@ -54,7 +56,7 @@ def require_login(func):
 
 
 def check_login():
-    if current_app.config['TESTING']:#g.unittest:#os.environ.has_key('UNITTEST'):
+    if current_app.config['TESTING']:
         return True;
 
     decode_cookie()
@@ -107,8 +109,8 @@ def new_user():
     user = User(email=user_email.strip().lower(),
                 first_name=request.json['first_name'],
                 last_name=request.json['last_name'] if 'last_name' in request.json else '',
-                created_at=datetime.now(),
-                logged_in_at=datetime.now(),
+                created_at=datetime.datetime.now(),
+                logged_in_at=datetime.datetime.now(),
                 admin=False
                 )
     user.password = request.json['password']
@@ -149,7 +151,7 @@ def sign_in():
         write_log('INFO', f'api/sign-in: {user_email} password verification failed')
         return {'result': 'bad login'}, 400
 
-    user.logged_in_at = datetime.now()
+    user.logged_in_at = datetime.datetime.now()
     get_db().commit_changes()
 
     response = make_response({ 'result' : 'success' })
@@ -158,6 +160,25 @@ def sign_in():
     return response
 
 
-@blueprint.route('/forgot-password')
+@blueprint.route('/forgot-password', methods=['POST'])
 def forgot_password():
-    return { 'result' : 'unhandled' }, 400
+
+    if 'email' not in request.json:
+        print(f'api/forgot-password: missing request fields', flush=True)
+        return {'result': 'error'}, 400
+
+    db = get_db()
+    user = db.get_user(request.json['email'])
+
+    if not user:
+        write_log('ERROR', f'api/forgot-password: Error {request.json["email"]} does not match any account')
+        return {'result': 'success'}, 200
+
+    # set token in user table. set expiry time
+    user.password_reset_token = secrets.token_urlsafe(16)
+    user.password_reset_token_expires_at = datetime.datetime.now() + datetime.timedelta(minutes=10)
+    db.commit_changes()
+
+    webserver.email.send_forgot_password(request.json['email'], user.password_reset_token)
+
+    return { 'result' : 'success' }, 200

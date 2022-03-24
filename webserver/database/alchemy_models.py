@@ -72,6 +72,9 @@ class User(Base):
 
     admin = Column(Boolean)
 
+    password_reset_token = Column(String, nullable=True)
+    password_reset_token_expires_at = Column(DateTime)
+
     @property
     def password(self):
         raise AttributeError('Cannot read password')

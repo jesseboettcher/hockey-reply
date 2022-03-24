@@ -3,6 +3,8 @@ import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+FROM_ADDRESS = 'hockey.reply@ourano.com'
+
 def send_welcome():
     message = Mail(
         from_email='hockey.reply@ourano.com',
@@ -13,19 +15,30 @@ def send_welcome():
     try:
         sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         response = sg.send(message)
-        print(response.status_code)
-        print(response.body)
-        print(response.headers)
     except Exception as e:
         print(e)
 
-def send_forgot_password(token):
-    pass
+def send_forgot_password(email, token):
+
+    message = Mail(
+        from_email=FROM_ADDRESS,
+        to_emails=email)
+
+    message.dynamic_template_data = {
+                "token" : token
+            }
+    message.template_id = "d-16832cb2df954c6cba5cfc41db35a4e1" # Forgot password
+
+    try:
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        response = sg.send(message)
+    except Exception as e:
+        print(e)
 
 def send_game_coming_soon():
 
     message = Mail(
-        from_email='hockey.reply@ourano.com',
+        from_email=FROM_ADDRESS,
         to_emails='jesse.boettcher@gmail.com')
 
     message.dynamic_template_data = {
@@ -44,9 +57,6 @@ def send_game_coming_soon():
     try:
         sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         response = sg.send(message)
-        print(response.status_code)
-        print(response.body)
-        print(response.headers)
     except Exception as e:
         print(e)
 

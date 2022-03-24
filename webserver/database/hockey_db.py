@@ -25,7 +25,6 @@ class Database:
     SQLITE_DB_PATH = 'database/hockey.db'
 
     def __init__(self, local):
-        print("Database__init__")
         connect_string = f'postgresql://postgres:{os.getenv("POSTGRES_PASSWORD")}@hockey-data.cb53hszvt88d.us-west-2.rds.amazonaws.com/hockeydata'
         if local:
             connect_string = f"sqlite:///{self.SQLITE_DB_PATH}"
