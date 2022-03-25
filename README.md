@@ -14,7 +14,9 @@ Using python version 3.9.5:
 * backend
   * `export POSTGRES_PASSWORD=[insert password here]`
   * `export FLASK_APP=webserver`
-  * `python -m flask run`
+  * `export GOOGLE_APPLICATION_CREDENTIALS=[path to creds]`
+  * `export SENDGRID_API_KEY=[insert api key]`
+  * `flask run`
 * frontend
   * `cd frontend`
   * `npm run start`
