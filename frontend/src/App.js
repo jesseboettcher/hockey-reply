@@ -8,6 +8,7 @@ import {
   Routes,
 } from 'react-router-dom';
 
+import Game from './components/Game'
 import Games from './components/Games'
 import Home from './components/Home';
 import ForgotPassword from './components/auth/ForgotPassword'
@@ -21,6 +22,7 @@ function App() {
       <Router>
         <Routes>
           <Route path='/' element={<Home />} />
+          <Route path='/game/:game_id' element={<Game />} />
           <Route path='/games' element={<Games />} />
           <Route path='/forgot-password' element={<ForgotPassword />} />
           <Route path='/sign-in' element={<SignIn />} />

@@ -61,6 +61,13 @@ def get_game(game_id):
         write_log('ERROR', f'/api/game/<game>: game {game_id} not found')
         return {'result': 'error'}, 400
 
+    home_team = db.get_team_by_id(game.home_team_id)
+    away_team = db.get_team_by_id(game.away_team_id)
+
+    if home_team is None or away_team is None:
+        write_log('ERROR', f'/api/game/<game>: Team for game {game_id} is not found')
+        return {'result': 'error'}, 400
+
     result = { 'games': [] }
     game_dict = {
         'game_id' : game.game_id,
@@ -69,7 +76,9 @@ def get_game(game_id):
         'rink': game.rink,
         'level': game.level,
         'home_team_id': game.home_team_id,
+        'home_team_name': home_team.name,
         'away_team_id': game.away_team_id,
+        'away_team_name': away_team.name,
         'home_goals': game.home_goals,
         'away_goals': game.away_goals,
         'game_type': game.game_type
