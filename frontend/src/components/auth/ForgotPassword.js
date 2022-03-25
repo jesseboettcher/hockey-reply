@@ -7,13 +7,54 @@ import {
   Stack,
   Text,
   useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
+import React, { useEffect, useState } from 'react';
 
 type ForgotPasswordFormInputs = {
   email: string;
 };
 
+// TODO move to utils
+function checkEmail (email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
 export default function ForgotPasswordForm(): JSX.Element {
+
+  const [userEmail, setUserEmail] = useState('');
+  const toast = useToast();
+
+  const submitForgotPassword = async event => {
+
+    if (!checkEmail(userEmail)) {
+      toast({
+                title: `Valid email address required`,
+                status: 'error', isClosable: true,
+            })
+      return;
+    }
+
+    let data = {
+      email: userEmail
+    };
+
+    fetch("/api/forgot-password", {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status == 200) {
+        toast({
+                  title: `Check your email`,
+                  status: 'info', isClosable: true,
+              })
+      }
+    });
+  };
+
   return (
     <Flex
       minH={'100vh'}
@@ -39,6 +80,7 @@ export default function ForgotPasswordForm(): JSX.Element {
         </Text>
         <FormControl id="email">
           <Input
+            onChange={(e) => setUserEmail(e.target.value) }
             placeholder="your-email@example.com"
             _placeholder={{ color: 'gray.500' }}
             type="email"
@@ -46,6 +88,7 @@ export default function ForgotPasswordForm(): JSX.Element {
         </FormControl>
         <Stack spacing={6}>
           <Button
+            onClick={submitForgotPassword}
             bg={'blue.400'}
             color={'white'}
             _hover={{

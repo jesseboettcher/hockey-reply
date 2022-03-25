@@ -14,10 +14,11 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function SignIn() {
 
+  const [searchParams, setSearchParams] = useSearchParams();
   let navigate = useNavigate();
   const emailRef = React.useRef();
   const passwordRef = React.useRef();
@@ -64,6 +65,12 @@ export default function SignIn() {
     };
   }, []);
 
+  const url_event = searchParams.get("event")
+  let password_update_msg = null
+  if (url_event == "password_updated") {
+    password_update_msg = <p>Your password has been updated. Please sign in.</p>
+  }
+
   return (
     <Flex
       minH={'100vh'}
@@ -80,7 +87,7 @@ export default function SignIn() {
           boxShadow={'lg'}
           p={8}>
           <Stack spacing={4}>
-
+            {password_update_msg}
             <FormControl id="email">
               <FormLabel>Email address</FormLabel>
               <Input type="email" ref={emailRef} />
