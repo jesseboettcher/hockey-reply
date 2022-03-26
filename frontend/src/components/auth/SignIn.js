@@ -24,10 +24,9 @@ export default function SignIn() {
   const passwordRef = React.useRef();
   const toast = useToast();
 
-  const keyboardHandler = async event => {
-    console.log(event.target);
-  };
   const submitSignIn = async event => {
+
+    event.preventDefault();
 
     // TODO hash password before sending (HR-7)
     let data = {
@@ -53,18 +52,6 @@ export default function SignIn() {
     });
   };
 
- useEffect(() => {
-    const listener = event => {
-      if (event.code === "Enter" || event.code === "NumpadEnter") {
-        submitSignIn();
-      }
-    };
-    document.addEventListener("keyup", listener);
-    return () => {
-      document.removeEventListener("keyup", listener);
-    };
-  }, []);
-
   const url_event = searchParams.get("event")
   let password_update_msg = null
   if (url_event == "password_updated") {
@@ -86,36 +73,37 @@ export default function SignIn() {
           bg={useColorModeValue('white', 'gray.700')}
           boxShadow={'lg'}
           p={8}>
-          <Stack spacing={4}>
-            {password_update_msg}
-            <FormControl id="email">
-              <FormLabel>Email address</FormLabel>
-              <Input type="email" ref={emailRef} />
-            </FormControl>
+          <form onSubmit={submitSignIn}>
+            <Stack spacing={4}>
+              {password_update_msg}
+              <FormControl id="email">
+                <FormLabel>Email address</FormLabel>
+                <Input type="email" ref={emailRef} />
+              </FormControl>
 
-            <FormControl id="password">
-              <FormLabel>Password</FormLabel>
-              <Input type="password" ref={passwordRef} />
-            </FormControl>
+              <FormControl id="password">
+                <FormLabel>Password</FormLabel>
+                <Input type="password" ref={passwordRef} />
+              </FormControl>
 
-            <Stack spacing={10}>
-              <Stack
-                direction={{ base: 'column', sm: 'row' }}
-                align={'start'}
-                justify={'space-between'}>
-                <Link color={'blue.400'} href='/forgot-password'>Forgot password?</Link>
+              <Stack spacing={10}>
+                <Stack
+                  direction={{ base: 'column', sm: 'row' }}
+                  align={'start'}
+                  justify={'space-between'}>
+                  <Link color={'blue.400'} href='/forgot-password'>Forgot password?</Link>
+                </Stack>
+                <Button
+                  bg={'blue.400'}
+                  color={'white'}
+                  _hover={{ bg: 'blue.500', }}
+                  type="submit">
+                  Sign in
+                </Button>
+                <p>Need an account? <Link color={'blue.400'} href='/sign-up'>Sign up ></Link></p>
               </Stack>
-              <Button
-                bg={'blue.400'}
-                color={'white'}
-                _hover={{ bg: 'blue.500', }}
-                onClick={submitSignIn}>
-                Sign in
-              </Button>
-              <p>Need an account? <Link color={'blue.400'} href='/sign-up'>Sign up ></Link></p>
             </Stack>
-
-          </Stack>
+          </form>
         </Box>
       </Stack>
     </Flex>

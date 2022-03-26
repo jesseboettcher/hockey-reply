@@ -34,6 +34,8 @@ export default function SignupCard() {
 
   const submitSignUp = async event => {
 
+    event.preventDefault();
+
     if (firstNameRef.current.value.length == 0) {
       toast({
                 title: `Required field, first name`,
@@ -76,18 +78,6 @@ export default function SignupCard() {
     });
   };
 
- useEffect(() => {
-    const listener = event => {
-      if (event.code === "Enter" || event.code === "NumpadEnter") {
-        submitSignUp();
-      }
-    };
-    document.addEventListener("keyup", listener);
-    return () => {
-      document.removeEventListener("keyup", listener);
-    };
-  }, []);
-
   return (
     <Flex
       minH={'100vh'}
@@ -105,64 +95,64 @@ export default function SignupCard() {
           bg={useColorModeValue('white', 'gray.700')}
           boxShadow={'lg'}
           p={8}>
-          <Stack spacing={4}>
+            <Stack spacing={4}>
+              <form onSubmit={submitSignUp}>
+                <HStack>
+                  <Box>
+                    <FormControl id="firstName" isRequired>
+                      <FormLabel>First Name</FormLabel>
+                      <Input type="text" ref={firstNameRef}/>
+                    </FormControl>
+                  </Box>
 
-            <HStack>
-              <Box>
-                <FormControl id="firstName" isRequired>
-                  <FormLabel>First Name</FormLabel>
-                  <Input type="text" ref={firstNameRef}/>
+                  <Box>
+                    <FormControl id="lastName">
+                      <FormLabel>Last Name</FormLabel>
+                      <Input type="text" />
+                    </FormControl>
+                  </Box>
+                </HStack>
+
+                <FormControl id="email" isRequired>
+                  <FormLabel>Email address</FormLabel>
+                  <Input type="email" onChange={(e) => setUserEmail(e.target.value) }/>
                 </FormControl>
-              </Box>
 
-              <Box>
-                <FormControl id="lastName">
-                  <FormLabel>Last Name</FormLabel>
-                  <Input type="text" />
+                <FormControl id="password" isRequired>
+                  <FormLabel>Password</FormLabel>
+                  <InputGroup>
+                    <Input type={showPassword ? 'text' : 'password'} onChange={(e) => setPassword(e.target.value) } />
+                    <InputRightElement h={'full'}>
+                      <Button
+                        variant={'ghost'}
+                        onClick={() =>
+                          setShowPassword((showPassword) => !showPassword)
+                        }>
+                        {showPassword ? <ViewIcon /> : <ViewOffIcon />}
+                      </Button>
+                    </InputRightElement>
+                  </InputGroup>
                 </FormControl>
-              </Box>
-            </HStack>
 
-            <FormControl id="email" isRequired>
-              <FormLabel>Email address</FormLabel>
-              <Input type="email" onChange={(e) => setUserEmail(e.target.value) }/>
-            </FormControl>
-
-            <FormControl id="password" isRequired>
-              <FormLabel>Password</FormLabel>
-              <InputGroup>
-                <Input type={showPassword ? 'text' : 'password'} onChange={(e) => setPassword(e.target.value) } />
-                <InputRightElement h={'full'}>
+                <Stack spacing={10} pt={2}>
                   <Button
-                    variant={'ghost'}
-                    onClick={() =>
-                      setShowPassword((showPassword) => !showPassword)
-                    }>
-                    {showPassword ? <ViewIcon /> : <ViewOffIcon />}
+                    loadingText="Submitting"
+                    size="lg"
+                    bg={'blue.400'}
+                    color={'white'}
+                    _hover={{
+                      bg: 'blue.500',
+                    }}
+                    type="submit">
+                    Sign up
                   </Button>
-                </InputRightElement>
-              </InputGroup>
-            </FormControl>
+                </Stack>
 
-            <Stack spacing={10} pt={2}>
-              <Button
-                loadingText="Submitting"
-                size="lg"
-                bg={'blue.400'}
-                color={'white'}
-                _hover={{
-                  bg: 'blue.500',
-                }}
-                onClick={submitSignUp}>
-                Sign up
-              </Button>
+                <Stack pt={6}>
+                    <p>Already a user? <Link color={'blue.400'} href='sign-in'>Sign in ></Link></p>
+                </Stack>
+              </form>
             </Stack>
-
-            <Stack pt={6}>
-                <p>Already a user? <Link color={'blue.400'} href='sign-in'>Sign in ></Link></p>
-            </Stack>
-
-          </Stack>
         </Box>
       </Stack>
     </Flex>
