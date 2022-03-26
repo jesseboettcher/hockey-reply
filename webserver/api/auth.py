@@ -128,8 +128,6 @@ def new_user():
 def sign_in():
     db = get_db()
 
-    print(request.json, flush=True)
-
     # check for required fields
     if 'email' not in request.json or request.json['email'] == ''\
        'password' not in request.json or request.json['email'] == '':

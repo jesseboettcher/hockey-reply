@@ -1,3 +1,4 @@
+import secrets
 from sqlalchemy import Column, Integer, String, ForeignKey, Table, DateTime, Boolean
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
@@ -60,6 +61,7 @@ class User(Base):
     activated = Column(Integer, default='0', server_default='0', nullable=False)
 
     _password = Column(String)
+    salt = Column(String)
 
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
@@ -81,7 +83,10 @@ class User(Base):
 
     @password.setter
     def password(self, password):
-        self._password = generate_password_hash(password)
+        # Add some random additional text to the password befeore hashing so that
+        # common passwords do not create a common hash.
+        self.salt = secrets.token_urlsafe(16)
+        self._password = generate_password_hash(f"{password}{self.salt}")
 
     def verify_password(self, password):
-        return check_password_hash(self._password, password)
+        return check_password_hash(self._password, f"{password}{self.salt}")
