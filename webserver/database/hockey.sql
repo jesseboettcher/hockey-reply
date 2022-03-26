@@ -12,7 +12,7 @@ CREATE TABLE game(
     away_team_id    INTEGER     NOT NULL,
     home_goals      INTEGER,
     away_goals      INTEGER,
-    game_type       TEXT ,   -- preseason vs Regular 2
+    game_type       TEXT,
     scoresheet_html_url TEXT,
     scoresheet_pdf_url TEXT
 );
@@ -32,11 +32,6 @@ CREATE TABLE team(
     name            TEXT        NOT NULL
 );
 
--- CREATE TABLE player(
---     player_id       SERIAL     PRIMARY KEY,
---     name            TEXT        NOT NULL
--- );
-
 CREATE TABLE team_player(
     user_id         INTEGER,
     team_id         INTEGER,
@@ -54,6 +49,10 @@ CREATE TABLE users(
     activated       BOOL,
 
     _password       TEXT,
+    salt            TEXT,
+
+    password_reset_token    TEXT,
+    password_reset_token_expire_at  TIMESTAMP WITH TIME ZONE;
 
     first_name      TEXT,
     last_name       TEXT,
@@ -64,10 +63,5 @@ CREATE TABLE users(
 
     admin           BOOL
 );
-
--- sample data
--- insert into team (name) values ("Choking Hazards"), ("Pileons"), ("A-Team");
--- insert into player (name) values ("Jesse Boettcher"), ("Bill Stull"), ("Dave Christie");
--- insert into game (game_id, scheduled_time) values ("Jesse Boettcher"), ("Bill Stull"), ("Dave Christie");
 
 COMMIT;
