@@ -116,13 +116,15 @@ class BasicTestCase(unittest.TestCase):
     def test_get_games_for_team(self):
         response = self.client.get(f'/api/games/{self.team_id}', content_type='application/json')
         self.assertEqual(response.status_code, 200)
+        print(response.get_data())
 
     def test_get_single_game(self):
-        response = self.client.get(f'/api/game/{self.GAME_TEST_ID}', content_type='application/json')
+        response = self.client.get(f'/api/game/{self.GAME_TEST_ID}/for-team/{self.team_id}', content_type='application/json')
         self.assertEqual(response.status_code, 200)
+        print(response.get_data())
 
         # 0 is an invalid game ID
-        response = self.client.get('/api/game/0', content_type='application/json')
+        response = self.client.get('/api/game/0/for-team/0', content_type='application/json')
         self.assertEqual(response.status_code, 400)
 
     def test_post_game_reply(self):
@@ -138,3 +140,5 @@ class BasicTestCase(unittest.TestCase):
     def test_get_game_replies_for_team(self):
         response = self.client.get(f'/api/game/reply/{self.GAME_TEST_ID}/for-team/{self.team_id}', content_type='application/json')
         self.assertEqual(response.status_code, 200)
+        print(response.get_data())
+

@@ -153,8 +153,10 @@ class Database:
                                 )
             self.session.add(db_reply)
         else:
-            db_reply.reply = reply
-            db_reply.message = message
+            if reply:
+                db_reply.response = reply
+            if message:
+                db_reply.message = message
 
         db_reply.modified_at = datetime.datetime.now()
 

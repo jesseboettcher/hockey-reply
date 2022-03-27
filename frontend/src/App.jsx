@@ -23,7 +23,7 @@ function App() {
       <Router>
         <Routes>
           <Route path='/' element={<Home />} />
-          <Route path='/game/:game_id' element={<Game />} />
+          <Route path='/game/:game_id/for-team/:team_id' element={<Game />} />
           <Route path='/games' element={<Games />} />
           <Route path='/forgot-password' element={<ForgotPassword />} />
           <Route path='/reset-password' element={<ResetPassword />} />

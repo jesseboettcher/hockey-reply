@@ -34,6 +34,8 @@ def get_teams(team_id=None):
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
+    team_id = int(team_id)
+
     db = get_db()
     teams = db.get_teams()
 
@@ -80,6 +82,8 @@ def get_team_players(team_id=None):
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
+    team_id = int(team_id)
+
     db = get_db()
 
     team = db.get_team_by_id(team_id)
@@ -118,6 +122,8 @@ def get_join_requests(team_id=None):
 
     if not check_login():
         return { 'result' : 'needs login' }, 400
+
+    team_id = int(team_id)
 
     db = get_db()
 

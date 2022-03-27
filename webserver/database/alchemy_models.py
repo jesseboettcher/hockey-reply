@@ -15,7 +15,7 @@ class TeamPlayer(Base):
     role = Column(String)
     pending_status = Column(Boolean)
     joined_at = Column(DateTime)
-    player = relationship("User", back_populates="teams")
+    player = relationship("User", back_populates="teams") # TODO rename user
     team = relationship("Team", back_populates="players")
 
 class Team(Base):
