@@ -8,6 +8,7 @@ import {
   Button,
   GridItem,
   Flex,
+  IconButton,
   Input,
   InputGroup,
   InputRightElement,
@@ -19,6 +20,11 @@ import {
   VStack,
   Code,
   Grid,
+  Popover,
+  PopoverArrow,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverTrigger,
   theme,
   Select,
   SimpleGrid,
@@ -40,22 +46,23 @@ import {
   Td,
   TableCaption,
 } from "@chakra-ui/react"
-import { ArrowForwardIcon } from '@chakra-ui/icons'
+import { ArrowForwardIcon, EditIcon } from '@chakra-ui/icons'
 import { useNavigate, useParams } from "react-router-dom";
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { checkLogin } from '../utils';
 
-function getData(url, arrayName, setFn) {
+function getData(url, setFn) {
     fetch(url, {credentials: 'include'})
     .then(r =>  r.json().then(data => ({status: r.status, body: data})))
-      .then(obj => { return setFn(obj.body[arrayName][0]) });
+      .then(obj => {
+          return setFn(obj.body)
+      });
 }
 
 function InfoBox(props: React.PropsWithChildren<MyProps>) {
-  const bg = useColorModeValue('brand.500', 'teal')
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
   const infoBoxBorderColor = useColorModeValue('#DDE5EB', '#495563')
-  console.log(bg)
+
   return (
     <Box textAlign="left"
          fontSize="0.8em"
@@ -64,7 +71,7 @@ function InfoBox(props: React.PropsWithChildren<MyProps>) {
          borderWidth='1px'
          borderRadius='10px'
          p="10px"
-         mr="20px">
+         mx="20px">
          {props.children}
     </Box>
 
@@ -73,23 +80,100 @@ function InfoBox(props: React.PropsWithChildren<MyProps>) {
 
 function Game() {
 
-  let { game_id } = useParams();
+  let { game_id, team_id } = useParams();
   let navigate = useNavigate();
   const [game, setGame] = useState([]);
+  const [user, setUser] = useState(0);
+  const [replies, setReplies] = useState([]);
+  const [message, setMessage] = useState([]);
   const fetchedData = useRef(false);
   const toast = useToast();
 
-  useEffect(() => {
-    checkLogin(navigate);
+  // Popover control
+  const [openPopover, setOpenPopover] = React.useState(0)
+  const open = (user) => setOpenPopover(user);
+  const close = () => setOpenPopover(0);
 
+
+  function receiveReplyData(body) {
+    let serverReplies = body;
+
+    serverReplies['replies'] = serverReplies['replies'].sort(function(a, b) {
+      if (a['reply_id'] < b['reply_id']) {
+        return -1;
+      }
+      if (a['reply_id'] > b['reply_id']) {
+        return 1;
+      }
+      return 0;
+    });
+
+    setReplies(serverReplies)
+    setUser(serverReplies['user'])
+  }
+  function receiveGameData(body) {
+    setGame(body['games'][0])
+  }
+
+  useEffect(() => {
     if (!fetchedData.current) {
-      console.log(`/api/game/${game_id}`)
-      getData(`/api/game/${game_id}`, 'games', setGame);
-      console.log(game)
+      checkLogin(navigate);
+
+      getData(`/api/game/${game_id}/for-team/${team_id}`, receiveGameData);
+      getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
       fetchedData.current = true;
     }
   });
-  const bg = useColorModeValue('brand.500', 'teal')
+
+  function submitReply(event, user_id, response, new_msg) {
+
+    event.preventDefault();
+    close();
+
+    let data = {
+      game_id: game_id,
+      team_id: team_id,
+      response: response,
+      message: new_msg,
+    };
+    if (user_id != 0) {
+      data.user_id = user_id;
+    }
+
+    fetch(`/api/game/reply/${game_id}/for-team/${team_id}`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status == 200) {
+        getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
+        return;
+      }
+    });
+  };
+
+  const isUserCaptain = user['role'] == 'captain';
+
+  let replyBadge = {};
+  replyBadge['yes'] = <Badge colorScheme="green" my="0px">YES</Badge>;
+  replyBadge['no'] = <Badge colorScheme="red" my="0px">NO</Badge>;
+  replyBadge['maybe'] = <Badge colorScheme="blue" my="0px">Maybe</Badge>;
+
+  let yesCount = 0;
+  let maybeCount = 0;
+
+  if (replies['replies']) {
+    replies['replies'].forEach(element => {
+      yesCount += element['response'] === 'yes';
+      maybeCount += element['response'] === 'maybe';
+    });
+  }
+  let maybeCountStr = ''
+  if (maybeCount) {
+    maybeCountStr = `(+${maybeCount} maybe)`
+  }
 
   return (
     <ChakraProvider theme={theme}>
@@ -100,34 +184,36 @@ function Game() {
               <Text>RINK: {game['rink']}</Text>
               <Text>VS: {game['away_team_name']}</Text>
               <Text>&nbsp;</Text>
-              <Text>Players: 9 + (2 maybe)</Text>
+              <Text>Players: {yesCount} {maybeCountStr}</Text>
               <Text>Goalie: Yes</Text>
             </InfoBox>
-
-            <Box textAlign="left" p="10px" ml="20px">
+            <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
-              <Button colorScheme='green' size='sm' mr="15px">
+              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'yes', null)}>
                 YES
               </Button>
-              <Button colorScheme='blue' size='sm' mr="15px">
+              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'maybe', null)}>
                 Maybe
               </Button>
-              <Button colorScheme='red' size='sm'>
+              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, 'no', null)}>
                 NO
               </Button>
-
-              <InputGroup size='md' mt="28px">
-                <Input
-                  pr='4.5rem'
-                  type='text'
-                  placeholder='Message'
-                />
-                <InputRightElement width='4.5rem'>
-                  <Button h='1.75rem' size='sm'>
-                    Send
-                  </Button>
-                </InputRightElement>
-              </InputGroup>
+              <form onSubmit={(e) => submitReply(e, 0, null, message)}>
+                <InputGroup size='md' mt="28px">
+                  <Input
+                    pr='4.5rem'
+                    type='text'
+                    placeholder='Message'
+                    onChange={(e) => setMessage(e.target.value)}
+                    key="main"
+                  />
+                  <InputRightElement width='4.5rem'>
+                    <Button h='1.75rem' size='sm' type="submit">
+                      Send
+                    </Button>
+                  </InputRightElement>
+                </InputGroup>
+              </form>
             </Box>
 
           </SimpleGrid>
@@ -137,32 +223,67 @@ function Game() {
               <Thead fontSize="0.6em">
                 <Tr>
                   <Th w="25%">Player</Th>
-                  <Th w="10%">Reply</Th>
-                  <Th w="75%">Message</Th>
+                  <Th w="15%">Reply</Th>
+                  <Th w="70%">Message</Th>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
-                <Tr>
-                  <Td py="6px">Jesse (full)</Td>
-                  <Td>
-                    <Badge colorScheme="green" >YES</Badge>
-                  </Td>
-                  <Td>Are we getting beer tonight?</Td>
-                </Tr>
-                <Tr>
-                  <Td py="6px">Travis (full)</Td>
-                  <Td>
-                    <Badge colorScheme="red">NO</Badge>
-                  </Td>
-                  <Td>I like candy</Td>
-                </Tr>
-                <Tr>
-                  <Td py="5px">Rob (half)</Td>
-                  <Td>
-                    <Badge colorScheme="blue">Maybe</Badge>
-                  </Td>
-                  <Td>Driving my car</Td>
-                </Tr>
+                {
+                  replies['replies'] && replies['replies'].map((reply) => (
+
+                    <Tr key={reply.user_id}>
+                      <Td py="6px">{reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}</Td>
+                      <Td>
+                        {
+                          isUserCaptain &&
+                          <Popover isOpen={reply.user_id == openPopover}>
+                            <PopoverTrigger>
+                              <IconButton size='sm' icon={<EditIcon />} onClick={() => open(reply.user_id)} my="5px" />
+                            </PopoverTrigger>
+                            <PopoverContent p={5} >
+                                <PopoverArrow />
+                                <PopoverCloseButton onClick={close} />
+
+                                <Box textAlign="left" p="10px" mx="20px">
+                                  <Text fontSize="0.8em" mb="8px">Update status for {reply.name}:</Text>
+                                  <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, reply.user_id, 'yes', null)}>
+                                    YES
+                                  </Button>
+                                  <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, reply.user_id, 'maybe', null)}>
+                                    Maybe
+                                  </Button>
+                                  <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, reply.user_id, 'no', null)}>
+                                    NO
+                                  </Button>
+
+                                  <form onSubmit={(e) => submitReply(e, reply.user_id, null, message)}>
+                                    <InputGroup size='md' mt="28px">
+                                      <Input
+                                        pr='4.5rem'
+                                        type='text'
+                                        placeholder='Message'
+                                        onChange={(e) => setMessage(e.target.value)}
+                                        key="main"
+                                      />
+                                      <InputRightElement width='4.5rem'>
+                                        <Button h='1.75rem' size='sm' type="submit">
+                                          Send
+                                        </Button>
+                                      </InputRightElement>
+                                    </InputGroup>
+                                  </form>
+                                </Box>
+                              </PopoverContent>
+                            </Popover>
+                          }
+                        <span>&nbsp;&nbsp;</span>
+                        {replyBadge[reply.response]}
+                      </Td>
+                      <Td>{reply.message}</Td>
+                    </Tr>
+
+                 ))
+                }
               </Tbody>
             </Table>
           </Center>
@@ -175,20 +296,20 @@ function Game() {
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
-                <Tr>
-                  <Td py="6px">Jim (full)</Td>
-                </Tr>
-                <Tr>
-                  <Td py="6px">Vic (full)</Td>
-                </Tr>
-                <Tr>
-                  <Td py="5px">JP (sub)</Td>
-                </Tr>
+                {
+                  replies['no_response'] && replies['no_response'].map((reply) => (
+
+                    <Tr key={reply.user_id}>
+                      <Td py="6px">{reply.name}</Td>
+                    </Tr>
+
+                 ))
+                }
               </Tbody>
             </Table>
           </Center>
-
           <ColorModeSwitcher justifySelf="flex-end" />
+
       </Box>
     </ChakraProvider>
   );
