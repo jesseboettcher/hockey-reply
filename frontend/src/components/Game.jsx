@@ -98,6 +98,7 @@ function Game() {
   function receiveReplyData(body) {
     let serverReplies = body;
 
+    // Sort replies
     serverReplies['replies'] = serverReplies['replies'].sort(function(a, b) {
       if (a['reply_id'] < b['reply_id']) {
         return -1;
@@ -106,6 +107,17 @@ function Game() {
         return 1;
       }
       return 0;
+    });
+
+    // Sort not replied (put logged in user on top)
+    serverReplies['no_response'] = serverReplies['no_response'].sort(function(a, b) {
+      if (a['user_id'] == serverReplies['user']['user_id']) {
+        return -1;
+      }
+      if (b['user_id'] == serverReplies['user']['user_id']) {
+        return 1;
+      }
+      return a['name'].localeCompare(b['name']);
     });
 
     setReplies(serverReplies)
@@ -300,7 +312,7 @@ function Game() {
                   replies['no_response'] && replies['no_response'].map((reply) => (
 
                     <Tr key={reply.user_id}>
-                      <Td py="6px">{reply.name}</Td>
+                      <Td py="6px">{reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}</Td>
                     </Tr>
 
                  ))
