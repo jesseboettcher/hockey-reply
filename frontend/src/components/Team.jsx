@@ -42,7 +42,7 @@ function respondToJoinRequest(request, requestRoles, toast) {
     role: requestRoles[request.email]
   };
 
-  fetch("/api/accept-join", {
+  fetch("/api/player-role", {
     method: "POST",
     credentials: 'include',
     headers: {'Content-Type': 'application/json'},

@@ -228,7 +228,7 @@ def join_team():
     return make_response({ 'result' : 'success' })
 
 
-@blueprint.route('/accept-join', methods=['POST'])
+@blueprint.route('/player-role', methods=['POST'])
 def accept_join():
 
     if not check_login():
@@ -240,7 +240,7 @@ def accept_join():
     if 'team_id' not in request.json or \
        'user_id' not in request.json:
 
-        write_log('ERROR', f'api/accept-join: missing request fields')
+        write_log('ERROR', f'api/player-role: missing request fields')
         return {'result': 'error'}, 400
 
     team = db.get_team_by_id(request.json['team_id'])
@@ -251,32 +251,29 @@ def accept_join():
 
     # get current user and check for authorization to accept join requests
     logged_in_user_player_obj = find_player(team, g.user.user_id)
-    requesting_user = find_player(team, request.json['user_id'])
-
-    if not requesting_user:
-        write_log('ERROR', f'api/accept-join: player request to join team not found')
-        return {'result': 'error'}, 400
 
     if (not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain') and not g.user.admin:
-        write_log('ERROR', f'api/accept-join: logged in user does not have permissions to accept join requests')
+        write_log('ERROR', f'api/player-role: logged in user does not have permissions to modify player roles')
         return {'result': 'error'}, 400
 
     # find the player, accept the request, and apply any role changes
     for player in team.players:
     
-        if player.user_id == g.user.user_id and player.pending_status:
-            player.pending_status = False
-            player.joined_at = datetime.now()
+        if player.user_id == request.json['user_id']:
+
+            if player.pending_status:
+                player.pending_status = False
+                player.joined_at = datetime.now()
 
             if 'role' in request.json and validate_role(request.json['role']):
                 player.role = request.json['role']
 
             db.commit_changes()
 
-            write_log('INFO', f'api/accept-join: {player.player.email} accepted to {team.name} by {g.user.email}')
+            write_log('INFO', f'api/player-role: {player.player.email} updated to {player.role} on {team.name} by {g.user.email}')
             return make_response({ 'result' : 'success' })
 
-    write_log('ERROR', f'api/accept-join: player request to join team not found')
+    write_log('ERROR', f'api/player-role: player not found in team')
     return {'result': 'error'}, 400
 
 
