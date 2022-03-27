@@ -1,3 +1,13 @@
+'''
+create_test_data
+
+Script to populate database with players, teams, and games for testing.
+    Creates 2 teams
+    Creates 10 users
+    Adds 10 users as players to one of the teams
+
+To run: python -m webserver.test.create_test_data
+'''
 import datetime
 import json
 import unittest
@@ -27,9 +37,19 @@ def get_or_create_player(email):
                     )
         user.password = '12345678'
         get_db().add_user(user)
+    else:
+        print(f'User {email} already exists')
+
+    return user
+
+def team_has_player(user_id, players):
+    for player in players:
+        if player.user_id == user_id:
+            return True
+
+    return False
 
 app = create_app(True)
-client = app.test_client(self)
 
 db = get_db()
 
@@ -38,29 +58,39 @@ team = db.get_team(TEAM_TEST_NAME)
 if team == None:
     print(f'Adding test team')
     team = db.add_team(TEAM_TEST_NAME)
+else:
+    print(f'Team {TEAM_TEST_NAME} already exists')
 team_id = team.team_id
 
 team = db.get_team(TEAM_TEST_NAME_2)
 if team == None:
     print(f'Adding test team 2')
     team = db.add_team(TEAM_TEST_NAME_2)
+else:
+    print(f'Team {TEAM_TEST_NAME_2} already exists')
 team_id_2 = team.team_id
 
 # user setup
 for i in range(10):
-    get_or_create_player(get_player_email(i))
+    player = get_or_create_player(get_player_email(i))
 
     team = db.get_team(TEAM_TEST_NAME)
-    join_team_as_player = TeamPlayer(
-                                     team_id=team.team_id,
-                                     role='captain' if i == 0 else 'full',
-                                     pending_status=False,
-                                     joined_at=datetime.datetime.now()
-                                    )
-    join_team_as_player.player = user
-    team.players.append(join_team_as_player)
-    db.commit_changes()
 
+    if not team_has_player(player.user_id, team.players):
+        join_team_as_player = TeamPlayer(
+                                         team_id=team.team_id,
+                                         role='captain' if i == 0 else 'full',
+                                         pending_status=False,
+                                         joined_at=datetime.datetime.now()
+                                        )
+        join_team_as_player.player = player
+        team.players.append(join_team_as_player)
+        db.commit_changes()
+        print(f'Adding player {player.user_id} to team {TEAM_TEST_NAME}')
+    else:
+        print(f'Player {player.user_id} already on team {TEAM_TEST_NAME}')
+
+user = get_or_create_player(get_player_email(0))
 user_id = user.user_id
 
 # game setup
@@ -86,3 +116,4 @@ if game == None:
 
 game.scheduled_at = game_time
 db.commit_changes()
+print('Commited changes')
