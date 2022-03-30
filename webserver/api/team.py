@@ -22,6 +22,8 @@ def validate_role(role):
 
 def find_player(team, user_id):
     for player in team.players:
+        print(user_id, flush=True)
+        print(type(user_id), flush=True)
         if int(player.user_id) == int(user_id):
             return player
 
@@ -112,6 +114,11 @@ def get_team_players(team_id=None):
             'player_count': len(team.players)
         }
         result['players'].append(request_dict)
+
+    team_player = db.get_team_player(team_id, g.user.user_id)
+    result['user'] = {}
+    result['user']['user_id'] = g.user.user_id
+    result['user']['role'] = team_player.role
 
     return make_response(result)
 
@@ -292,20 +299,26 @@ def remove_player():
         write_log('ERROR', f'api/accept-join: missing request fields')
         return {'result': 'error'}, 400
 
-    team = db.get_team_by_id(request.json['team_id'])
+    print(request.json, flush=True)
+    team_id = int(request.json['team_id'])
+    user_id = int(request.json['user_id'])
+
+    team = db.get_team_by_id(team_id)
 
     if not team:
-        write_log('ERROR', f'api/remove-player: team {request.json["team_id"]} not found')
+        write_log('ERROR', f'api/remove-player: team {team_id} not found')
         return {'result': 'error'}, 400
 
-    player_to_remove = find_player(team, request.json['user_id'])
+    player_to_remove = find_player(team, user_id)
 
     if not player_to_remove:
         write_log('ERROR', f'api/remove-player: player is not on the team')
         return {'result': 'error'}, 400
 
-    if not current_app.config['TESTING'] and not g.user.admin:
-        write_log('ERROR', f'api/remove-player: logged in user does not have permissions to accept join requests')
+    logged_in_user_player_obj = find_player(team, g.user.user_id)
+
+    if (not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain') and not current_app.config['TESTING'] and not g.user.admin:
+        write_log('ERROR', f'api/remove-player: logged in user does not have permissions to remove players')
         return {'result': 'error'}, 400
 
     email = player_to_remove.player.email

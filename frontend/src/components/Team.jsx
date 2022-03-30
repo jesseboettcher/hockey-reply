@@ -1,143 +1,297 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
   ChakraProvider,
+  Center,
+  Divider,
   Box,
   Button,
+  Icon,
+  IconButton,
   Text,
   Link,
   List,
   ListIcon,
   ListItem,
+  Popover,
+  PopoverArrow,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverTrigger,
   VStack,
   Code,
   Grid,
   theme,
   Select,
+  Stack,
+  useDisclosure,
   useToast
 } from '@chakra-ui/react';
-import { ArrowForwardIcon } from '@chakra-ui/icons'
+import {
+  Table,
+  Thead,
+  Tbody,
+  Tfoot,
+  Tr,
+  Th,
+  Td,
+  TableCaption,
+} from "@chakra-ui/react"
+import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ChatIcon } from '@chakra-ui/icons'
 import { useNavigate, useParams } from "react-router-dom";
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { checkLogin } from '../utils';
 
-function getData(url, arrayName, setFn) {
+function getData(url, setFn) {
     fetch(url, {credentials: 'include'})
     .then(r =>  r.json().then(data => ({status: r.status, body: data})))
-      .then(obj => { return setFn(obj.body[arrayName]) });
-}
-
-function respondToJoinRequest(request, requestRoles, toast) {
-
-  if (requestRoles[request.email] == undefined) {
-    toast({
-        title: `Must select a role before adding player to team`,
-        status: 'error', isClosable: true,
-    });
-    return;
-  }
-
-  let data = {
-    team_id: request.team_id,
-    user_id: request.user_id,
-    role: requestRoles[request.email]
-  };
-
-  fetch("/api/player-role", {
-    method: "POST",
-    credentials: 'include',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(data)
-  })
-  .then(response => {
-    if (response.status == 200) {
-      // TODO refresh
-      return;
-    }
-    toast({
-        title: `Accept failed`,
-        status: 'error', isClosable: true,
-    });
-  });
+      .then(obj => {
+          return setFn(obj.body)
+      });
 }
 
 function Team() {
 
   let { team_id } = useParams();
   let navigate = useNavigate();
-  const [teams, setTeams] = useState([]);
-  const [joinRequests, setJoinRequests] = useState([]);
-  const [requestRoles, setRequestRoles] = useState({});
+  const [players, setPlayers] = useState([]);
+  const [user, setUser] = useState(0);
   const fetchedData = useRef(false);
   const toast = useToast();
 
-  const acceptRequest = async event => {
+  // Remove Player alert
+  const [playerPendingRemoval, setPlayerPendingRemoval] = React.useState({})
+  const { isAlertOpen, onAlertOpen, onAlertClose } = useDisclosure()
+  const [openAlert, setOpenAlert] = React.useState(false)
+  const cancelAlertRef = React.useRef()
 
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  const cancelRef = React.useRef()
+
+  function cancelRemovePlayer() {
+
+    // Restore current role in selection
+    let player_list = players;
+
+    for (var i = 0; i < player_list.length;i++) {
+      if (player_list[i].user_id == playerPendingRemoval.user_id) {
+        player_list[i].role = player_list[i].save_role;
+      }
+    }
+    setPlayers(player_list);
+
+    setPlayerPendingRemoval({})
+    onClose();
+  }
+
+  function confirmRemovePlayer() {
+    removePlayer(playerPendingRemoval['user_id'])
+    onClose();
+  }
+
+  function roleSelectionChange(player, role) {
+
+    if (role === 'remove') {
+      let player_list = players;
+
+      for (var i = 0; i < player_list.length;i++) {
+        if (player_list[i].user_id == player.user_id) {
+          player_list[i].save_role = player_list[i].role;
+          player_list[i].role = 'remove';
+        }
+      }
+      setPlayers(player_list);
+
+      setPlayerPendingRemoval(player);
+      onOpen();
+      return;
+    }
+
+    let data = {
+      team_id, team_id,
+      user_id: player['user_id'],
+      role: role
+    };
+
+    fetch(`/api/player-role`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status == 200) {
+        return;
+      }
+    });
   };
 
-  function roleSelectionChange(request, role) {
+  function removePlayer(user_id) {
 
-    requestRoles[request.email] = role;
-    console.log(request)
-    console.log(role)
+    let data = {
+      team_id, team_id,
+      user_id: user_id
+    };
 
+    fetch(`/api/remove-player`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status == 200) {
+
+        var filtered = players.filter(function(value, index, arr){ 
+            return value['user_id'] != user_id;
+        });
+        setPlayers(filtered);
+        return;
+      }
+    });
   };
+
+  function receivePlayerData(body) {
+
+    let serverReplies = body;
+
+    // Sort not replied (put logged in user on top)
+    serverReplies['players'] = serverReplies['players'].sort(function(a, b) {
+      if (a['user_id'] == serverReplies['user']['user_id']) {
+        return -1;
+      }
+      if (b['user_id'] == serverReplies['user']['user_id']) {
+        return 1;
+      }
+      return a['name'].localeCompare(b['name']);
+    });
+
+    setPlayers(body['players'])
+    setUser(body['user'])
+  }
 
   useEffect(() => {
     checkLogin(navigate);
 
     if (!fetchedData.current) {
-      if (team_id === undefined) {
-        getData('/api/team/', 'teams', setTeams);
-        getData('/api/join-requests/', 'join_requests', setJoinRequests);
-      }
-      else {
-        getData(`/api/team/${team_id}`, 'teams', setTeams);
-        getData(`/api/team-players/${team_id}`, 'players', setJoinRequests);
-      }
+      getData(`/api/team-players/${team_id}`, receivePlayerData);
       fetchedData.current = true;
     }
   });
 
+  // Info Popover control
+  const [openPopover, setOpenPopover] = React.useState(0)
+  const open = (user) => setOpenPopover(user);
+  const close = () => setOpenPopover(0);
+
+  const isUserCaptain = user['role'] == 'captain';
+
   return (
     <ChakraProvider theme={theme}>
-      <Box textAlign="center" fontSize="xl">
-        <Grid minH="100vh" p={3}>
+      <Box textAlign="center" fontSize="xl" mt="50px">
+          <Center>
+            <Table size="sml" maxWidth="600px" my="50px" mx="20px">
+              <Thead fontSize="0.6em">
+                <Tr>
+                  <Th w="33%">Player</Th>
+                  <Th w="33%">Role</Th>
+                </Tr>
+              </Thead>
+              <Tbody fontSize="0.8em">
+                {
+                  players && players.map((player) => (
+
+                    <Tr key={player.user_id}>
+                      <Td py="10px">
+                          <Popover isOpen={player.user_id == openPopover}>
+                            <PopoverTrigger>
+                              <div onClick={() => open(player.user_id)} style={{cursor: 'pointer'}}>
+                                <span>
+                                  {player.user_id == user['user_id'] ? <b>{player.name} (You)</b> : player.name}
+                                </span>
+                                <Icon as={ChevronDownIcon} w={4} h={4} />
+                              </div>
+                            </PopoverTrigger>
+                            <PopoverContent p={5} color='white' bg='blue.800' >
+                              <PopoverArrow />
+                              <PopoverCloseButton onClick={close} />
+                              <Stack>
+                                <a href={`mailto:${player.email}`}>
+                                  <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
+                                    <IconButton size='xs' icon={<EmailIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
+                                    {player.email}
+                                  </Box>
+                                </a>
+                                <a href={`sms:408-219-7030`}>
+                                  <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
+                                    <IconButton size='xs' icon={<ChatIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
+                                    408-219-7030
+                                  </Box>
+                                </a>
+                              </Stack>
+
+                            </PopoverContent>
+                          </Popover>
+                      </Td>
+                      {
+                        isUserCaptain &&
+                        <Td>
+                          <Select size='xs' value={player.role} onChange={e => roleSelectionChange(player, e.target.value)}>
+                            <option value='full'>Full Time</option>
+                            <option value='half'>Half Time</option>
+                            <option value='sub'>Sub</option>
+                            <option value='captain'>Captain</option>
+                            <option disabled />
+                            <option value='remove'>Remove Player</option>
+                          </Select>
+                        </Td>
+                      }
+                      {
+                        !isUserCaptain &&
+                        <Td>{player.role}</Td>
+                      }
+
+                    </Tr>
+                 ))
+                }
+              </Tbody>
+            </Table>
+          </Center>
+
           <ColorModeSwitcher justifySelf="flex-end" />
-            
-            <List spacing={3}>
-              { teams.map((team) => (
-                <ListItem key={team.team_id}>
-                  <ListIcon  color='green.500' />
-                  {team.name} ({team.player_count} players)
-                </ListItem>
-               ))
-              }
-            </List>
-            <List spacing={3}>
-              { joinRequests.map((request) => (
-                <ListItem key={request.email}>
-                  <ListIcon  color='green.500' />
-                  {request.email} ({request.requested_at})
-                  <Select placeholder='Role' defaultValue={request.role} onChange={e => roleSelectionChange(request, e.target.value)}>
-                    <option value='full'>Full Time</option>
-                    <option value='half'>Half Time</option>
-                    <option value='sub'>Sub</option>
-                    <option value='captain'>Captain</option>
-                  </Select>
-                    <Button rightIcon={<ArrowForwardIcon />}
-                            colorScheme='teal'
-                            variant='outline'
-                            onClick={() => respondToJoinRequest(request, requestRoles, toast)}>
-                    Accept
-                  </Button>
-                </ListItem>
-               ))
-              }
-            </List>
-
-
-        </Grid>
       </Box>
+
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}>
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize='lg' fontWeight='bold'>
+              Remove {`${playerPendingRemoval.name} (${playerPendingRemoval.email})`} from the team?
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              You cannot undo this action. {playerPendingRemoval.name} will need to re-request team access to return.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={cancelRemovePlayer}>
+                Cancel
+              </Button>
+              <Button colorScheme='red' onClick={confirmRemovePlayer} ml={3}>
+                Remove
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+
     </ChakraProvider>
   );
 }

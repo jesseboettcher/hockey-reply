@@ -305,6 +305,7 @@ function Game() {
               <Thead fontSize="0.6em">
                 <Tr>
                   <Th w="25%">No Reply</Th>
+                  <Th/>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
@@ -313,6 +314,53 @@ function Game() {
 
                     <Tr key={reply.user_id}>
                       <Td py="6px">{reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}</Td>
+                      <Td>
+                        {
+                          isUserCaptain &&
+                          <Popover isOpen={reply.user_id == openPopover}>
+                            <PopoverTrigger>
+                              <IconButton size='sm' icon={<EditIcon />} onClick={() => open(reply.user_id)} my="5px" />
+                            </PopoverTrigger>
+                            <PopoverContent p={5} >
+                                <PopoverArrow />
+                                <PopoverCloseButton onClick={close} />
+
+                                <Box textAlign="left" p="10px" mx="20px">
+                                  <Text fontSize="0.8em" mb="8px">Update status for {reply.name}:</Text>
+                                  <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, reply.user_id, 'yes', null)}>
+                                    YES
+                                  </Button>
+                                  <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, reply.user_id, 'maybe', null)}>
+                                    Maybe
+                                  </Button>
+                                  <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, reply.user_id, 'no', null)}>
+                                    NO
+                                  </Button>
+
+                                  <form onSubmit={(e) => submitReply(e, reply.user_id, null, message)}>
+                                    <InputGroup size='md' mt="28px">
+                                      <Input
+                                        pr='4.5rem'
+                                        type='text'
+                                        placeholder='Message'
+                                        onChange={(e) => setMessage(e.target.value)}
+                                        key="main"
+                                      />
+                                      <InputRightElement width='4.5rem'>
+                                        <Button h='1.75rem' size='sm' type="submit">
+                                          Send
+                                        </Button>
+                                      </InputRightElement>
+                                    </InputGroup>
+                                  </form>
+                                </Box>
+                              </PopoverContent>
+                            </Popover>
+                          }
+                        <span>&nbsp;&nbsp;</span>
+                        {replyBadge[reply.response]}
+                      </Td>
+
                     </Tr>
 
                  ))
