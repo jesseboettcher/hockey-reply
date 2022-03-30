@@ -114,7 +114,7 @@ def get_game(game_id, team_id):
 def game_reply(game_id, team_id):
     '''
     POST with game_id, response (yes|no|maybe), message
-    GET list of replies for a game
+    GET dictionary with list of 'replies', list of 'no_response' for the game, and current 'user' dictionary
     '''
     if not check_login():
         return { 'result' : 'needs login' }, 400
@@ -130,13 +130,23 @@ def game_reply(game_id, team_id):
             write_log('ERROR', f'/api/game/reply: {g.user.email} does not have access to replies for game {game_id} and {team_id}')
             return {'result': 'error'}, 401
 
-        replies = db.game_replies_for_game(game_id, team_id)
+        # Structure of response data
+        result = {}
+        result['replies'] = []
+        result['no_response'] = []
+        result['user'] = {}
 
-        result = { 'replies': [] }
+        replies = db.game_replies_for_game(game_id, team_id)
         replies_dict = {}
 
+        # Collect the replies
         for reply in replies:
             reply_player = db.get_team_player(team_id, reply.user_id)
+
+            if reply_player is None:
+                # player was removed from the team
+                continue
+
             reply_dict = {
                 'reply_id': reply.reply_id,
                 'game_id': reply.game_id,
@@ -147,8 +157,9 @@ def game_reply(game_id, team_id):
             }
             replies_dict[reply.user_id] = reply_dict
 
-        result['no_response'] = []
+        result['replies'] = list(replies_dict.values())
 
+        # Collect the players who have not yet responded
         team = db.get_team_by_id(team_id)
         for player in team.players:
             if player.user_id not in replies_dict:
@@ -159,8 +170,7 @@ def game_reply(game_id, team_id):
                 }
                 result['no_response'].append(reply_dict)
 
-        result['replies'] = list(replies_dict.values())
-
+        # Add the logged in user information
         team_player = db.get_team_player(team_id, g.user.user_id)
         result['user'] = {}
         result['user']['user_id'] = g.user.user_id

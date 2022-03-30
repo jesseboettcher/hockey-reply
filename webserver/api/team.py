@@ -22,6 +22,8 @@ def validate_role(role):
 
 def find_player(team, user_id):
     for player in team.players:
+        print(user_id, flush=True)
+        print(type(user_id), flush=True)
         if int(player.user_id) == int(user_id):
             return player
 
@@ -112,6 +114,11 @@ def get_team_players(team_id=None):
             'player_count': len(team.players)
         }
         result['players'].append(request_dict)
+
+    team_player = db.get_team_player(team_id, g.user.user_id)
+    result['user'] = {}
+    result['user']['user_id'] = g.user.user_id
+    result['user']['role'] = team_player.role
 
     return make_response(result)
 
@@ -228,7 +235,7 @@ def join_team():
     return make_response({ 'result' : 'success' })
 
 
-@blueprint.route('/accept-join', methods=['POST'])
+@blueprint.route('/player-role', methods=['POST'])
 def accept_join():
 
     if not check_login():
@@ -240,7 +247,7 @@ def accept_join():
     if 'team_id' not in request.json or \
        'user_id' not in request.json:
 
-        write_log('ERROR', f'api/accept-join: missing request fields')
+        write_log('ERROR', f'api/player-role: missing request fields')
         return {'result': 'error'}, 400
 
     team = db.get_team_by_id(request.json['team_id'])
@@ -251,32 +258,29 @@ def accept_join():
 
     # get current user and check for authorization to accept join requests
     logged_in_user_player_obj = find_player(team, g.user.user_id)
-    requesting_user = find_player(team, request.json['user_id'])
-
-    if not requesting_user:
-        write_log('ERROR', f'api/accept-join: player request to join team not found')
-        return {'result': 'error'}, 400
 
     if (not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain') and not g.user.admin:
-        write_log('ERROR', f'api/accept-join: logged in user does not have permissions to accept join requests')
+        write_log('ERROR', f'api/player-role: logged in user does not have permissions to modify player roles')
         return {'result': 'error'}, 400
 
     # find the player, accept the request, and apply any role changes
     for player in team.players:
     
-        if player.user_id == g.user.user_id and player.pending_status:
-            player.pending_status = False
-            player.joined_at = datetime.now()
+        if player.user_id == request.json['user_id']:
+
+            if player.pending_status:
+                player.pending_status = False
+                player.joined_at = datetime.now()
 
             if 'role' in request.json and validate_role(request.json['role']):
                 player.role = request.json['role']
 
             db.commit_changes()
 
-            write_log('INFO', f'api/accept-join: {player.player.email} accepted to {team.name} by {g.user.email}')
+            write_log('INFO', f'api/player-role: {player.player.email} updated to {player.role} on {team.name} by {g.user.email}')
             return make_response({ 'result' : 'success' })
 
-    write_log('ERROR', f'api/accept-join: player request to join team not found')
+    write_log('ERROR', f'api/player-role: player not found in team')
     return {'result': 'error'}, 400
 
 
@@ -295,20 +299,26 @@ def remove_player():
         write_log('ERROR', f'api/accept-join: missing request fields')
         return {'result': 'error'}, 400
 
-    team = db.get_team_by_id(request.json['team_id'])
+    print(request.json, flush=True)
+    team_id = int(request.json['team_id'])
+    user_id = int(request.json['user_id'])
+
+    team = db.get_team_by_id(team_id)
 
     if not team:
-        write_log('ERROR', f'api/remove-player: team {request.json["team_id"]} not found')
+        write_log('ERROR', f'api/remove-player: team {team_id} not found')
         return {'result': 'error'}, 400
 
-    player_to_remove = find_player(team, request.json['user_id'])
+    player_to_remove = find_player(team, user_id)
 
     if not player_to_remove:
         write_log('ERROR', f'api/remove-player: player is not on the team')
         return {'result': 'error'}, 400
 
-    if not current_app.config['TESTING'] and not g.user.admin:
-        write_log('ERROR', f'api/remove-player: logged in user does not have permissions to accept join requests')
+    logged_in_user_player_obj = find_player(team, g.user.user_id)
+
+    if (not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain') and not current_app.config['TESTING'] and not g.user.admin:
+        write_log('ERROR', f'api/remove-player: logged in user does not have permissions to remove players')
         return {'result': 'error'}, 400
 
     email = player_to_remove.player.email
