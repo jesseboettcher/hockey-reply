@@ -8,18 +8,11 @@ import sqlite3
 
 from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamPlayer
 
-global_db_instance = None
-
 def get_db():
-    global global_db_instance
-    if global_db_instance is None:
-        global_db_instance = Database(False)
-
-    return global_db_instance
-
-def close_db(e=None):
-    if global_db_instance is not None:
-        global_db_instance.close()
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = Database(False)
+    return db
 
 class Database:
     SQLITE_DB_PATH = 'database/hockey.db'
