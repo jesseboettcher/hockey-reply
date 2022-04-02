@@ -1,8 +1,9 @@
-from datetime import datetime
+import datetime
 import os
 import sys
 
 from flask import Blueprint, current_app, g, make_response, request
+import humanize
 
 from webserver.database.alchemy_models import GameReply, User, Team
 from webserver.database.hockey_db import get_db
@@ -78,7 +79,8 @@ def get_games(team_id = None):
 
             game_dict = {
                 'game_id' : game.game_id,
-                'scheduled_at': game.scheduled_at,
+                'scheduled_at': game.scheduled_at.strftime("%a, %b %d @ %I:%M %p"),
+                'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
                 'completed': game.completed,
                 'rink': game.rink,
                 'level': game.level,
@@ -124,9 +126,11 @@ def get_game(game_id, team_id):
         return {'result': 'error'}, 400
 
     result = { 'games': [] }
+
     game_dict = {
         'game_id' : game.game_id,
-        'scheduled_at': game.scheduled_at,
+        'scheduled_at': game.scheduled_at.strftime("%a, %b %d @ %I:%M %p"),
+        'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
         'completed': game.completed,
         'rink': game.rink,
         'level': game.level,
