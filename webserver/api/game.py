@@ -28,35 +28,68 @@ def is_logged_in_user_in_team(team_id):
     return False
 
 
+@blueprint.route('/games/', methods=['GET'])
 @blueprint.route('/games/<team_id>', methods=['GET'])
-def get_games(team_id):
+def get_games(team_id = None):
     '''
     Returns all games for the specified team. Includes flag for whether the game was completed.
     '''
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
-    team_id = int(team_id)
+    # Structure of response data
+    result = { 'games': [] }
 
     db = get_db()
-    games = db.get_games_for_team(team_id)
+    upcomingOnly = 'upcomingOnly' in request.args
 
-    result = { 'games': [] }
-    for game in games:
+    teams = []
+    if team_id is not None:
+        team = db.get_team_by_id(int(team_id))
 
-        game_dict = {
-            'game_id' : game.game_id,
-            'scheduled_at': game.scheduled_at,
-            'completed': game.completed,
-            'rink': game.rink,
-            'level': game.level,
-            'home_team_id': game.home_team_id,
-            'away_team_id': game.away_team_id,
-            'home_goals': game.home_goals,
-            'away_goals': game.away_goals,
-            'game_type': game.game_type
-        }
-        result['games'].append(game_dict)
+        if not team:
+            write_log('ERROR', f'api/games: team {team_id} not found')
+            return {'result': 'error'}, 400
+
+        teams.append(team)
+    else:
+        for team in g.user.teams:
+            teams.append(team)
+
+    for team in teams:
+
+        games = db.get_games_for_team(team.team_id)
+
+        for game in games:
+
+            if upcomingOnly and game.completed == 1:
+                continue
+
+            home_team = db.get_team_by_id(game.home_team_id)
+            away_team = db.get_team_by_id(game.away_team_id)
+
+            if home_team is None or away_team is None:
+                write_log('ERROR', f'/api/game/<game>: Team for game {game.game_id} is not found')
+                return {'result': 'error'}, 400
+
+            if game.home_team_id is not team.team_id and game.away_team_id is not team.team_id:
+                write_log('ERROR', f'/api/game/<game>: Team ({team.team_id}) is not in game {game.game_id}')
+                return {'result': 'error'}, 400
+
+            game_dict = {
+                'game_id' : game.game_id,
+                'scheduled_at': game.scheduled_at,
+                'completed': game.completed,
+                'rink': game.rink,
+                'level': game.level,
+                'home_team_id': game.home_team_id,
+                'away_team_id': game.away_team_id,
+                'vs': home_team.name if game.away_team_id == team.team_id else away_team.name,
+                'home_goals': game.home_goals,
+                'away_goals': game.away_goals,
+                'game_type': game.game_type
+            }
+            result['games'].append(game_dict)
 
     return make_response(result)
 

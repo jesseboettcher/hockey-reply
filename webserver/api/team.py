@@ -36,14 +36,12 @@ def get_teams(team_id=None):
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
-    team_id = int(team_id)
-
     db = get_db()
     teams = db.get_teams()
 
     result = { 'teams': [] }
 
-    if request.args.get('all') and g.user.admin:
+    if request.args.get('all'):
         for team in teams:
             team_dict = {
                 'team_id': team.team_id,
@@ -61,6 +59,7 @@ def get_teams(team_id=None):
             }
             result['teams'].append(team_dict)
     else:
+        team_id = int(team_id)
         team = db.get_team_by_id(team_id)
 
         if not team:

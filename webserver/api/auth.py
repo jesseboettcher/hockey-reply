@@ -79,7 +79,11 @@ def hello_world():
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
-    return { 'result' : 'success' }
+    result = {}
+    result['user_id'] = g.user.user_id
+    result['name'] = g.user.first_name
+
+    return make_response(result)
 
 
 @blueprint.route('/new-user', methods=['POST'])
