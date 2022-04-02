@@ -78,7 +78,7 @@ class Database:
         return self.session.query(Team).all()
 
     def get_team(self, name):
-        return self.session.query(Team).filter(Team.name == name).one_or_none()
+        return self.session.query(Team).filter(func.lower(Team.name) == name.lower()).one_or_none()
 
     def get_team_by_id(self, team_id):
         return self.session.query(Team).filter(Team.team_id == team_id).one_or_none()
