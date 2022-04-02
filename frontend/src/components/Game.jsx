@@ -114,6 +114,7 @@ function Game() {
     });
 
     setReplies(serverReplies)
+    setUser(serverReplies['user'])
   }
   function receiveGameData(body) {
     setGame(body['games'][0])
@@ -121,7 +122,7 @@ function Game() {
 
   useEffect(() => {
     if (!fetchedData.current) {
-      checkLogin(navigate).then(result => { setUser(result) });
+      checkLogin(navigate);
 
       getData(`/api/game/${game_id}/for-team/${team_id}`, receiveGameData);
       getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
@@ -185,7 +186,7 @@ function Game() {
       <Box textAlign="center" fontSize="xl" mt="50px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
             <InfoBox>
-              <Text>TIME: {game['scheduled_at']}</Text>
+              <Text>TIME: {game['scheduled_at']} (in {game['scheduled_how_soon']})</Text>
               <Text>RINK: {game['rink']}</Text>
               <Text>VS: {game['away_team_name']}</Text>
               <Text>&nbsp;</Text>
@@ -239,11 +240,14 @@ function Game() {
                     <Tr key={reply.user_id}>
                       <Td py="6px">{reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}</Td>
                       <Td>
+                        {replyBadge[reply.response]}
+                      </Td>
+                      <Td>
                         {
                           isUserCaptain &&
                           <Popover isOpen={reply.user_id == openPopover}>
                             <PopoverTrigger>
-                              <IconButton size='sm' icon={<EditIcon />} onClick={() => open(reply.user_id)} my="5px" />
+                              <IconButton size='xs' icon={<EditIcon />} onClick={() => open(reply.user_id)} my="5px" />
                             </PopoverTrigger>
                             <PopoverContent p={5} >
                                 <PopoverArrow />
@@ -280,11 +284,10 @@ function Game() {
                                 </Box>
                               </PopoverContent>
                             </Popover>
-                          }
+                        }
                         <span>&nbsp;&nbsp;</span>
-                        {replyBadge[reply.response]}
+                        {reply.message}
                       </Td>
-                      <Td>{reply.message}</Td>
                     </Tr>
 
                  ))
