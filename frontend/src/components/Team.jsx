@@ -168,7 +168,7 @@ function Team() {
   }
 
   useEffect(() => {
-    checkLogin(navigate);
+      checkLogin(navigate).then(result => { setUser(result) });
 
     if (!fetchedData.current) {
       getData(`/api/team-players/${team_id}`, receivePlayerData);
@@ -185,7 +185,7 @@ function Team() {
 
   return (
     <ChakraProvider theme={theme}>
-      <Header react_navigate={navigate}></Header>
+      <Header react_navigate={navigate} signed_in={user != {}}></Header>
       <Box textAlign="center" fontSize="xl" mt="50px">
           <Center>
             <Table size="sml" maxWidth="600px" my="50px" mx="20px">
