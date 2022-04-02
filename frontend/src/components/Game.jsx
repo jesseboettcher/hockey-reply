@@ -315,7 +315,7 @@ function Game() {
                           isUserCaptain &&
                           <Popover isOpen={reply.user_id == openPopover}>
                             <PopoverTrigger>
-                              <IconButton size='sm' icon={<EditIcon />} onClick={() => open(reply.user_id)} my="5px" />
+                              <IconButton size='xs' icon={<EditIcon />} onClick={() => open(reply.user_id)} my="5px" />
                             </PopoverTrigger>
                             <PopoverContent p={5} >
                                 <PopoverArrow />

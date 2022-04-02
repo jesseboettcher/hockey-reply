@@ -109,7 +109,7 @@ function Home() {
 
                     <Tr key={game.game_id}>
                       <Td py="6px">
-                        <a href={`/game/${game.game_id}/for-team/${game.home_team_id}`}>
+                        <a href={`/game/${game.game_id}/for-team/${game.user_team_id}`}>
                           vs {game.vs} >
                         </a></Td>
                       <Td py="6px">{game['scheduled_at']} (in&nbsp;{game['scheduled_how_soon']})</Td>

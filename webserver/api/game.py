@@ -77,6 +77,10 @@ def get_games(team_id = None):
                 write_log('ERROR', f'/api/game/<game>: Team ({team.team_id}) is not in game {game.game_id}')
                 return {'result': 'error'}, 400
 
+            user_is_home = False
+            if team.team_id == game.home_team_id:
+                user_is_home = True
+
             game_dict = {
                 'game_id' : game.game_id,
                 'scheduled_at': game.scheduled_at.strftime("%a, %b %d @ %I:%M %p"),
@@ -86,7 +90,8 @@ def get_games(team_id = None):
                 'level': game.level,
                 'home_team_id': game.home_team_id,
                 'away_team_id': game.away_team_id,
-                'vs': home_team.name if game.away_team_id == team.team_id else away_team.name,
+                'vs': home_team.name if not user_is_home else away_team.name,
+                'user_team_id': game.away_team_id if not user_is_home else game.home_team_id,
                 'home_goals': game.home_goals,
                 'away_goals': game.away_goals,
                 'game_type': game.game_type
