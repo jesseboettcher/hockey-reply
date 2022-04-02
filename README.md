@@ -5,7 +5,7 @@ Web app to manage attendance to Sharks/Solar4America San Jose Adult Hockey Leagu
 Using python version 3.9.5:
 * `python -m pip venv venv`
 * `source venv/bin/activate`
-* `pip install -r requirements.txt`
+* `pip install -r webserver/requirements.txt`
   * `psycopg2-binary` will fail if `postgresql` and `openssl` are not installed
   * `brew install postgresql`
   * `brew install openssl`

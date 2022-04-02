@@ -207,7 +207,7 @@ def reset_password():
         write_log('ERROR', f'api/reset-password: Error user for {request.json["token"]} not found')
         return {'result': 'failed'}, 400
 
-    if datetime.datetime.now() > user.password_reset_token_expires_at:
+    if datetime.datetime.now(datetime.timezone.utc) > user.password_reset_token_expires_at:
 
         user.password_reset_token = None
         user.password_reset_token_expires_at = None

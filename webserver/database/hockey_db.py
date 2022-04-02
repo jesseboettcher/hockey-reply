@@ -7,7 +7,26 @@ from sqlalchemy.orm import sessionmaker
 
 from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamPlayer
 
+global_db_instance = None
+
+def setup_test_db():
+    global global_db_instance
+
+    if global_db_instance is None:
+        global_db_instance = Database(False)
+
+    return global_db_instance
+
+def get_current_user():
+    if current_app.config['TESTING']:
+        return current_app.config['TESTING_USER']
+
+    return g.user
+
 def get_db():
+    if global_db_instance:
+        return global_db_instance
+
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = Database(False)
@@ -21,7 +40,7 @@ class Database:
         if local:
             connect_string = f"sqlite:///{self.SQLITE_DB_PATH}"
 
-        self.engine = create_engine(connect_string)
+        self.engine = create_engine(connect_string) # DEBUG add echo=True
         Session = sessionmaker()
         Session.configure(bind=self.engine)
         self.session = Session()
@@ -88,7 +107,7 @@ class Database:
         return self.session.query(Game).all()
 
     def get_games_for_team(self, team_id):
-        return self.session.query(Game).filter(or_(Game.home_team_id == team_id, Game.away_team_id == team_id)).all()
+        return self.session.query(Game).filter(or_(Game.home_team_id == team_id, Game.away_team_id == team_id)).order_by(Game.game_id).all()
 
     def get_game_by_id(self, game_id):
         return self.session.query(Game).filter(Game.game_id == game_id).one_or_none()

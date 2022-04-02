@@ -9,6 +9,19 @@ import {
   Link,
   HStack,
   VStack,
+  Modal,
+  useDisclosure,
+  finalRef,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  FormControl,
+  FormLabel,
+  Input,
+  ModalFooter,
+  Button,
   Code,
   Grid,
   Spacer,
@@ -36,6 +49,9 @@ function Home() {
   const [teams, setTeams] = useState([]);
   const [myGames, setMyGames] = useState([]);
   const [user, setUser] = useState({});
+  const joinTeamRef = React.useRef();
+
+  const { isOpen, onOpen, onClose } = useDisclosure()
 
   useEffect(() => {
 
@@ -49,6 +65,29 @@ function Home() {
       fetchedData.current = true;
     }
   });
+
+  function joinTeam() {
+    let data = {
+      team_name: joinTeamRef.current.value,
+      user_id: user['user_id'],
+    };
+
+    fetch(`/api/join-team`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status == 200) {
+        // TODO smarter refresh
+        window.location.reload(false);
+        return;
+      }
+    });
+    onClose();
+  };
+
 
   return (
     <ChakraProvider theme={theme}>
@@ -98,10 +137,40 @@ function Home() {
                     </Tr>
                  ))
                 }
+                <Tr>
+                 &nbsp;
+                </Tr>
+                <Tr>
+                  <Button size='sm' onClick={onOpen}>Join a Team</Button>
+                </Tr>
               </Tbody>
             </Table>
           </Center>
       </Box>
+
+      <Modal
+              isOpen={isOpen}
+              onClose={onClose}
+            >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Join a team</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <FormControl>
+              <Input ref={joinTeamRef} placeholder='Team name' />
+            </FormControl>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button onClick={e => joinTeam()} colorScheme='blue' mr={3}>
+              Join
+            </Button>
+            <Button onClick={onClose}>Cancel</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <Footer></Footer>
     </ChakraProvider>
   );

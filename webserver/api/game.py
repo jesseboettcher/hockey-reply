@@ -6,7 +6,7 @@ from flask import Blueprint, current_app, g, make_response, request
 import humanize
 
 from webserver.database.alchemy_models import GameReply, User, Team
-from webserver.database.hockey_db import get_db
+from webserver.database.hockey_db import get_db, get_current_user
 from webserver.logging import write_log
 from webserver.api.auth import check_login
 
@@ -22,7 +22,7 @@ def is_logged_in_user_in_team(team_id):
         return True
 
     user_in_team = False
-    for team in g.user.teams:
+    for team in get_current_user().teams:
         if team.team_id == team_id:
             return True
 
@@ -54,7 +54,7 @@ def get_games(team_id = None):
 
         teams.append(team)
     else:
-        for team in g.user.teams:
+        for team in get_current_user().teams:
             teams.append(team)
 
     for team in teams:
@@ -164,7 +164,7 @@ def game_reply(game_id, team_id):
     if request.method == 'GET':
 
         if not is_logged_in_user_in_team(team_id):
-            write_log('ERROR', f'/api/game/reply: {g.user.email} does not have access to replies for game {game_id} and {team_id}')
+            write_log('ERROR', f'/api/game/reply: {get_current_user().email} does not have access to replies for game {game_id} and {team_id}')
             return {'result': 'error'}, 401
 
         # Structure of response data
@@ -208,10 +208,11 @@ def game_reply(game_id, team_id):
                 result['no_response'].append(reply_dict)
 
         # Add the logged in user information
-        team_player = db.get_team_player(team_id, g.user.user_id)
-        result['user'] = {}
-        result['user']['user_id'] = g.user.user_id
-        result['user']['role'] = team_player.role
+        if not current_app.config['TESTING']:
+            team_player = db.get_team_player(team_id, get_current_user().user_id)
+            result['user'] = {}
+            result['user']['user_id'] = get_current_user().user_id
+            result['user']['role'] = team_player.role
 
         return make_response(result)
 
@@ -221,7 +222,7 @@ def game_reply(game_id, team_id):
             write_log('ERROR', f'api/reply: missing request fields')
             return {'result': 'error'}, 400
 
-        user_id = g.user.user_id
+        user_id = get_current_user().user_id if not current_app.config['TESTING'] else None
         if 'user_id' in request.json:
             user_id = request.json['user_id']
 
@@ -239,9 +240,9 @@ def game_reply(game_id, team_id):
             write_log('ERROR', f'api/reply: player is not on team')
             return {'result': 'error'}, 400
 
-        if not current_app.config['TESTING'] and user_id != g.user.user_id:
+        if not current_app.config['TESTING'] and user_id != get_current_user().user_id:
 
-            logged_in_player = db.get_team_player(team_id, g.user.user_id)
+            logged_in_player = db.get_team_player(team_id, get_current_user().user_id)
             if logged_in_player is None:
                 write_log('ERROR', f'api/reply: player is not on team')
                 return {'result': 'error'}, 400
@@ -249,11 +250,11 @@ def game_reply(game_id, team_id):
             if logged_in_player and logged_in_player.role == 'captain':
                 # this is ok
                 pass
-            elif g.user.admin:
+            elif get_current_user().admin:
                 # this is ok
                 pass
             else:
-                write_log('ERROR', f'api/reply: {g.user.user_id} does not have access to edit reply for {user_id}')
+                write_log('ERROR', f'api/reply: {get_current_user().user_id} does not have access to edit reply for {user_id}')
                 return {'result': 'error'}, 400
 
         db.set_game_reply(game_id, team_id,
