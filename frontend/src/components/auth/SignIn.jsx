@@ -42,7 +42,7 @@ export default function SignIn() {
     })
     .then(response => {
       if (response.status == 200) {
-        navigate('/games', {replace: true});
+        navigate('/home', {replace: true});
         return;
       }
       toast({

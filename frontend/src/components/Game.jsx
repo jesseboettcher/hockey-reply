@@ -48,16 +48,9 @@ import {
 } from "@chakra-ui/react"
 import { ArrowForwardIcon, EditIcon } from '@chakra-ui/icons'
 import { useNavigate, useParams } from "react-router-dom";
-import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
-import { checkLogin } from '../utils';
-
-function getData(url, setFn) {
-    fetch(url, {credentials: 'include'})
-    .then(r =>  r.json().then(data => ({status: r.status, body: data})))
-      .then(obj => {
-          return setFn(obj.body)
-      });
-}
+import { Header } from '../components/Header';
+import { Footer } from '../components/Footer';
+import { checkLogin, getData } from '../utils';
 
 function InfoBox(props: React.PropsWithChildren<MyProps>) {
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
@@ -121,7 +114,6 @@ function Game() {
     });
 
     setReplies(serverReplies)
-    setUser(serverReplies['user'])
   }
   function receiveGameData(body) {
     setGame(body['games'][0])
@@ -129,7 +121,7 @@ function Game() {
 
   useEffect(() => {
     if (!fetchedData.current) {
-      checkLogin(navigate);
+      checkLogin(navigate).then(result => { setUser(result) });
 
       getData(`/api/game/${game_id}/for-team/${team_id}`, receiveGameData);
       getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
@@ -189,6 +181,7 @@ function Game() {
 
   return (
     <ChakraProvider theme={theme}>
+      <Header react_navigate={navigate} signed_in={user != {}}></Header>
       <Box textAlign="center" fontSize="xl" mt="50px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
             <InfoBox>
@@ -368,9 +361,8 @@ function Game() {
               </Tbody>
             </Table>
           </Center>
-          <ColorModeSwitcher justifySelf="flex-end" />
-
       </Box>
+      <Footer></Footer>
     </ChakraProvider>
   );
 }

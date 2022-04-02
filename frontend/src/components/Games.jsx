@@ -11,11 +11,8 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from "react-router-dom";
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
-import { checkLogin } from '../utils';
+import { checkLogin, logout } from '../utils';
 
-function delete_cookie(name) {
-  document.cookie = name+'=; Max-Age=-99999999;';
-}
 
 function Games() {
 
@@ -24,11 +21,6 @@ function Games() {
   useEffect(() => {
     checkLogin(navigate);
   });
-
-  const logout = async event => {
-    delete_cookie('user');
-    navigate('/', {replace: true})
-  }
 
   return (
     <ChakraProvider theme={theme}>
@@ -46,7 +38,7 @@ function Games() {
               color="green.500"
               fontSize="2xl"
               rel="noopener noreferrer"
-              onClick={logout}>
+              onClick={() => logout(navigate)}>
             >
               Log out
             </Link>

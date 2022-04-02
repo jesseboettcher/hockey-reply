@@ -44,16 +44,8 @@ import {
 } from "@chakra-ui/react"
 import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ChatIcon } from '@chakra-ui/icons'
 import { useNavigate, useParams } from "react-router-dom";
-import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
-import { checkLogin } from '../utils';
-
-function getData(url, setFn) {
-    fetch(url, {credentials: 'include'})
-    .then(r =>  r.json().then(data => ({status: r.status, body: data})))
-      .then(obj => {
-          return setFn(obj.body)
-      });
-}
+import { Header } from '../components/Header';
+import { checkLogin, getData } from '../utils';
 
 function Team() {
 
@@ -193,6 +185,7 @@ function Team() {
 
   return (
     <ChakraProvider theme={theme}>
+      <Header react_navigate={navigate}></Header>
       <Box textAlign="center" fontSize="xl" mt="50px">
           <Center>
             <Table size="sml" maxWidth="600px" my="50px" mx="20px">
@@ -262,8 +255,6 @@ function Team() {
               </Tbody>
             </Table>
           </Center>
-
-          <ColorModeSwitcher justifySelf="flex-end" />
       </Box>
 
       <AlertDialog
