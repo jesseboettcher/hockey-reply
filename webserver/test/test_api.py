@@ -3,7 +3,7 @@ import json
 import unittest
 
 from webserver import create_app
-from webserver.database.hockey_db import get_db
+from webserver.database.hockey_db import get_db, setup_test_db
 from webserver.database.alchemy_models import Game, TeamPlayer, User
 
 class BasicTestCase(unittest.TestCase):
@@ -18,6 +18,7 @@ class BasicTestCase(unittest.TestCase):
         self.app = create_app(True)
         self.client = self.app.test_client(self)
 
+        setup_test_db()
         db = get_db()
 
         # team setup
@@ -32,6 +33,11 @@ class BasicTestCase(unittest.TestCase):
             print(f'Adding test team 2')
             team = db.add_team(self.TEAM_TEST_NAME_2)
         self.team_id_2 = team.team_id
+
+        # logged in user setup
+        # make sure this person is an admin so there are no auth failures on some tests
+        self.app.config['TESTING_USER'] = db.get_user_by_id(3);
+        assert(self.app.config['TESTING_USER'] != None)
 
         # user setup
         user = db.get_user(self.USER_TEST_EMAIL)
