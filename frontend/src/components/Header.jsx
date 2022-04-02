@@ -44,21 +44,22 @@ import {
   ChevronRightIcon,
 } from '@chakra-ui/icons';
 
-function Logo() {
+export function Logo() {
   const titleGradient = useColorModeValue('linear(to-b, #A6C7FF, #90B3FF, #5D74A5, #5D74A5)', 'linear(to-b, #5D729F, #3B4968, #1A202C)')
 
   return (
       <Center height="80px">
-      <Text mx="30px"
+      <Link mx="30px"
         width={{ base: "300px", md: "400px"}}
         bgGradient={titleGradient}
         bgClip='text'
         fontSize={{ base: '4xl', md: '5xl' }}
         fontWeight='extrabold'
-        textAlign={{ base: 'center', md: 'left' }}
+        textAlign={{ base: 'center', md: 'center' }}
+        href="/home"
       >
         Hockey Reply
-      </Text>
+      </Link>
       </Center>
     )
 }
