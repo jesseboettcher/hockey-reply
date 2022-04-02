@@ -15,7 +15,7 @@ export const Footer = props => {
         <Stack>
         <ColorModeSwitcher justifySelf="flex-right" />
         <Box>
-        <Text color="red.600" fontWeight="medium">WARNING: Work in progress. Lots of issues.</Text>
+        <Text color="red.600" fontWeight="medium">WARNING: Do not use this site. Work in progress.</Text>
         </Box>
         </Stack>
       </Center>

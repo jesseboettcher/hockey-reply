@@ -105,12 +105,12 @@ export const Header = props => {
           justify={'flex-end'}
           direction={'row'}
           spacing={6}
-          ml={6}>
+          mx={6}>
           { props.signed_in &&
           <Button
             as={'a'}
             fontSize={'sm'}
-            fontWeight={400}
+            fontWeight={500}
             variant={'link'}
             href={'#'}
             color={linkColor}
@@ -126,7 +126,7 @@ export const Header = props => {
           <Button
             display={{ base: 'none', md: 'inline-flex' }}
             fontSize={'sm'}
-            fontWeight={600}
+            fontWeight={500}
             color={'white'}
             bg={'blue.400'}
             href={'#'}
@@ -303,10 +303,6 @@ const NAV_ITEMS: Array<NavItem> = [
   {
     label: 'Home',
     href: '/home',
-  },
-  {
-    label: 'Games',
-    href: '/games',
   },
   {
     label: 'Schedule',
