@@ -4,7 +4,6 @@ import os
 from flask import current_app, g
 from sqlalchemy import create_engine, func, and_, or_
 from sqlalchemy.orm import sessionmaker
-import sqlite3
 
 from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamPlayer
 
