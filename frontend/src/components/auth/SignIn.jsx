@@ -14,6 +14,8 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
+import { Logo } from '../Header';
+import { Footer } from '../Footer';
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function SignIn() {
@@ -59,14 +61,14 @@ export default function SignIn() {
   }
 
   return (
+    <Box bg={useColorModeValue('gray.50', 'gray.800')}>
     <Flex
       minH={'100vh'}
       align={'center'}
-      justify={'center'}
-      bg={useColorModeValue('gray.50', 'gray.800')}>
+      justify={'center'}>
       <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
         <Stack align={'center'}>
-          <Heading fontSize={'4xl'}>Sign in to Hockey Reply</Heading>
+          <Logo/>
         </Stack>
         <Box
           rounded={'lg'}
@@ -107,5 +109,7 @@ export default function SignIn() {
         </Box>
       </Stack>
     </Flex>
+    <Footer/>
+    </Box>
   );
   }

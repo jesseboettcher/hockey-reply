@@ -45,6 +45,7 @@ import {
 import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ChatIcon } from '@chakra-ui/icons'
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from '../components/Header';
+import { Footer } from '../components/Footer';
 import { checkLogin, getData } from '../utils';
 
 function Team() {
@@ -118,6 +119,8 @@ function Team() {
     })
     .then(response => {
       if (response.status == 200) {
+        // TODO smarter refresh
+        window.location.reload(false);
         return;
       }
     });
@@ -168,7 +171,7 @@ function Team() {
   }
 
   useEffect(() => {
-      checkLogin(navigate).then(result => { setUser(result) });
+      checkLogin(navigate);
 
     if (!fetchedData.current) {
       getData(`/api/team-players/${team_id}`, receivePlayerData);
@@ -283,6 +286,7 @@ function Team() {
         </AlertDialogOverlay>
       </AlertDialog>
 
+      <Footer/>
     </ChakraProvider>
   );
 }

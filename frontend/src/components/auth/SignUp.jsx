@@ -17,6 +17,8 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
+import { Logo } from '../Header';
+import { Footer } from '../Footer';
 import { useNavigate } from "react-router-dom";
 
 function checkEmail (email) {
@@ -79,16 +81,14 @@ export default function SignupCard() {
   };
 
   return (
+    <Box bg={useColorModeValue('gray.50', 'gray.800')}>
     <Flex
       minH={'100vh'}
       align={'center'}
-      justify={'center'}
-      bg={useColorModeValue('gray.50', 'gray.800')}>
+      justify={'center'}>
       <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
         <Stack align={'center'}>
-          <Heading fontSize={'4xl'} textAlign={'center'}>
-            Sign up
-          </Heading>
+          <Logo/>
         </Stack>
         <Box
           rounded={'lg'}
@@ -156,5 +156,7 @@ export default function SignupCard() {
         </Box>
       </Stack>
     </Flex>
+    <Footer/>
+    </Box>
   );
 }
