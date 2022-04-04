@@ -13,10 +13,11 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Logo } from '../Header';
 import { Footer } from '../Footer';
 import { useNavigate, useSearchParams } from "react-router-dom";
+import TagManager from 'react-gtm-module'
 
 export default function SignIn() {
 
@@ -25,6 +26,7 @@ export default function SignIn() {
   const emailRef = React.useRef();
   const passwordRef = React.useRef();
   const toast = useToast();
+  const fetchedData = useRef(false);
 
   const submitSignIn = async event => {
 
@@ -53,6 +55,19 @@ export default function SignIn() {
       })
     });
   };
+
+  useEffect(() => {
+    if (!fetchedData.current) {
+      TagManager.dataLayer({
+        dataLayer: {
+          event: 'pageview',
+          pagePath: window.location.pathname,
+          pageTitle: 'Sign In',
+        },
+      });
+      fetchedData.current = true;
+    }
+  });
 
   const url_event = searchParams.get("event")
   let password_update_msg = null
