@@ -40,6 +40,7 @@ import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getData, logout, MyLink } from '../utils';
+import TagManager from 'react-gtm-module'
 
 function Home() {
 
@@ -56,6 +57,14 @@ function Home() {
   useEffect(() => {
 
     if (!fetchedData.current) {
+      TagManager.dataLayer({
+        dataLayer: {
+          event: 'pageview',
+          pagePath: window.location.pathname,
+          pageTitle: 'Home',
+        },
+      });
+
       checkLogin(navigate).then(result => { setUser(result) });
 
       getData('/api/team/', setMyTeams)
@@ -123,7 +132,7 @@ function Home() {
             <Table size="sml" maxWidth="1200px" my="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
-                  <Th w="25%">My Teams</Th>
+                  <Th w="100%">My Teams</Th>
                   <Th/>
                 </Tr>
               </Thead>

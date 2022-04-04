@@ -47,6 +47,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getData } from '../utils';
+import TagManager from 'react-gtm-module'
 
 function Team() {
 
@@ -119,6 +120,13 @@ function Team() {
     })
     .then(response => {
       if (response.status == 200) {
+        TagManager.dataLayer({
+          dataLayer: {
+            event: 'player_role_change',
+            pagePath: window.location.pathname,
+          },
+        });
+
         // TODO smarter refresh
         window.location.reload(false);
         return;
@@ -174,6 +182,13 @@ function Team() {
       checkLogin(navigate);
 
     if (!fetchedData.current) {
+      TagManager.dataLayer({
+        dataLayer: {
+          event: 'pageview',
+          pagePath: window.location.pathname,
+          pageTitle: 'Game',
+        },
+      });
       getData(`/api/team-players/${team_id}`, receivePlayerData);
       fetchedData.current = true;
     }

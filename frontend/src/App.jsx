@@ -16,6 +16,12 @@ import ResetPassword from './components/auth/ResetPassword'
 import SignIn from './components/auth/SignIn';
 import SignUp from './components/auth/SignUp'
 import Team from './components/Team'
+import TagManager from 'react-gtm-module'
+
+const tagManagerArgs = {
+    gtmId: 'GTM-PKF2HNB'
+};
+TagManager.initialize(tagManagerArgs)
 
 function App() {
   return (

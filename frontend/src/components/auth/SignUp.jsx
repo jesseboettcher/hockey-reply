@@ -16,10 +16,11 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Logo } from '../Header';
 import { Footer } from '../Footer';
 import { useNavigate } from "react-router-dom";
+import TagManager from 'react-gtm-module'
 
 function checkEmail (email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -33,6 +34,7 @@ export default function SignupCard() {
   const firstNameRef = React.useRef();
   let navigate = useNavigate();
   const toast = useToast();
+  const fetchedData = useRef(false);
 
   const submitSignUp = async event => {
 
@@ -79,6 +81,19 @@ export default function SignupCard() {
       }
     });
   };
+
+  useEffect(() => {
+    if (!fetchedData.current) {
+      TagManager.dataLayer({
+        dataLayer: {
+          event: 'pageview',
+          pagePath: window.location.pathname,
+          pageTitle: 'Sign Up',
+        },
+      });
+      fetchedData.current = true;
+    }
+  });
 
   return (
     <Box bg={useColorModeValue('gray.50', 'gray.800')}>

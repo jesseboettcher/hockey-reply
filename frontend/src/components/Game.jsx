@@ -51,6 +51,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getData } from '../utils';
+import TagManager from 'react-gtm-module'
 
 function InfoBox(props: React.PropsWithChildren<MyProps>) {
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
@@ -122,6 +123,14 @@ function Game() {
 
   useEffect(() => {
     if (!fetchedData.current) {
+      TagManager.dataLayer({
+        dataLayer: {
+          event: 'pageview',
+          pagePath: window.location.pathname,
+          pageTitle: 'Game',
+        },
+      });
+
       checkLogin(navigate);
 
       getData(`/api/game/${game_id}/for-team/${team_id}`, receiveGameData);
@@ -153,6 +162,12 @@ function Game() {
     })
     .then(response => {
       if (response.status == 200) {
+        TagManager.dataLayer({
+          dataLayer: {
+            event: 'game_reply'
+          },
+        });
+
         getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
         return;
       }
