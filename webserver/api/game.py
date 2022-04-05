@@ -143,6 +143,7 @@ def get_game(game_id, team_id):
         'home_team_name': home_team.name,
         'away_team_id': game.away_team_id,
         'away_team_name': away_team.name,
+        'user_team': home_team.name if game.away_team_id != team_id else away_team.name,
         'vs': home_team.name if game.away_team_id == team_id else away_team.name,
         'home_goals': game.home_goals,
         'away_goals': game.away_goals,
