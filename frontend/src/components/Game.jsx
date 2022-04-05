@@ -203,10 +203,10 @@ function Game() {
             <InfoBox>
               <Text>TIME: {game['scheduled_at']} (in {game['scheduled_how_soon']})</Text>
               <Text>RINK: {game['rink']}</Text>
-              <Text>VS: {game['away_team_name']}</Text>
+              <Text>VS: {game['user_team']} vs {game['vs']}</Text>
               <Text>&nbsp;</Text>
               <Text>Players: {yesCount} {maybeCountStr}</Text>
-              <Text>Goalie: Yes</Text>
+              <Text>Goalie: &#x1f937;</Text>
             </InfoBox>
             <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
