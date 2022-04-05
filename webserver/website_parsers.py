@@ -159,7 +159,7 @@ class GameParser(BaseParser):
         SEASON_NUM = 52
         year = self.calculate_year(game_dict['Date'], SEASON_NUM) # TODO season_num to year
         dt = datetime.datetime.strptime(f'{year} {game_dict["Date"]} {game_dict["Time"]}',
-                                                  f'%Y %a %b %d %H:%M %p')
+                                                  f'%Y %a %b %d %I:%M %p')
         self.datetime = dt
         self.rink = game_dict['Rink']
         self.league = game_dict['League']
