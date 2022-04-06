@@ -5,8 +5,11 @@ Top level class to pull data from the shark's ice web site, feed it into the htm
 the parser output to update the database with the latest data.
 '''
 
+import os
 import requests
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from bs4 import BeautifulSoup
 
 from webserver.database.hockey_db import Database, get_db
@@ -22,6 +25,24 @@ class Synchronizer:
 
     def __init__(self):
         self.db = None
+
+        executors = {
+            'default': {'type': 'threadpool', 'max_workers': 1},
+            'processpool': ProcessPoolExecutor(max_workers=1)
+        }
+        job_defaults = {
+            'coalesce': False,
+            'max_instances': 1
+        }
+        self.scheduler = BackgroundScheduler()
+        self.scheduler.configure(executors=executors, job_defaults=job_defaults)
+        self.scheduler.add_job(self.sync, 'interval', hours=4)
+
+        if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
+            self.scheduler.start()
+
+    def faux_sync(self):
+        print('faux_sync', flush=True)
 
     def sync(self):
         write_log('INFO', f'Synchronization started')
