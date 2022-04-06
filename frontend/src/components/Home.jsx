@@ -104,10 +104,10 @@ function Home() {
 
       <Box fontSize="xl">
           <Center>
-            <Table size="sml" maxWidth="1200px" my="50px" mx="20px">
+            <Table size="sml" maxWidth="800px" my="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
-                  <Th w="50%">My Games</Th>
+                  <Th w="100%">My Games</Th>
                   <Th/>
                 </Tr>
               </Thead>
@@ -117,10 +117,17 @@ function Home() {
 
                     <Tr key={game.game_id}>
                       <Td py="6px">
-                        <a href={`/game/${game.game_id}/for-team/${game.user_team_id}`}>
-                         {myTeams['teams'] && myTeams['teams'].length > 1 ? game.user_team : ''} vs {game.vs} >
-                        </a></Td>
-                      <Td py="6px">{game['scheduled_at']} (in&nbsp;{game['scheduled_how_soon']})</Td>
+                         <Text fontWeight={500}>{game['scheduled_at']} (in&nbsp;{game['scheduled_how_soon']})</Text>
+                         <Text color="gray.500"
+                               _hover={{
+                                  textDecoration: 'none',
+                                  color: "gray.800",
+                                }}>
+                          <a href={`/game/${game.game_id}/for-team/${game.user_team_id}`}>
+                           {myTeams['teams'] && myTeams['teams'].length > 1 ? game.user_team : ''} vs {game.vs} >
+                          </a>
+                        </Text>
+                      </Td>
                     </Tr>
                  ))
                 }
@@ -128,7 +135,7 @@ function Home() {
             </Table>
           </Center>
           <Center>
-            <Table size="sml" maxWidth="1200px" my="50px" mx="20px">
+            <Table size="sml" maxWidth="800px" my="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
                   <Th w="100%">My Teams</Th>
