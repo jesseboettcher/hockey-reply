@@ -107,7 +107,7 @@ class Database:
         return self.session.query(Game).all()
 
     def get_games_for_team(self, team_id):
-        return self.session.query(Game).filter(or_(Game.home_team_id == team_id, Game.away_team_id == team_id)).order_by(Game.game_id).all()
+        return self.session.query(Game).filter(or_(Game.home_team_id == team_id, Game.away_team_id == team_id)).order_by(Game.scheduled_at.asc()).all()
 
     def get_game_by_id(self, game_id):
         return self.session.query(Game).filter(Game.game_id == game_id).one_or_none()

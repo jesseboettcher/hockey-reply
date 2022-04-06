@@ -190,9 +190,14 @@ function Game() {
       maybeCount += element['response'] === 'maybe';
     });
   }
-  let maybeCountStr = ''
+  let maybeCountStr = '';
   if (maybeCount) {
-    maybeCountStr = `(+${maybeCount} maybe)`
+    maybeCountStr = `(+${maybeCount} maybe)`;
+  }
+
+  let homeAwayLabel = '(home)';
+  if (game.user_team_id == game.away_team_id) {
+    homeAwayLabel = '(away)';
   }
 
   return (
@@ -203,7 +208,7 @@ function Game() {
             <InfoBox>
               <Text>TIME: {game['scheduled_at']} (in {game['scheduled_how_soon']})</Text>
               <Text>RINK: {game['rink']}</Text>
-              <Text>VS: {game['user_team']} vs {game['vs']}</Text>
+              <Text>VS: {game['user_team']} {homeAwayLabel} vs {game['vs']}</Text>
               <Text>&nbsp;</Text>
               <Text>Players: {yesCount} {maybeCountStr}</Text>
               <Text>Goalie: &#x1f937;</Text>

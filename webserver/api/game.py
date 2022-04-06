@@ -78,11 +78,13 @@ def get_games(team_id = None):
                 return {'result': 'error'}, 400
 
             user_is_home = False
-            if team.team_id == game.home_team_id:
+            if is_logged_in_user_in_team(game.home_team_id):
                 user_is_home = True
+            print(f'{user_is_home} home id {game.home_team_id} away {game.away_team_id} user team {team.team_id}', flush=True)
 
             game_dict = {
                 'game_id' : game.game_id,
+                'scheduled_at_dt': game.scheduled_at,
                 'scheduled_at': game.scheduled_at.strftime("%a, %b %d @ %I:%M %p"),
                 'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
                 'completed': game.completed,
@@ -90,6 +92,7 @@ def get_games(team_id = None):
                 'level': game.level,
                 'home_team_id': game.home_team_id,
                 'away_team_id': game.away_team_id,
+                'user_team': home_team.name if user_is_home else away_team.name,
                 'vs': home_team.name if not user_is_home else away_team.name,
                 'user_team_id': game.away_team_id if not user_is_home else game.home_team_id,
                 'home_goals': game.home_goals,
@@ -97,6 +100,7 @@ def get_games(team_id = None):
                 'game_type': game.game_type
             }
             result['games'].append(game_dict)
+            result['games'] = sorted(result['games'], key=lambda game: game['scheduled_at_dt'])
 
     return make_response(result)
 
@@ -145,6 +149,7 @@ def get_game(game_id, team_id):
         'away_team_name': away_team.name,
         'user_team': home_team.name if game.away_team_id != team_id else away_team.name,
         'vs': home_team.name if game.away_team_id == team_id else away_team.name,
+        'user_team_id': game.away_team_id if game.away_team_id == team_id else game.home_team_id,
         'home_goals': game.home_goals,
         'away_goals': game.away_goals,
         'game_type': game.game_type
