@@ -15,6 +15,9 @@ def create_app(testing=False):
 
 	app.config['TESTING'] = testing
 
+	from webserver.data_synchronizer import Synchronizer
+	app.config['synchronizer'] = Synchronizer()
+
 	@app.teardown_appcontext
 	def close_connection(exception):
 	    db = getattr(g, '_database', None)
