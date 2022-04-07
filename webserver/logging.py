@@ -1,13 +1,13 @@
-from flask import g
+from flask import current_app
 from google.cloud import logging
 
 def get_logger():
 
-	if not 'google_cloud_logger' in g:
+	if 'google_cloud_logger' not in current_app.config:
 		logging_client = logging.Client()
-		g.google_cloud_logger = logging_client.logger('webserver')	
+		current_app.config['google_cloud_logger'] = logging_client.logger('webserver')	
 
-	return g.google_cloud_logger
+	return current_app.config['google_cloud_logger']
 
 
 def write_log(severity, msg):
