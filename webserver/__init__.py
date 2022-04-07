@@ -18,6 +18,19 @@ def create_app(testing=False):
 	from webserver.data_synchronizer import Synchronizer
 	app.config['synchronizer'] = Synchronizer()
 
+	from webserver.logging import write_log
+	import os
+	if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
+		commit = ''
+
+		try:
+			f = open('webserver/COMMIT', 'r')
+			commit = f.read().strip('\n')
+		except:
+			pass
+
+		write_log('INFO', f'Starting up {commit}')
+
 	@app.teardown_appcontext
 	def close_connection(exception):
 	    db = getattr(g, '_database', None)
