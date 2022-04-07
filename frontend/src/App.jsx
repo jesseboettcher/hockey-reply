@@ -14,6 +14,7 @@ import Home from './components/Home';
 import ForgotPassword from './components/auth/ForgotPassword'
 import ResetPassword from './components/auth/ResetPassword'
 import SignIn from './components/auth/SignIn';
+import SignOut from './components/auth/SignOut'
 import SignUp from './components/auth/SignUp'
 import Team from './components/Team'
 import TagManager from 'react-gtm-module'
@@ -35,6 +36,7 @@ function App() {
           <Route path='/forgot-password' element={<ForgotPassword />} />
           <Route path='/reset-password' element={<ResetPassword />} />
           <Route path='/sign-in' element={<SignIn />} />
+          <Route path='/sign-out' element={<SignOut />} />
           <Route path='/sign-up' element={<SignUp />} />
           <Route path='/team/:team_id' element={<Team />} />
           <Route path='/team/' element={<Team />} />
