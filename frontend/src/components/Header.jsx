@@ -82,8 +82,7 @@ export const Header = props => {
         borderStyle={'solid'}
         borderColor={useColorModeValue('gray.200', 'gray.900')}
         align={'center'}>
-        <Flex
-          flex={{ base: 1, md: 'auto' }}
+        <Box
           ml={{ base: -2 }}
           display={{ base: 'flex', md: 'none' }}>
           <IconButton
@@ -94,59 +93,21 @@ export const Header = props => {
             variant={'ghost'}
             aria-label={'Toggle Navigation'}
           />
-        </Flex>
+        </Box>
         <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
           <Logo></Logo>
         </Flex>
-
-        <DesktopNav />
-        <Stack
-          flex={{ base: 1, md: 0 }}
-          justify={'flex-end'}
-          direction={'row'}
-          spacing={6}
-          mx={6}>
-          { props.signed_in &&
-          <Button
-            as={'a'}
-            fontSize={'sm'}
-            fontWeight={500}
-            variant={'link'}
-            href={'#'}
-            color={linkColor}
-            onClick={() => logout(props.react_navigate)}
-            _hover={{
-                    textDecoration: 'none',
-                    color: linkHoverColor,
-                  }}>
-            Sign Out
-          </Button>
-          }
-          { !props.signed_in &&
-          <Button
-            display={{ base: 'none', md: 'inline-flex' }}
-            fontSize={'sm'}
-            fontWeight={500}
-            color={'white'}
-            bg={'blue.400'}
-            href={'#'}
-            _hover={{
-              bg: 'blue.300',
-            }}>
-            Sign In
-          </Button>
-          }
-        </Stack>
+        <DesktopNav signed_in={props.signed_in} react_navigate={props.react_navigate}/>
       </Flex>
 
       <Collapse in={isOpen} animateOpacity>
-        <MobileNav />
+        <MobileNav signed_in={props.signed_in} react_navigate={props.react_navigate}/>
       </Collapse>
     </Box>
   );
 }
 
-const DesktopNav = () => {
+const DesktopNav = props => {
   const linkColor = useColorModeValue('blue.400', 'blue.300');
   const linkHoverColor = useColorModeValue('blue.600', 'blue.100');
   const popoverContentBgColor = useColorModeValue('gray.50', 'gray.700');
@@ -191,6 +152,36 @@ const DesktopNav = () => {
           </Popover>
         </Box>
       ))}
+          { props.signed_in &&
+          <Button
+            as={'a'}
+            fontSize={'sm'}
+            fontWeight={500}
+            variant={'link'}
+            color={linkColor}
+            href={'/sign-out'}
+            _hover={{
+                    textDecoration: 'none',
+                    color: linkHoverColor,
+                  }}>
+            Sign Out
+          </Button>
+          }
+          { !props.signed_in &&
+          <Button
+            as={'a'}
+            fontSize={'sm'}
+            fontWeight={500}
+            variant={'link'}
+            href={'/sign-in'}
+            color={linkColor}
+            _hover={{
+                    textDecoration: 'none',
+                    color: linkHoverColor,
+                  }}>
+            Sign In
+          </Button>
+          }
     </Stack>
   );
 };
@@ -229,7 +220,7 @@ const DesktopSubNav = ({ label, href, subLabel }: NavItem) => {
   );
 };
 
-const MobileNav = () => {
+const MobileNav = props => {
   return (
     <Stack
       bg={useColorModeValue('white', 'gray.800')}
@@ -238,6 +229,12 @@ const MobileNav = () => {
       {NAV_ITEMS.map((navItem) => (
         <MobileNavItem key={navItem.label} {...navItem} />
       ))}
+      { !props.signed_in &&
+        <MobileNavItem key='sign-in-mobile-nav' label='Sign In' href='/sign-in' />
+      }
+      { props.signed_in &&
+        <MobileNavItem key='sign-out-mobile-nav' label='Sign Out' href='/sign-out' />
+      }
     </Stack>
   );
 };
@@ -318,42 +315,3 @@ const NAV_ITEMS: Array<NavItem> = [
     ],
   },
 ];
-
-// export const Header = props => {
-//   const text = useColorModeValue('dark', 'light');
-//   const SwitchIcon = useColorModeValue(FaMoon, FaSun);
-
-//   return (
-//       <div>
-//       <Flex>
-//         <Box>
-//           <Center height="130px">
-//             <TitleText></TitleText>
-//           </Center>
-//         </Box>
-//         <Spacer />
-//         <Box>
-//           <Center px={6} height="130px">
-//             <Link onClick={() => props.react_navigate('/home')}>Home</Link>
-//           </Center>
-//         </Box>
-//         <Box>
-//           <Center px={6} height="130px">
-//             <Link href='https://stats.sharksice.timetoscore.com/display-stats.php?league=1'>Sharks Ice Schedule</Link>
-//           </Center>
-//         </Box>
-//         <Box>
-//           <Center px={6} height="130px">
-//             <Link onClick={() => logout(props.react_navigate)}>Sign Out</Link>
-//           </Center>
-//         </Box>
-//         <Box>
-//           <Center px={6} height="130px">
-//             <ColorModeSwitcher justifySelf="flex-end" />
-//           </Center>
-//         </Box>
-//       </Flex>
-//       <Divider/>
-//       </div>
-//   );
-// };
