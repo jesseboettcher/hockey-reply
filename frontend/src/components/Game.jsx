@@ -81,7 +81,11 @@ function Game() {
   const [replies, setReplies] = useState([]);
   const [message, setMessage] = useState([]);
   const fetchedData = useRef(false);
+  const responseReceived = useRef(false);
   const toast = useToast();
+
+  const [userIsOnTeam, setUserIsOnTeam] = useState(true);
+  const [isUserMembershipPending, setIsUserMembershipPending] = useState(false);
 
   // Popover control
   const [openPopover, setOpenPopover] = React.useState(0)
@@ -91,6 +95,10 @@ function Game() {
 
   function receiveReplyData(body) {
     let serverReplies = body;
+
+    if (serverReplies['replies'] == undefined) {
+      return;
+    }
 
     // Sort replies
     serverReplies['replies'] = serverReplies['replies'].sort(function(a, b) {
@@ -118,7 +126,10 @@ function Game() {
     setUser(serverReplies['user'])
   }
   function receiveGameData(body) {
+    responseReceived.current = true;
     setGame(body['games'][0])
+    setUserIsOnTeam(body['games'][0]['is_user_on_team'])
+    setIsUserMembershipPending(body['games'][0]['is_user_membership_pending'])
   }
 
   useEffect(() => {
@@ -203,7 +214,7 @@ function Game() {
   return (
     <ChakraProvider theme={theme}>
       <Header react_navigate={navigate} signed_in={user != {}}></Header>
-      <Box textAlign="center" fontSize="xl" mt="50px">
+      <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
             <InfoBox>
               <Text>TIME: {game['scheduled_at']} (in {game['scheduled_how_soon']})</Text>
@@ -213,6 +224,8 @@ function Game() {
               <Text>Players: {yesCount} {maybeCountStr}</Text>
               <Text>Goalie: &#x1f937;</Text>
             </InfoBox>
+
+          { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
             <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
               <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'yes', null)}>
@@ -241,9 +254,21 @@ function Game() {
                 </InputGroup>
               </form>
             </Box>
-
+          }
           </SimpleGrid>
 
+          { isUserMembershipPending && responseReceived.current &&
+            <Box mt={20} mb={40}>
+              <Text fontSize="lg">Your request to join <b>{game['user_team']}</b> has not been accepted yet.</Text>
+            </Box>
+          }
+          { !userIsOnTeam && !isUserMembershipPending &&
+            <Box mt={20} mb={40}>
+              <Text fontSize="lg">You are not on this team.</Text>
+            </Box>
+          }
+
+          { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
           <Center>
             <Table size="sml" maxWidth="1200px" mt="50px" mx="20px">
               <Thead fontSize="0.6em">
@@ -315,7 +340,8 @@ function Game() {
               </Tbody>
             </Table>
           </Center>
-
+          }
+          { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
           <Center>
             <Table size="sml" maxWidth="1200px" my="50px" mx="20px">
               <Thead fontSize="0.6em">
@@ -384,6 +410,7 @@ function Game() {
               </Tbody>
             </Table>
           </Center>
+        }
       </Box>
       <Footer></Footer>
     </ChakraProvider>

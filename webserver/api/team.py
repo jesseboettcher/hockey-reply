@@ -22,8 +22,6 @@ def validate_role(role):
 
 def find_player(team, user_id):
     for player in team.players:
-        print(user_id, flush=True)
-        print(type(user_id), flush=True)
         if int(player.user_id) == int(user_id):
             return player
 
@@ -77,21 +75,36 @@ def get_teams(team_id=None):
     return make_response(result)
 
 
-@blueprint.route('/team-players/<team_id>', methods=['GET'])
-def get_team_players(team_id=None):
+@blueprint.route('/team-players/<team_name_or_id>', methods=['GET'])
+def get_team_players(team_name_or_id=None):
 
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
-    team_id = int(team_id)
-
     db = get_db()
+
+    team_id = None
+    try:
+        team_id = int(team_name_or_id)
+    except Exception as e:
+        # must be a name
+        team = db.get_team(team_name_or_id.replace('-', ' '))
+        if team:
+            team_id = team.team_id
 
     team = db.get_team_by_id(team_id)
 
     if not team:
-        write_log('ERROR', f'/api/team/<team_id>: team {team_id} not found')
+        write_log('ERROR', f'/api/team/<team_id>: team {team_name_or_id} not found')
         return {'result': 'error'}, 400
+
+    team_player = db.get_team_player(team_id, get_current_user().user_id)
+    if not team_player:
+        result = {}
+        result['result'] = 'USER_NOT_ON_TEAM'
+        result['team_id'] = team_id
+        result['team_name'] = team.name
+        return result, 200
 
     result = { 'players': [] }
 
@@ -114,10 +127,11 @@ def get_team_players(team_id=None):
         }
         result['players'].append(request_dict)
 
-    team_player = db.get_team_player(team_id, get_current_user().user_id)
     result['user'] = {}
     result['user']['user_id'] = get_current_user().user_id
     result['user']['role'] = team_player.role
+    result['team_id'] = team_id
+    result['team_name'] = team.name
 
     return make_response(result)
 
@@ -302,10 +316,9 @@ def remove_player():
     if 'team_id' not in request.json or \
        'user_id' not in request.json:
 
-        write_log('ERROR', f'api/accept-join: missing request fields')
+        write_log('ERROR', f'api/remove-player: missing request fields')
         return {'result': 'error'}, 400
 
-    print(request.json, flush=True)
     team_id = int(request.json['team_id'])
     user_id = int(request.json['user_id'])
 

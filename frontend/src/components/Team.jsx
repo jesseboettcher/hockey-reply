@@ -51,12 +51,19 @@ import TagManager from 'react-gtm-module'
 
 function Team() {
 
-  let { team_id } = useParams();
+  let { team_name_or_id } = useParams();
   let navigate = useNavigate();
+  const [userIsOnTeam, setUserIsOnTeam] = useState(false);
+  const [teamId, setTeamId] = useState(0);
+  const [teamName, setTeamName] = useState('this team');
   const [players, setPlayers] = useState([]);
   const [user, setUser] = useState(0);
   const fetchedData = useRef(false);
+  const responseReceived = useRef(false);
   const toast = useToast();
+
+  const isUserCaptain = user['role'] == 'captain';
+  const isUserMembershipPending = user['role'] == '';
 
   // Remove Player alert
   const [playerPendingRemoval, setPlayerPendingRemoval] = React.useState({})
@@ -107,7 +114,7 @@ function Team() {
     }
 
     let data = {
-      team_id, team_id,
+      team_id: teamId,
       user_id: player['user_id'],
       role: role
     };
@@ -128,7 +135,7 @@ function Team() {
         });
 
         // TODO smarter refresh
-        window.location.reload(false);
+        window.location.reload();
         return;
       }
     });
@@ -137,7 +144,7 @@ function Team() {
   function removePlayer(user_id) {
 
     let data = {
-      team_id, team_id,
+      team_id: teamId,
       user_id: user_id
     };
 
@@ -154,14 +161,47 @@ function Team() {
             return value['user_id'] != user_id;
         });
         setPlayers(filtered);
-        return;
+
+        // TODO smarter refresh
+        window.location.reload();
       }
     });
   };
 
+  function joinTeam() {
+    let data = {
+      team_name: teamName,
+      user_id: user['user_id'],
+    };
+
+    fetch(`/api/join-team`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status == 200) {
+        // TODO smarter refresh
+        window.location.reload(false);
+        return;
+      }
+    });
+    onClose();
+  };
+
+
   function receivePlayerData(body) {
 
     let serverReplies = body;
+    responseReceived.current = true;
+
+    if (serverReplies['result'] && serverReplies['result'] == 'USER_NOT_ON_TEAM') {
+      setUserIsOnTeam(false);
+      setTeamName(body['team_name']);
+      setTeamId(body['team_id']);
+      return;
+    }
 
     // Sort not replied (put logged in user on top)
     serverReplies['players'] = serverReplies['players'].sort(function(a, b) {
@@ -174,14 +214,20 @@ function Team() {
       return a['name'].localeCompare(b['name']);
     });
 
+    setUserIsOnTeam(true);
     setPlayers(body['players'])
     setUser(body['user'])
+    setTeamId(body['team_id']);
+    setTeamName(body['team_name'])
   }
 
   useEffect(() => {
-      checkLogin(navigate);
 
     if (!fetchedData.current) {
+      checkLogin(navigate).then( data => {
+        setUser({ user_id: data['user_id' ]})
+      });
+
       TagManager.dataLayer({
         dataLayer: {
           event: 'pageview',
@@ -189,7 +235,7 @@ function Team() {
           pageTitle: 'Game',
         },
       });
-      getData(`/api/team-players/${team_id}`, receivePlayerData);
+      getData(`/api/team-players/${team_name_or_id}`, receivePlayerData);
       fetchedData.current = true;
     }
   });
@@ -199,79 +245,91 @@ function Team() {
   const open = (user) => setOpenPopover(user);
   const close = () => setOpenPopover(0);
 
-  const isUserCaptain = user['role'] == 'captain';
-
   return (
     <ChakraProvider theme={theme}>
       <Header react_navigate={navigate} signed_in={user != {}}></Header>
       <Box textAlign="center" fontSize="xl" mt="50px">
-          <Center>
-            <Table size="sml" maxWidth="600px" my="50px" mx="20px">
-              <Thead fontSize="0.6em">
-                <Tr>
-                  <Th w="33%">Player</Th>
-                  <Th w="33%">Role</Th>
-                </Tr>
-              </Thead>
-              <Tbody fontSize="0.8em">
-                {
-                  players && players.map((player) => (
+          <Center minH="500px">
+            { isUserMembershipPending && responseReceived.current &&
+              <Box mt={20} mb={40}>
+                <Text fontSize="lg">Your request to join <b>{teamName}</b> has not been accepted yet.</Text>
+                <Button my={4} size='sm' onClick={ () => removePlayer(user['user_id']) }>Cancel Request</Button>
+              </Box>
+            }
+            { !userIsOnTeam && responseReceived.current &&
+              <Box mt={20} mb={40}>
+                <Text fontSize="lg">You are not on <b>{teamName}</b>. Would you like to request to join?</Text>
+                <Button my={4} size='sm' onClick={ () => joinTeam() }>Join</Button>
+              </Box>
+            }
+            { userIsOnTeam && !isUserMembershipPending &&
+              <Table size="sml" maxWidth="600px" my="50px" mx="20px">
+                <Thead fontSize="0.6em">
+                  <Tr>
+                    <Th w="33%">Player</Th>
+                    <Th w="33%">Role</Th>
+                  </Tr>
+                </Thead>
+                <Tbody fontSize="0.8em">
+                  {
+                    players && players.map((player) => (
 
-                    <Tr key={player.user_id}>
-                      <Td py="10px">
-                          <Popover isOpen={player.user_id == openPopover}>
-                            <PopoverTrigger>
-                              <div onClick={() => open(player.user_id)} style={{cursor: 'pointer'}}>
-                                <span>
-                                  {player.user_id == user['user_id'] ? <b>{player.name} (You)</b> : player.name}
-                                </span>
-                                <Icon as={ChevronDownIcon} w={4} h={4} />
-                              </div>
-                            </PopoverTrigger>
-                            <PopoverContent p={5} color='white' bg='blue.800' >
-                              <PopoverArrow />
-                              <PopoverCloseButton onClick={close} />
-                              <Stack>
-                                <a href={`mailto:${player.email}`}>
-                                  <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
-                                    <IconButton size='xs' icon={<EmailIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
-                                    {player.email}
-                                  </Box>
-                                </a>
-                                <a href={`sms:408-219-7030`}>
-                                  <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
-                                    <IconButton size='xs' icon={<ChatIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
-                                    408-219-7030
-                                  </Box>
-                                </a>
-                              </Stack>
+                      <Tr key={player.user_id}>
+                        <Td py="10px">
+                            <Popover isOpen={player.user_id == openPopover}>
+                              <PopoverTrigger>
+                                <div onClick={() => open(player.user_id)} style={{cursor: 'pointer'}}>
+                                  <span>
+                                    {player.user_id == user['user_id'] ? <b>{player.name} (You)</b> : player.name}
+                                  </span>
+                                  <Icon as={ChevronDownIcon} w={4} h={4} />
+                                </div>
+                              </PopoverTrigger>
+                              <PopoverContent p={5} color='white' bg='blue.800' >
+                                <PopoverArrow />
+                                <PopoverCloseButton onClick={close} />
+                                <Stack>
+                                  <a href={`mailto:${player.email}`}>
+                                    <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
+                                      <IconButton size='xs' icon={<EmailIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
+                                      {player.email}
+                                    </Box>
+                                  </a>
+                                  <a href={`sms:408-219-7030`}>
+                                    <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
+                                      <IconButton size='xs' icon={<ChatIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
+                                      408-219-7030
+                                    </Box>
+                                  </a>
+                                </Stack>
 
-                            </PopoverContent>
-                          </Popover>
-                      </Td>
-                      {
-                        isUserCaptain &&
-                        <Td>
-                          <Select size='xs' value={player.role} onChange={e => roleSelectionChange(player, e.target.value)}>
-                            <option value='full'>Full Time</option>
-                            <option value='half'>Half Time</option>
-                            <option value='sub'>Sub</option>
-                            <option value='captain'>Captain</option>
-                            <option disabled />
-                            <option value='remove'>Remove Player</option>
-                          </Select>
+                              </PopoverContent>
+                            </Popover>
                         </Td>
-                      }
-                      {
-                        !isUserCaptain &&
-                        <Td>{player.role}</Td>
-                      }
+                        {
+                          isUserCaptain &&
+                          <Td>
+                            <Select size='xs' value={player.role} onChange={e => roleSelectionChange(player, e.target.value)}>
+                              <option value='full'>Full Time</option>
+                              <option value='half'>Half Time</option>
+                              <option value='sub'>Sub</option>
+                              <option value='captain'>Captain</option>
+                              <option disabled />
+                              <option value='remove'>Remove Player</option>
+                            </Select>
+                          </Td>
+                        }
+                        {
+                          !isUserCaptain &&
+                          <Td>{player.role}</Td>
+                        }
 
-                    </Tr>
-                 ))
-                }
-              </Tbody>
-            </Table>
+                      </Tr>
+                   ))
+                  }
+                </Tbody>
+              </Table>
+            }
           </Center>
       </Box>
 
