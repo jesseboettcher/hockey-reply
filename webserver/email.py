@@ -35,23 +35,13 @@ def send_forgot_password(email, token):
     except Exception as e:
         print(e)
 
-def send_game_coming_soon():
+def send_game_coming_soon(data):
 
     message = Mail(
         from_email=FROM_ADDRESS,
         to_emails='jesse.boettcher@gmail.com')
 
-    message.dynamic_template_data = {
-                "name" : "Jesse",
-                "team" : "PileOns",
-                "days_until": "2 days",
-                "date": "Sun Mar 01 08:00 PM",
-                "rink": "San Jose Center",
-                "vs": "Shenanigans",
-                "reply": "Maybe",
-                "confirmed_players": "9",
-                "goalie": "Richard"
-            }
+    message.dynamic_template_data = data
     message.template_id = "d-b94dc2cebcec407caf3c8e03789d4c34" # Game coming soon
 
     try:
