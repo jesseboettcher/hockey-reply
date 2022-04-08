@@ -13,6 +13,7 @@ import Games from './components/Games'
 import Home from './components/Home';
 import ForgotPassword from './components/auth/ForgotPassword'
 import ResetPassword from './components/auth/ResetPassword'
+import Reply from './components/Reply';
 import SignIn from './components/auth/SignIn';
 import SignOut from './components/auth/SignOut'
 import SignUp from './components/auth/SignUp'
@@ -35,6 +36,7 @@ function App() {
           <Route path='/games' element={<Games />} />
           <Route path='/forgot-password' element={<ForgotPassword />} />
           <Route path='/reset-password' element={<ResetPassword />} />
+          <Route path='/reply/:game_id/:team_id/:user_id/:response' element={<Reply />} />
           <Route path='/sign-in' element={<SignIn />} />
           <Route path='/sign-out' element={<SignOut />} />
           <Route path='/sign-up' element={<SignUp />} />
