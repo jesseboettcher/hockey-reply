@@ -295,12 +295,6 @@ function Team() {
                                       {player.email}
                                     </Box>
                                   </a>
-                                  <a href={`sms:408-219-7030`}>
-                                    <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
-                                      <IconButton size='xs' icon={<ChatIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
-                                      408-219-7030
-                                    </Box>
-                                  </a>
                                 </Stack>
 
                               </PopoverContent>
@@ -363,5 +357,14 @@ function Team() {
     </ChakraProvider>
   );
 }
+
+// TODO add profile page, field for phone numbers, this panel
+// <a href={`sms:408-867-5309`}>
+//   <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
+//     <IconButton size='xs' icon={<ChatIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
+//     408-867-5309
+//   </Box>
+// </a>
+
 
 export default Team;
