@@ -17,13 +17,20 @@ APIs for managing updates to games
 blueprint = Blueprint('game', __name__, url_prefix='/api')
 
 
-def is_logged_in_user_in_team(team_id):
+def is_logged_in_user_in_team(team_id, and_has_been_accepted):
     if current_app.config['TESTING']:
         return True
 
     user_in_team = False
     for team in get_current_user().teams:
         if team.team_id == team_id:
+
+            if and_has_been_accepted:
+                player = get_db().get_team_player(team_id, get_current_user().user_id)
+                if not player or player.role == '':
+                    # membership is pending
+                    return False
+
             return True
 
     return False
@@ -78,7 +85,7 @@ def get_games(team_id = None):
                 return {'result': 'error'}, 400
 
             user_is_home = False
-            if is_logged_in_user_in_team(game.home_team_id):
+            if is_logged_in_user_in_team(game.home_team_id, False):
                 user_is_home = True
             print(f'{user_is_home} home id {game.home_team_id} away {game.away_team_id} user team {team.team_id}', flush=True)
 
@@ -134,6 +141,11 @@ def get_game(game_id, team_id):
         write_log('ERROR', f'/api/game/<game>: Team ({team_id}) is not in game {game_id}')
         return {'result': 'error'}, 400
 
+    user_role = None
+    player = get_db().get_team_player(team_id, get_current_user().user_id)
+    if player:
+        user_role = player.role
+
     result = { 'games': [] }
 
     game_dict = {
@@ -152,7 +164,9 @@ def get_game(game_id, team_id):
         'user_team_id': game.away_team_id if game.away_team_id == team_id else game.home_team_id,
         'home_goals': game.home_goals,
         'away_goals': game.away_goals,
-        'game_type': game.game_type
+        'game_type': game.game_type,
+        'is_user_membership_pending': True if user_role == '' else False,
+        'is_user_on_team': is_logged_in_user_in_team(team_id, False)
     }
     result['games'].append(game_dict)
 
@@ -174,7 +188,7 @@ def game_reply(game_id, team_id):
 
     if request.method == 'GET':
 
-        if not is_logged_in_user_in_team(team_id):
+        if not is_logged_in_user_in_team(team_id, True):
             write_log('ERROR', f'/api/game/reply: {get_current_user().email} does not have access to replies for game {game_id} and {team_id}')
             return {'result': 'error'}, 401
 
@@ -210,7 +224,7 @@ def game_reply(game_id, team_id):
         # Collect the players who have not yet responded
         team = db.get_team_by_id(team_id)
         for player in team.players:
-            if player.user_id not in replies_dict:
+            if player.user_id not in replies_dict and player.role != '':
                 reply_dict = {
                     'reply_id': 0,
                     'user_id': player.user_id,

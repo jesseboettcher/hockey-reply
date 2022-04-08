@@ -147,7 +147,7 @@ function Home() {
                   myTeams['teams'] && myTeams['teams'].map((team) => (
 
                     <Tr key={team.team_id}>
-                      <Td py="6px"><a href={`/team/${team.team_id}`}>{team.name} ></a></Td>
+                      <Td py="6px"><a href={`/team/${team.name.replaceAll(' ', '-').toLowerCase()}`}>{team.name} ></a></Td>
                       <Td py="6px"></Td>
                     </Tr>
                  ))

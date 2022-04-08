@@ -40,7 +40,7 @@ function App() {
           <Route path='/sign-in' element={<SignIn />} />
           <Route path='/sign-out' element={<SignOut />} />
           <Route path='/sign-up' element={<SignUp />} />
-          <Route path='/team/:team_id' element={<Team />} />
+          <Route path='/team/:team_name_or_id' element={<Team />} />
           <Route path='/team/' element={<Team />} />
         </Routes>
       </Router>
