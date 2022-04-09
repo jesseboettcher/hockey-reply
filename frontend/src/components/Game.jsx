@@ -272,13 +272,13 @@ function Game() {
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
             <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
-              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'yes', null, submitReply)}>
+              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'yes', null, userIsGoalie)}>
                 YES
               </Button>
-              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'maybe', null, submitReply)}>
+              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'maybe', null, userIsGoalie)}>
                 Maybe
               </Button>
-              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, 'no', null, submitReply)}>
+              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, 'no', null, userIsGoalie)}>
                 NO
               </Button>
               <Checkbox ml={8} mt='4px' colorScheme='green' isChecked={userIsGoalie} onChange={(e) => selectUserIsGoalie(e.target.checked)}>
