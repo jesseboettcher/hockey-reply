@@ -18,9 +18,11 @@ import { Logo } from '../Header';
 import { Footer } from '../Footer';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import TagManager from 'react-gtm-module'
+import queryString from 'query-string'
 
 export default function SignIn() {
 
+  let redirect_path = queryString.parse(window.location.search).redirect;
   const [searchParams, setSearchParams] = useSearchParams();
   let navigate = useNavigate();
   const emailRef = React.useRef();
@@ -46,7 +48,12 @@ export default function SignIn() {
     })
     .then(response => {
       if (response.status == 200) {
-        navigate('/home', {replace: true});
+        if (redirect_path) {
+          navigate(redirect_path, {replace: true});
+        }
+        else {
+          navigate('/home', {replace: true});
+        }
         return;
       }
       toast({
