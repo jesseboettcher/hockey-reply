@@ -22,6 +22,7 @@ CREATE TABLE game_reply(
     game_id         INTEGER,
     team_id         INTEGER,
     user_id         INTEGER,
+    is_goalie       BOOLEAN,
     response        TEXT,
     message         TEXT,
     modified_at     TIMESTAMP WITH TIME ZONE

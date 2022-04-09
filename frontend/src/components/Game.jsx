@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   Center,
+  Checkbox,
   ChakraProvider,
   Container,
   Badge,
@@ -52,6 +53,7 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getData } from '../utils';
 import TagManager from 'react-gtm-module'
+import _ from "lodash";
 
 function InfoBox(props: React.PropsWithChildren<MyProps>) {
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
@@ -122,8 +124,11 @@ function Game() {
       return a['name'].localeCompare(b['name']);
     });
 
-    setReplies(serverReplies)
-    setUser(serverReplies['user'])
+    let userReply = serverReplies['replies'].find(item => item.user_id == serverReplies['user']['user_id']);
+    serverReplies.user.reply = userReply
+
+    setReplies(serverReplies);
+    setUser(serverReplies['user']);
   }
   function receiveGameData(body) {
     responseReceived.current = true;
@@ -150,7 +155,7 @@ function Game() {
     }
   });
 
-  function submitReply(event, user_id, response, new_msg) {
+  function submitReply(event, user_id, response, new_msg, is_goalie) {
 
     event.preventDefault();
     close();
@@ -160,6 +165,7 @@ function Game() {
       team_id: team_id,
       response: response,
       message: new_msg,
+      is_goalie: is_goalie
     };
     if (user_id != 0) {
       data.user_id = user_id;
@@ -191,14 +197,20 @@ function Game() {
   replyBadge['yes'] = <Badge colorScheme="green" my="0px">YES</Badge>;
   replyBadge['no'] = <Badge colorScheme="red" my="0px">NO</Badge>;
   replyBadge['maybe'] = <Badge colorScheme="blue" my="0px">Maybe</Badge>;
+  replyBadge['goalie'] = <Badge colorScheme="yellow" mx={1} my="0px">G</Badge>;
 
   let yesCount = 0;
   let maybeCount = 0;
+  let haveGoalie = false;
 
   if (replies['replies']) {
     replies['replies'].forEach(element => {
-      yesCount += element['response'] === 'yes';
-      maybeCount += element['response'] === 'maybe';
+      yesCount += element['response'] === 'yes' && element['is_goalie'] == false;
+      maybeCount += element['response'] === 'maybe' && element['is_goalie'] == false;
+
+      if (element['is_goalie'] && element['response'] === 'yes') {
+        haveGoalie = true;
+      }
     });
   }
   let maybeCountStr = '';
@@ -209,6 +221,11 @@ function Game() {
   let homeAwayLabel = '(home)';
   if (game.user_team_id == game.away_team_id) {
     homeAwayLabel = '(away)';
+  }
+
+  let goalieLabel = <span>&#x1f937;</span>;
+  if (haveGoalie) {
+    goalieLabel = <span>&#x1F44D;</span>;
   }
 
   return (
@@ -222,21 +239,24 @@ function Game() {
               <Text>VS: {game['user_team']} {homeAwayLabel} vs {game['vs']}</Text>
               <Text>&nbsp;</Text>
               <Text>Players: {yesCount} {maybeCountStr}</Text>
-              <Text>Goalie: &#x1f937;</Text>
+              <Text>Goalie: {goalieLabel}</Text>
             </InfoBox>
 
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
             <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
-              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'yes', null)}>
+              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'yes', null, null)}>
                 YES
               </Button>
-              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'maybe', null)}>
+              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'maybe', null, null)}>
                 Maybe
               </Button>
-              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, 'no', null)}>
+              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, 'no', null, null)}>
                 NO
               </Button>
+              <Checkbox ml={8} mt='4px' colorScheme='green' isChecked={_.get(user, 'reply.is_goalie', false)} onChange={(e) => submitReply(e, 0, null, null, e.target.checked)}>
+                Goalie?
+              </Checkbox>
               <form onSubmit={(e) => submitReply(e, 0, null, message)}>
                 <InputGroup size='md' mt="28px">
                   <Input
@@ -286,6 +306,9 @@ function Game() {
                       <Td py="6px">{reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}</Td>
                       <Td>
                         {replyBadge[reply.response]}
+                        { reply.is_goalie &&
+                          replyBadge['goalie']
+                        }
                       </Td>
                       <Td>
                         {
@@ -309,6 +332,10 @@ function Game() {
                                   <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, reply.user_id, 'no', null)}>
                                     NO
                                   </Button>
+                                  <Checkbox ml={0} mt={6} colorScheme='green' isChecked={reply.is_goalie} onChange={(e) => submitReply(e, reply.user_id, null, null, e.target.checked)}>
+                                    Goalie?
+                                  </Checkbox>
+
 
                                   <form onSubmit={(e) => submitReply(e, reply.user_id, null, message)}>
                                     <InputGroup size='md' mt="28px">

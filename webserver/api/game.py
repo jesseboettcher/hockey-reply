@@ -215,7 +215,8 @@ def game_reply(game_id, team_id):
                 'user_id': reply.user_id,
                 'name': f'{reply_player.player.first_name} ({reply_player.role})',
                 'response': reply.response,
-                'message': reply.message
+                'message': reply.message,
+                'is_goalie': reply.is_goalie
             }
             replies_dict[reply.user_id] = reply_dict
 
@@ -259,6 +260,10 @@ def game_reply(game_id, team_id):
         if 'response' in request.json:
             response = request.json['response']
 
+        is_goalie = False
+        if 'is_goalie' in request.json:
+            is_goalie = request.json['is_goalie']
+
         # check if logged in user == user_id || loged in user == captain on team
         team_player = db.get_team_player(team_id, user_id)
         if team_player is None:
@@ -285,7 +290,8 @@ def game_reply(game_id, team_id):
         db.set_game_reply(game_id, team_id,
                           user_id,
                           response,
-                          message)
+                          message,
+                          is_goalie)
 
         write_log('INFO', f'api/game/reply: {user_id} says {response} for game {game_id}')
         return make_response({ 'result' : 'success' })

@@ -45,6 +45,7 @@ class GameReply(Base):
     game_id = Column(Integer, ForeignKey("game.game_id"))
     team_id = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.user_id"))
+    is_goalie = Column(Boolean)
     response = Column(String)
     message = Column(String)
     modified_at = Column(DateTime)
