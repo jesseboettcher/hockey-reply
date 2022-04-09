@@ -46,7 +46,7 @@ import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ChatIcon } from '@chakra-
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { checkLogin, getData } from '../utils';
+import { checkLogin, getAuthHeader, getData } from '../utils';
 import TagManager from 'react-gtm-module'
 
 function Team() {
@@ -122,7 +122,7 @@ function Team() {
     fetch(`/api/player-role`, {
       method: "POST",
       credentials: 'include',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
       body: JSON.stringify(data)
     })
     .then(response => {
@@ -151,7 +151,7 @@ function Team() {
     fetch(`/api/remove-player`, {
       method: "POST",
       credentials: 'include',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
       body: JSON.stringify(data)
     })
     .then(response => {
@@ -177,7 +177,7 @@ function Team() {
     fetch(`/api/join-team`, {
       method: "POST",
       credentials: 'include',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
       body: JSON.stringify(data)
     })
     .then(response => {

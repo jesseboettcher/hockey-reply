@@ -46,8 +46,14 @@ export default function SignIn() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(data)
     })
-    .then(response => {
-      if (response.status == 200) {
+    .then(r =>  r.json().then(data => ({status: r.status, body: data})))
+    .then(obj => {
+      if (obj.status == 200) {
+
+        if (obj.body.token) {
+          window.localStorage.setItem('token', obj.body.token);
+        }
+
         if (redirect_path) {
           navigate(redirect_path, {replace: true});
         }

@@ -45,7 +45,9 @@ class Synchronizer:
 
     def notify(self):
         write_log('INFO', f'Notify sync')
-        coming_soon = get_db().get_games_coming_soon()
+        self.db = Database()
+
+        coming_soon = self.db.get_games_coming_soon()
 
         for game in coming_soon:
             write_log('INFO', f'Notify coming soon {game.game_id} ({game.scheduled_at})')
