@@ -6,7 +6,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from webserver.logging import write_log
 
-FROM_ADDRESS = 'hockey.reply@ourano.com'
+FROM_ADDRESS = 'jesse@hockeyreply.com'
 
 def send_welcome():
     message = Mail(
