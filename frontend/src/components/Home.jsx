@@ -39,7 +39,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { checkLogin, getData, logout, MyLink } from '../utils';
+import { checkLogin, getAuthHeader, getData, logout, MyLink } from '../utils';
 import TagManager from 'react-gtm-module'
 
 function Home() {
@@ -84,7 +84,7 @@ function Home() {
     fetch(`/api/join-team`, {
       method: "POST",
       credentials: 'include',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
       body: JSON.stringify(data)
     })
     .then(response => {

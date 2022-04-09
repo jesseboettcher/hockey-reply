@@ -4,7 +4,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from "react-router-dom";
-import { checkLogin, getData } from '../utils';
+import { checkLogin, getAuthHeader, getData } from '../utils';
 
 export default function Reply() {
 
@@ -23,7 +23,7 @@ export default function Reply() {
     fetch(`/api/game/reply/${game_id}/for-team/${team_id}`, {
       method: "POST",
       credentials: 'include',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
       body: JSON.stringify(data)
     })
     .then(response => {

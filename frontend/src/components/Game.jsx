@@ -51,7 +51,7 @@ import { ArrowForwardIcon, EditIcon } from '@chakra-ui/icons'
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { checkLogin, getData } from '../utils';
+import { checkLogin, getAuthHeader, getData } from '../utils';
 import TagManager from 'react-gtm-module'
 import _ from "lodash";
 
@@ -130,7 +130,6 @@ function Game() {
 
     setReplies(serverReplies);
     setUser(serverReplies['user']);
-    console.log(serverReplies['user'])
 
     if (serverReplies['user']['reply']) {
       // If the user has replied, use that value of is_goalie, otherwise leave it alone
@@ -189,7 +188,7 @@ function Game() {
     fetch(`/api/game/reply/${game_id}/for-team/${team_id}`, {
       method: "POST",
       credentials: 'include',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
       body: JSON.stringify(data)
     })
     .then(response => {

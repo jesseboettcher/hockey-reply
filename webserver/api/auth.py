@@ -14,23 +14,24 @@ from webserver.logging import write_log
 
 blueprint = Blueprint('auth', __name__, url_prefix='/api')
 
-def decode_cookie():
-    cookie = request.cookies.get('user')
+def decode_token():
+    token = None
 
-    if not cookie:
-        g.cookie = {}
+    if request.headers['Authorization'].find('Bearer') == 0:
+        token = request.headers['Authorization'].split(' ')[1]
+
+    if not token:
+        g.token = {}
         return
 
-    print(cookie, flush=True)
     try:
-        g.cookie = jwt.decode(cookie, os.environ.get("SECRET_KEY", "placeholder_key"), algorithms='HS256')
-        print(g.cookie, flush=True)
+        g.token = jwt.decode(token, os.environ.get("SECRET_KEY", "placeholder_key"), algorithms='HS256')
     except jwt.InvalidTokenError as err:
         print(str(err), flush=True)
         abort(401)
 
 
-def create_cookie(external_id):
+def create_token(external_id):
     token = jwt.encode({ 'external_id': external_id, 'date': datetime.datetime.now().isoformat() },
                        os.environ.get("SECRET_KEY", "placeholder_key"),
                        algorithm='HS256')
@@ -39,11 +40,11 @@ def create_cookie(external_id):
 def require_login(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if 'id' not in g.cookie:
+        if 'id' not in g.token:
             print('No authorization provided', flush=True)
             abort(401)
 
-        g.user = get_db().get_user_by_external_id(g.cookie['external_id'])
+        g.user = get_db().get_user_by_external_id(g.token['external_id'])
 
         if not g.user:
             response = make_response('', 401)
@@ -59,13 +60,13 @@ def check_login():
     if current_app.config['TESTING']:
         return True;
 
-    decode_cookie()
+    decode_token()
 
-    if not 'cookie' in g or 'external_id' not in g.cookie:
-        print('no cookie!', flush=True)
+    if not 'token' in g or 'external_id' not in g.token:
+        print('no token!', flush=True)
         return False
 
-    g.user = get_db().get_user_by_external_id(g.cookie['external_id'])
+    g.user = get_db().get_user_by_external_id(g.token['external_id'])
 
     if not g.user:
         return False
@@ -122,8 +123,9 @@ def new_user():
     db.add_user(user)
     # TODO error checking on DB op?
 
-    response = make_response({ 'result' : 'success' })
-    response.set_cookie('user', create_cookie(user.external_id))
+    token = create_token(user.external_id);
+    response = make_response({ 'result' : 'success', 'token' : token })
+    response.set_cookie('user', token)
     write_log('INFO', f'api/sign-up: new user: {user_email}')
     return response
 
@@ -156,8 +158,9 @@ def sign_in():
     user.logged_in_at = datetime.datetime.now()
     get_db().commit_changes()
 
-    response = make_response({ 'result' : 'success' })
-    response.set_cookie('user', create_cookie(user.external_id))
+    token = create_token(user.external_id);
+    response = make_response({ 'result' : 'success', 'token' : token })
+    response.set_cookie('user', token)
     write_log('INFO', f'api/sign-in: {user_email} success')
     return response
 
