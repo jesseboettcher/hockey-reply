@@ -110,6 +110,13 @@ class Database:
     def get_game_by_id(self, game_id):
         return self.session.query(Game).filter(Game.game_id == game_id).one_or_none()
 
+    def get_games_coming_soon(self):
+        today = datetime.datetime.now()
+        soon = today + datetime.timedelta(hours=72)
+        return self.session.query(Game).filter(and_(Game.did_notify_coming_soon == False,
+                                                    Game.scheduled_at > today,
+                                                    Game.scheduled_at <= soon)).all()
+
     def add_game(self, game_parser):
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()
 

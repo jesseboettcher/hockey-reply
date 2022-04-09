@@ -37,12 +37,20 @@ class Synchronizer:
         self.scheduler = BackgroundScheduler()
         self.scheduler.configure(executors=executors, job_defaults=job_defaults)
         self.scheduler.add_job(self.sync, 'interval', hours=4)
+        self.scheduler.add_job(self.notify, 'interval', hours=1)
 
         if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
             self.scheduler.start()
 
-    def faux_sync(self):
-        print('faux_sync', flush=True)
+    def notify(self):
+        write_log('INFO', f'Notify sync')
+        coming_soon = get_db().get_games_coming_soon()
+
+        for game in coming_soon:
+            write_log('INFO', f'Notify coming soon {game.game_id} ({game.scheduled_at})')
+            game.did_notify_coming_soon = True
+
+        self.db.commit_changes()
 
     def sync(self):
         write_log('INFO', f'Synchronization started')

@@ -14,7 +14,8 @@ CREATE TABLE game(
     away_goals      INTEGER,
     game_type       TEXT,
     scoresheet_html_url TEXT,
-    scoresheet_pdf_url TEXT
+    scoresheet_pdf_url TEXT,
+    did_notify_coming_soon BOOLEAN
 );
 
 CREATE TABLE game_reply(
