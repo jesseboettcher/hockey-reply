@@ -13,6 +13,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from bs4 import BeautifulSoup
 
 from webserver.database.hockey_db import Database, get_db
+from webserver.email import send_game_coming_soon
 from webserver.website_parsers import TeamPageParser
 from webserver.logging import write_log
 
@@ -37,16 +38,25 @@ class Synchronizer:
         self.scheduler = BackgroundScheduler()
         self.scheduler.configure(executors=executors, job_defaults=job_defaults)
         self.scheduler.add_job(self.sync, 'interval', hours=4)
+        self.scheduler.add_job(self.notify, 'interval', hours=1)
 
         if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
             self.scheduler.start()
 
-    def faux_sync(self):
-        print('faux_sync', flush=True)
+    def notify(self):
+        write_log('INFO', f'Notify sync')
+        coming_soon = get_db().get_games_coming_soon()
+
+        for game in coming_soon:
+            write_log('INFO', f'Notify coming soon {game.game_id} ({game.scheduled_at})')
+            send_game_coming_soon(self.db, game)
+
+        # save updates to game was-notification-sent
+        self.db.commit_changes()
 
     def sync(self):
         write_log('INFO', f'Synchronization started')
-        self.db = Database(False)
+        self.db = Database()
 
         source, soup = self.open_season_page()
         for link in soup.find_all('a'):
@@ -72,7 +82,7 @@ class Synchronizer:
         return True
 
     def sync_local_file(self):
-        self.db = Database(True)
+        self.db = Database()
 
         source, soup = self.open_test_file()
         team_parser = TeamPageParser(source, soup)

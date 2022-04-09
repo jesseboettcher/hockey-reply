@@ -13,7 +13,7 @@ def setup_test_db():
     global global_db_instance
 
     if global_db_instance is None:
-        global_db_instance = Database(False)
+        global_db_instance = Database()
 
     return global_db_instance
 
@@ -29,16 +29,14 @@ def get_db():
 
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = Database(False)
+        db = g._database = Database()
     return db
 
 class Database:
     SQLITE_DB_PATH = 'database/hockey.db'
 
-    def __init__(self, local):
+    def __init__(self):
         connect_string = f'postgresql://postgres:{os.getenv("POSTGRES_PASSWORD")}@hockey-data.cb53hszvt88d.us-west-2.rds.amazonaws.com/hockeydata'
-        if local:
-            connect_string = f"sqlite:///{self.SQLITE_DB_PATH}"
 
         self.engine = create_engine(connect_string) # DEBUG add echo=True
         Session = sessionmaker()
@@ -111,6 +109,13 @@ class Database:
 
     def get_game_by_id(self, game_id):
         return self.session.query(Game).filter(Game.game_id == game_id).one_or_none()
+
+    def get_games_coming_soon(self):
+        today = datetime.datetime.now()
+        soon = today + datetime.timedelta(hours=72)
+        return self.session.query(Game).filter(and_(Game.did_notify_coming_soon == False,
+                                                    Game.scheduled_at > today,
+                                                    Game.scheduled_at <= soon)).all()
 
     def add_game(self, game_parser):
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()

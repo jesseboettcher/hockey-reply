@@ -4,6 +4,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from "react-router-dom";
+import { checkLogin, getData } from '../utils';
 
 export default function Reply() {
 
@@ -33,7 +34,11 @@ export default function Reply() {
   };
 
   useEffect(() => {
-    submitReply();
+    checkLogin(navigate).then( data => {
+        if (data.user_id) {
+          submitReply();
+        }
+    });
   });
 
   return (

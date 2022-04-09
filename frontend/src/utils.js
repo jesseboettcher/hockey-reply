@@ -7,7 +7,7 @@ export const checkLogin = async (navigate) => {
   if (response.status == 200) {
     return data;
   }
-  navigate('/sign-in', {replace: true});
+  navigate(`/sign-in?redirect=${window.location.pathname}`, {replace: true});
   return {}
 }
 
