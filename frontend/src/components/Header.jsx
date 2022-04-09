@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Badge,
   Center,
   ChakraProvider,
   Box,
@@ -49,8 +50,7 @@ export function Logo() {
 
   return (
       <Center height="80px">
-      <Link mx="30px"
-        width={{ base: "300px", md: "400px"}}
+      <Link ml="30px" mr="20px"
         bgGradient={titleGradient}
         bgClip='text'
         fontSize={{ base: '4xl', md: '5xl' }}
@@ -60,6 +60,7 @@ export function Logo() {
       >
         Hockey Reply
       </Link>
+      <Badge variant='outline' colorScheme="gray" mt="8px">BETA</Badge>
       </Center>
     )
 }
