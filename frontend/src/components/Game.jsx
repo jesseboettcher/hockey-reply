@@ -82,6 +82,7 @@ function Game() {
   const [user, setUser] = useState(0);
   const [replies, setReplies] = useState([]);
   const [message, setMessage] = useState([]);
+  const [userIsGoalie, setUserIsGoalie] = useState(false);
   const fetchedData = useRef(false);
   const responseReceived = useRef(false);
   const toast = useToast();
@@ -129,7 +130,15 @@ function Game() {
 
     setReplies(serverReplies);
     setUser(serverReplies['user']);
+    console.log(serverReplies['user'])
+
+    if (serverReplies['user']['reply']) {
+      // If the user has replied, use that value of is_goalie, otherwise leave it alone
+      // and the last set value from localStorage will remain populated
+      setUserIsGoalie(_.get(serverReplies, 'user.reply.is_goalie', false));
+    }
   }
+
   function receiveGameData(body) {
     responseReceived.current = true;
     setGame(body['games'][0])
@@ -149,6 +158,10 @@ function Game() {
 
       checkLogin(navigate);
 
+      if (window.localStorage.getItem('is_goalie') != null) {
+        setUserIsGoalie(window.localStorage.getItem('is_goalie') === true.toString());
+      }
+
       getData(`/api/game/${game_id}/for-team/${team_id}`, receiveGameData);
       getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
       fetchedData.current = true;
@@ -157,7 +170,9 @@ function Game() {
 
   function submitReply(event, user_id, response, new_msg, is_goalie) {
 
-    event.preventDefault();
+    if (event) {
+      event.preventDefault();
+    }
     close();
 
     let data = {
@@ -190,6 +205,19 @@ function Game() {
       }
     });
   };
+
+  function selectUserIsGoalie(isGoalieChecked) {
+    setUserIsGoalie(isGoalieChecked);
+    window.localStorage.setItem('is_goalie', isGoalieChecked.toString());
+
+    let userReply = replies.replies.find(item => item.user_id == user.user_id);
+
+    // Only submit the goalie flag, if there is already a response, so an empty response
+    // is not created
+    if (_.get(userReply, 'response', '') != '') {
+      submitReply(null, user.user_id, null, null, isGoalieChecked);
+    }
+  }
 
   const isUserCaptain = user['role'] == 'captain';
 
@@ -245,16 +273,16 @@ function Game() {
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
             <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
-              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'yes', null, null)}>
+              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'yes', null, submitReply)}>
                 YES
               </Button>
-              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'maybe', null, null)}>
+              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'maybe', null, submitReply)}>
                 Maybe
               </Button>
-              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, 'no', null, null)}>
+              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, 'no', null, submitReply)}>
                 NO
               </Button>
-              <Checkbox ml={8} mt='4px' colorScheme='green' isChecked={_.get(user, 'reply.is_goalie', false)} onChange={(e) => submitReply(e, 0, null, null, e.target.checked)}>
+              <Checkbox ml={8} mt='4px' colorScheme='green' isChecked={userIsGoalie} onChange={(e) => selectUserIsGoalie(e.target.checked)}>
                 Goalie?
               </Checkbox>
               <form onSubmit={(e) => submitReply(e, 0, null, message)}>
