@@ -251,13 +251,13 @@ function Team() {
       <Box textAlign="center" fontSize="xl" mt="50px">
           <Center minH="500px">
             { isUserMembershipPending && responseReceived.current &&
-              <Box mt={20} mb={40}>
+              <Box mx={10} mt={20} mb={40}>
                 <Text fontSize="lg">Your request to join <b>{teamName}</b> has not been accepted yet.</Text>
                 <Button my={4} size='sm' onClick={ () => removePlayer(user['user_id']) }>Cancel Request</Button>
               </Box>
             }
             { !userIsOnTeam && responseReceived.current &&
-              <Box mt={20} mb={40}>
+              <Box mx={10} mt={20} mb={40}>
                 <Text fontSize="lg">You are not on <b>{teamName}</b>. Would you like to request to join?</Text>
                 <Button my={4} size='sm' onClick={ () => joinTeam() }>Join</Button>
               </Box>

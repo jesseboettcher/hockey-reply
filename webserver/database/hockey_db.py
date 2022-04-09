@@ -152,7 +152,7 @@ class Database:
     def game_reply_for_game_and_user(self, game_id, team_id, user_id):
         return self.session.query(GameReply).filter(and_(GameReply.game_id == game_id, GameReply.team_id == team_id, GameReply.user_id == user_id)).one_or_none()
 
-    def set_game_reply(self, game_id, team_id, user_id, reply, message):
+    def set_game_reply(self, game_id, team_id, user_id, reply, message, is_goalie):
         db_reply = self.session.query(GameReply).filter(and_(GameReply.game_id == game_id, GameReply.user_id == user_id)).one_or_none()
 
         if db_reply is None:
@@ -160,10 +160,12 @@ class Database:
                                  team_id=team_id,
                                  user_id=user_id,
                                  response=reply,
-                                 message=message
+                                 message=message,
+                                 is_goalie=is_goalie
                                 )
             self.session.add(db_reply)
         else:
+            db_reply.is_goalie = is_goalie
             if reply:
                 db_reply.response = reply
             if message:
