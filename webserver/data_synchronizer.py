@@ -13,6 +13,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from bs4 import BeautifulSoup
 
 from webserver.database.hockey_db import Database, get_db
+from webserver.email import send_game_coming_soon
 from webserver.website_parsers import TeamPageParser
 from webserver.logging import write_log
 
@@ -48,8 +49,9 @@ class Synchronizer:
 
         for game in coming_soon:
             write_log('INFO', f'Notify coming soon {game.game_id} ({game.scheduled_at})')
-            game.did_notify_coming_soon = True
+            send_game_coming_soon(self.db, game)
 
+        # save updates to game was-notification-sent
         self.db.commit_changes()
 
     def sync(self):
