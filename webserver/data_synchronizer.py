@@ -46,7 +46,7 @@ class Synchronizer:
 
     def sync(self):
         write_log('INFO', f'Synchronization started')
-        self.db = Database(False)
+        self.db = Database()
 
         source, soup = self.open_season_page()
         for link in soup.find_all('a'):
@@ -72,7 +72,7 @@ class Synchronizer:
         return True
 
     def sync_local_file(self):
-        self.db = Database(True)
+        self.db = Database()
 
         source, soup = self.open_test_file()
         team_parser = TeamPageParser(source, soup)
