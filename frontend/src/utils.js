@@ -32,22 +32,66 @@ export const checkLogin = async (navigate) => {
   return {}
 }
 
+export function logout(navigate) {
+  window.localStorage.removeItem('token');
+  navigate('/sign-in', {replace: true})
+}
+
 export function getData(url, setFn) {
+
+    // Use localStorage to make site more responsive. Save fetch results in local storage.
+    // When fetching in the future, this function will apply the currently cached results
+    // before making the request, and then update the results when the request completes.
+    const cachedData = getCacheData(url);
+    if (cachedData) {
+      setFn(cachedData);
+    }
+
+    function setFnWrapper(data) {
+        setCacheData(url, data);
+        setFn(data);
+    }
+
     fetch(url, {
       credentials: 'include',
       headers: {'Authorization': getAuthHeader()},
     })
     .then(r =>  r.json().then(data => ({status: r.status, body: data})))
       .then(obj => {
-          return setFn(obj.body)
+          return setFnWrapper(obj.body)
       });
 }
 
-function delete_cookie(name) {
-  document.cookie = name+'=; Max-Age=-99999999;';
+export function setCacheData(key, saveData) {
+
+  const DAYS_TO_EXPIRATION = 7;
+  let expire = new Date();
+  expire.setDate(expire.getDate() + DAYS_TO_EXPIRATION);
+
+  window.localStorage.setItem(key, JSON.stringify({ expires_at: expire, data: saveData }));
 }
 
-export function logout(navigate) {
-  window.localStorage.removeItem('token');
-  navigate('/sign-in', {replace: true})
+export function getCacheData(key) {
+
+  let retrieved = window.localStorage.getItem(key);
+  try {
+    retrieved = JSON.parse(retrieved);
+  } catch(e) {
+    // key is unparsable. Removing from cache
+    window.localStorage.removeItem(key);
+    return null;
+  }
+
+  if (retrieved) {
+    let today = new Date();
+
+    if (today > Date.parse(retrieved.expires_at)) {
+      // key expired. Removing from cache
+      window.localStorage.removeItem(key);
+      return null;
+    }
+
+    return retrieved.data;
+  }
+  window.localStorage.getItem(key);
 }
