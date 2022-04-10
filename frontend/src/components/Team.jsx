@@ -13,6 +13,7 @@ import {
   Button,
   Icon,
   IconButton,
+  HStack,
   Text,
   Link,
   List,
@@ -29,6 +30,8 @@ import {
   theme,
   Select,
   Stack,
+  Tooltip,
+  useColorModeValue,
   useDisclosure,
   useToast
 } from '@chakra-ui/react';
@@ -42,7 +45,7 @@ import {
   Td,
   TableCaption,
 } from "@chakra-ui/react"
-import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ChatIcon } from '@chakra-ui/icons'
+import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ExternalLinkIcon, ChatIcon } from '@chakra-ui/icons'
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
@@ -55,7 +58,7 @@ function Team() {
   let navigate = useNavigate();
   const [userIsOnTeam, setUserIsOnTeam] = useState(false);
   const [teamId, setTeamId] = useState(0);
-  const [teamName, setTeamName] = useState('this team');
+  const [teamName, setTeamName] = useState(null);
   const [players, setPlayers] = useState([]);
   const [user, setUser] = useState(0);
   const fetchedData = useRef(false);
@@ -70,6 +73,9 @@ function Team() {
   const { isAlertOpen, onAlertOpen, onAlertClose } = useDisclosure()
   const [openAlert, setOpenAlert] = React.useState(false)
   const cancelAlertRef = React.useRef()
+
+  const tipBackground = useColorModeValue('#EDF2F7', 'whiteAlpha.200');
+  const tipTextColor = useColorModeValue('gray.500', 'gray.200');
 
   const { isOpen, onOpen, onClose } = useDisclosure()
   const cancelRef = React.useRef()
@@ -248,8 +254,21 @@ function Team() {
   return (
     <ChakraProvider theme={theme}>
       <Header react_navigate={navigate} signed_in={user != {}}></Header>
-      <Box textAlign="center" fontSize="xl" mt="50px">
-          <Center minH="500px">
+      <Box minH="500px" textAlign="center" fontSize="xl" mt="50px">
+          { teamName &&
+          <Center>
+            <HStack>
+              <Text fontSize='xl' fontWeight='medium'>{teamName}</Text>
+              <Tooltip label='Share link to join' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
+                <Link href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${teamName}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${teamName.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}>
+                  <IconButton ml={1} mb='3px' size='xs' icon={<ExternalLinkIcon/>}/>
+                </Link>
+              </Tooltip>
+            </HStack>
+            </Center>
+          }
+          <Center>
+
             { isUserMembershipPending && responseReceived.current &&
               <Box mx={10} mt={20} mb={40}>
                 <Text fontSize="lg">Your request to join <b>{teamName}</b> has not been accepted yet.</Text>

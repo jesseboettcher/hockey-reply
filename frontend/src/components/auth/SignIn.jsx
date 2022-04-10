@@ -14,7 +14,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useEffect, useState, useRef } from 'react';
-import { Logo } from '../Header';
+import { Header } from '../Header';
 import { Footer } from '../Footer';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import TagManager from 'react-gtm-module'
@@ -89,15 +89,13 @@ export default function SignIn() {
   }
 
   return (
-    <Box bg={useColorModeValue('gray.50', 'gray.800')}>
+    <Box >
+    <Header hide_sign_in={true} />
     <Flex
-      minH={'100vh'}
+      minH={'10vh'}
       align={'center'}
       justify={'center'}>
-      <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
-        <Stack align={'center'}>
-          <Logo/>
-        </Stack>
+      <Stack spacing={8} mx={'auto'} maxW={'lg'} minW={'md'} py={12} px={6}>
         <Box
           rounded={'lg'}
           bg={useColorModeValue('white', 'gray.700')}
