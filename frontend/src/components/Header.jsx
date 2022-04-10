@@ -98,11 +98,11 @@ export const Header = props => {
         <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
           <Logo></Logo>
         </Flex>
-        <DesktopNav signed_in={props.signed_in} react_navigate={props.react_navigate}/>
+        <DesktopNav hide_sign_in={props.hide_sign_in} signed_in={props.signed_in} react_navigate={props.react_navigate}/>
       </Flex>
 
       <Collapse in={isOpen} animateOpacity>
-        <MobileNav signed_in={props.signed_in} react_navigate={props.react_navigate}/>
+        <MobileNav hide_sign_in={props.hide_sign_in} signed_in={props.signed_in} react_navigate={props.react_navigate}/>
       </Collapse>
     </Box>
   );
@@ -153,7 +153,7 @@ const DesktopNav = props => {
           </Popover>
         </Box>
       ))}
-          { props.signed_in &&
+          { props.signed_in && !props.hide_sign_in &&
           <Button
             as={'a'}
             fontSize={'sm'}
@@ -168,7 +168,7 @@ const DesktopNav = props => {
             Sign Out
           </Button>
           }
-          { !props.signed_in &&
+          { !props.signed_in && !props.hide_sign_in &&
           <Button
             as={'a'}
             fontSize={'sm'}
@@ -230,10 +230,10 @@ const MobileNav = props => {
       {NAV_ITEMS.map((navItem) => (
         <MobileNavItem key={navItem.label} {...navItem} />
       ))}
-      { !props.signed_in &&
+      { !props.signed_in && !props.hide_sign_in &&
         <MobileNavItem key='sign-in-mobile-nav' label='Sign In' href='/sign-in' />
       }
-      { props.signed_in &&
+      { props.signed_in && !props.hide_sign_in &&
         <MobileNavItem key='sign-out-mobile-nav' label='Sign Out' href='/sign-out' />
       }
     </Stack>
@@ -314,5 +314,9 @@ const NAV_ITEMS: Array<NavItem> = [
         href: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=15',
       },
     ],
+  },
+  {
+    label: 'Docs',
+    href: '/docs',
   },
 ];
