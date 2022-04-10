@@ -51,6 +51,7 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
 import TagManager from 'react-gtm-module'
+import _ from "lodash";
 
 function Team() {
 
@@ -206,6 +207,10 @@ function Team() {
       setUserIsOnTeam(false);
       setTeamName(body['team_name']);
       setTeamId(body['team_id']);
+      return;
+    }
+
+    if (!_.has(body, 'players')) {
       return;
     }
 
