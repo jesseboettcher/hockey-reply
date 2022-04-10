@@ -7,6 +7,7 @@ to synchronize with the database.
 
 import datetime
 import traceback
+from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 
@@ -160,7 +161,9 @@ class GameParser(BaseParser):
         year = self.calculate_year(game_dict['Date'], SEASON_NUM) # TODO season_num to year
         dt = datetime.datetime.strptime(f'{year} {game_dict["Date"]} {game_dict["Time"]}',
                                                   f'%Y %a %b %d %I:%M %p')
-        self.datetime = dt
+        pacific = ZoneInfo('US/Pacific')
+
+        self.datetime = dt.replace(tzinfo=pacific)
         self.rink = game_dict['Rink']
         self.league = game_dict['League']
         self.level = game_dict['Level']
