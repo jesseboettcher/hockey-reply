@@ -1,4 +1,11 @@
 
+// hasAuthToken is used as an indicator of whether is a user is logged in or not. It is
+// possible the auth token is invalid, but unlikely. Using this lets the UI adjust immediately,
+// without having to wait for server feedback to confirm sign in - and avoids blinky UI
+export function hasAuthToken() {
+  return window.localStorage.getItem('token') != undefined;
+}
+
 export function getAuthHeader() {
   let bearer = '';
   if (window.localStorage.getItem('token')) {

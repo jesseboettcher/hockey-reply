@@ -253,7 +253,7 @@ function Team() {
 
   return (
     <ChakraProvider theme={theme}>
-      <Header react_navigate={navigate} signed_in={user != {}}></Header>
+      <Header react_navigate={navigate}/>
       <Box minH="500px" textAlign="center" fontSize="xl" mt="50px">
           { teamName &&
           <Center>

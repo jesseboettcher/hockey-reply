@@ -30,9 +30,9 @@ function DocsText(props: React.PropsWithChildren<MyProps>) {
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>About Hockey Reply</Text>
     <Text>
 Hockey Reply is a site for managing the roster of upcoming games. It was built only to make life in
-the Sharks Ice in San Jose adult league easier to manage. This site obviously shares similarities
+the Sharks Ice at San Jose Adult League easier to manage. This site obviously shares similarities
 with its predecessors that we were bummed out to see shut down. The hope is that by making this web app
-open source (coming soon), the community can pick it up and keep it going when its builder moves on to a new hobby.
+open source (coming soon), the community can pick it up and keep it going whenever its builder moves on to a new hobby.
     </Text>
     <br/>
 
@@ -47,27 +47,27 @@ before you can go further.
     <Text fontSize='lg' fontWeight='medium' color={headerColor}>Inviting Teammates</Text>
     <Text>
 To invite other team members to join, click the <ExternalLinkIcon mb='4px'/> button to
-send them the link to your team. Once they create an account, they'll be able be taken straight to a
+send them the link to your team. Once they create an account, they'll be taken straight to a
 button to join your team.
     </Text>
     <br/>
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor} my={2}>Team Management</Text>
     <Text>
-  There are 3 roles available for players on a team. Roles are managed from the team page. Team pages are found at the bottom of the home page. On the team page the captains may (re)assign player roles or removes players from the team.
+  There are 3 roles available for players on a team. Roles are managed from the team page. On the team page the captains may (re)assign player roles or remove players from the team.
     </Text>
 <UnorderedList ml={10} my={2}>
   <ListItem><b>Captain</b> - Has the ability to remove/confirm players, adjust player roles, and update player replies for games. The first person to join a team becomes the captain. Multiple players can share the captain role. </ListItem>
   <ListItem><b>Full</b> - Indicates the player has paid for the full season. Player can only modify their own replies.</ListItem>
   <ListItem><b>Half</b> - Indicates the player has paid for half of the season. Player can only modify their own replies.</ListItem>
   <ListItem><b>Sub</b> - Indicates the player has is available to play if the team is short handed.</ListItem>
-  <ListItem><b>[blank]</b> - Players who have requested to join the team, show up with a blank role. These players cannot view the team roster or game replies until they have been added to the team by a captain assigning them one of the player roles (captain/full/half/sub).</ListItem>
+  <ListItem><b>[blank]</b> - Players who have requested to join the team, show up with a blank role. These players cannot view the team roster or game replies until they have been added to the team by a captain, by assigning them one of the player roles (captain/full/half/sub).</ListItem>
 </UnorderedList>
     <br/>
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Notifications</Text>
     <Text>
-Upcoming game notifications are sent via email and you can add your reply just by clicking one of the
+Upcoming game notifications are sent via email and you can easily add your reply by tapping one of the
 &nbsp;<Tag colorScheme="green">Yes</Tag>&nbsp;&nbsp;<Tag colorScheme="red">No</Tag>&nbsp;or&nbsp;<Tag colorScheme="blue">Maybe</Tag>&nbsp;options
 from within the message.
     </Text>
