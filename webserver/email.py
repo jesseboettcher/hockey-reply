@@ -109,8 +109,6 @@ def send_game_coming_soon(db, game):
                 'confirmed_players': f'{confimed_yes}',
                 'goalie': goalie
             }
-            game.did_notify_coming_soon = True
-            db.commit_changes()
 
             send_email(email_data, user.email)
             write_log('INFO', f'Notify coming soon {game.game_id} to {user.email}')

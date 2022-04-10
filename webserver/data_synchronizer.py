@@ -52,6 +52,7 @@ class Synchronizer:
         for game in coming_soon:
             write_log('INFO', f'Notify coming soon {game.game_id} ({game.scheduled_at})')
             send_game_coming_soon(self.db, game)
+            game.did_notify_coming_soon = True
 
         # save updates to game was-notification-sent
         self.db.commit_changes()
