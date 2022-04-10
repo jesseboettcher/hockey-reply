@@ -2,6 +2,9 @@
 secrets.txt
 keys
 
+# NodeJS
+node_modules
+
 # Mac
 .DS_Store
 
