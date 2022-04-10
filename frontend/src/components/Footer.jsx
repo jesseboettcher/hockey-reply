@@ -23,7 +23,7 @@ export function IceHockeyGuy() {
       <Link href="mailto:jesse@hockeyreply.com?subject=Feedback%20on%20Hockey%20Reply">
         <Image bg='whiteAlpha.50'
                boxSize="40px"
-               src='ice_hockey_guy.png'
+               src='https://hockeyreply.com/ice_hockey_guy.png'
                borderRadius='6px'
                _hover={{
                   bg: hoverColor,
