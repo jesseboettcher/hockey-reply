@@ -1,5 +1,6 @@
 import datetime
 import os
+from zoneinfo import ZoneInfo
 
 import humanize
 from sendgrid import SendGridAPIClient
@@ -92,6 +93,7 @@ def send_game_coming_soon(db, game):
                 if reply.user_id == player.user_id:
                     user_reply = reply.response
 
+            pacific = ZoneInfo('US/Pacific')
             user = db.get_user_by_id(player.user_id)
             email_data = {
                 'name': user.first_name,
@@ -99,7 +101,7 @@ def send_game_coming_soon(db, game):
                 'game_id': game.game_id,
                 'user_team_id': team.team_id,
                 'team': team.name,
-                'scheduled_at': game.scheduled_at.strftime("%a, %b %d @ %I:%M %p"),
+                'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
                 'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
                 'rink': game.rink,
                 'vs': vs_team.name,

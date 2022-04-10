@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+from zoneinfo import ZoneInfo
 
 from flask import Blueprint, current_app, g, make_response, request
 import humanize
@@ -89,10 +90,11 @@ def get_games(team_id = None):
                 user_is_home = True
             print(f'{user_is_home} home id {game.home_team_id} away {game.away_team_id} user team {team.team_id}', flush=True)
 
+            pacific = ZoneInfo('US/Pacific')
             game_dict = {
                 'game_id' : game.game_id,
                 'scheduled_at_dt': game.scheduled_at,
-                'scheduled_at': game.scheduled_at.strftime("%a, %b %d @ %I:%M %p"),
+                'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
                 'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
                 'completed': game.completed,
                 'rink': game.rink,
@@ -148,9 +150,10 @@ def get_game(game_id, team_id):
 
     result = { 'games': [] }
 
+    pacific = ZoneInfo('US/Pacific')
     game_dict = {
         'game_id' : game.game_id,
-        'scheduled_at': game.scheduled_at.strftime("%a, %b %d @ %I:%M %p"),
+        'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
         'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
         'completed': game.completed,
         'rink': game.rink,
