@@ -4,7 +4,6 @@ data_synchronizer
 Top level class to pull data from the shark's ice web site, feed it into the html parsers, and use
 the parser output to update the database with the latest data.
 '''
-
 import os
 import requests
 

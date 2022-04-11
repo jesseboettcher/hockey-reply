@@ -37,5 +37,4 @@ def create_app(testing=False):
 	    if db is not None:
 	        db.close()
 
-
 	return app
