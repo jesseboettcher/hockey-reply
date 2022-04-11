@@ -2,6 +2,7 @@ import { ExternalLinkIcon } from '@chakra-ui/icons';
 import {
   Box,
   ChakraProvider,
+  Link,
   List,
   ListItem,
   ListIcon,
@@ -23,15 +24,16 @@ import { checkLogin, getAuthHeader, getData } from '../utils';
 function DocsText(props: React.PropsWithChildren<MyProps>) {
 
   const headerColor = useColorModeValue('#637CB1', '#637CB1');
+  const linkColor = useColorModeValue('blue.400', 'blue.300');
 
   return (
   <Box>
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>About Hockey Reply</Text>
     <Text>
-Hockey Reply is a site for managing the roster of upcoming games. It was built only to make life in
-the Sharks Ice at San Jose Adult League easier to manage. This site obviously shares similarities
-with its predecessors that we were bummed out to see shut down. The hope is that by making this web app
-open source (coming soon), the community can pick it up and keep it going whenever its builder moves on to a new hobby.
+Hockey Reply is a site for managing the roster of upcoming games. It was built to make life easier
+in the adult league at Sharks Ice San Jose. This site obviously shares similarities with its
+predecessors that we were bummed-out to see shut down. The hope is that by making this web app
+open source, the community can pick it up and keep it going whenever its builder moves on to a new hobby.
     </Text>
     <br/>
 
@@ -66,20 +68,27 @@ button to join your team.
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Notifications</Text>
     <Text>
+Notifications are sent over email for notable events:
+    </Text>
+<UnorderedList ml={10} my={2}>
+  <ListItem><b>Game Coming Soon</b> - 
 Upcoming game notifications are sent via email and you can easily add your reply by tapping one of the
 &nbsp;<Tag colorScheme="green">Yes</Tag>&nbsp;&nbsp;<Tag colorScheme="red">No</Tag>&nbsp;or&nbsp;<Tag colorScheme="blue">Maybe</Tag>&nbsp;options
 from within the message.
-    </Text>
-    <br/>
+  </ListItem>
+  <ListItem><b>Join Request</b> - When a new player requests to join a team, all captains on that team are sent a brief note.</ListItem>
+  <ListItem><b>Role Change</b> - When your role is changed, you will receive a message. This is the message new players receive when their request is accepted.</ListItem>
+  <ListItem><b>Removed from Team</b> - When (if?) you are removed from a team, you will receive a message.</ListItem>
+</UnorderedList>
     <Text>
-Other notifications are in the works and will follow (player-requested-to-join team, you-were-accepted-to-team,
+Other notifications are in the works and will follow (game-time-has-changed, new-games-added-to-schedule,
 the-goalie-switched-his-reply-to-no, etc).
     </Text>
     <br/>
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Contributing</Text>
     <Text>
-GitHub repo coming soon.
+Hockey Reply is free and open source. You can find <Link color={linkColor} href='https://github.com/jesseboettcher/hockey-reply'>the code on GitHub</Link>.
     </Text>
     <br/>
     <br/>

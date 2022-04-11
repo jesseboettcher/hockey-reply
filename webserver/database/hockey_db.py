@@ -1,7 +1,7 @@
 '''
 hockey_db
 
-Contains the Database class that's used for all queries in to the postgres DB.
+Contains the Database class that's used for all queries into the postgres DB.
 '''
 import datetime
 import os

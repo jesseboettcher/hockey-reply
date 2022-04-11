@@ -42,6 +42,9 @@ export function getData(url, setFn) {
     // Use localStorage to make site more responsive. Save fetch results in local storage.
     // When fetching in the future, this function will apply the currently cached results
     // before making the request, and then update the results when the request completes.
+    //
+    // sessionStorage is intentionally NOT used here (and for the auth token) because session
+    // data is frequently unavailable on mobile where pages are always opened in new tabs.
     const cachedData = getCacheData(url);
     if (cachedData) {
       setFn(cachedData);
