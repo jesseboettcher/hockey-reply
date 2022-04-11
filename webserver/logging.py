@@ -1,3 +1,12 @@
+'''
+logging
+
+Google Cloud Logging is used for service side logs. Google has instructions on how to bind their
+logging client to the standard python logging module. Those instructions did not work, so instead
+the site is using these simple logging functions.
+
+TODO: bind to std python logging (and be able to set log level on deployment without code changes)
+'''
 from flask import current_app
 from google.cloud import logging
 

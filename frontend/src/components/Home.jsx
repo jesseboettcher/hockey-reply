@@ -50,7 +50,6 @@ function Home() {
   let navigate = useNavigate();
   const fetchedData = useRef(false);
   const [myTeams, setMyTeams] = useState([]);
-  const [teams, setTeams] = useState([]);
   const [myGames, setMyGames] = useState([]);
   const [user, setUser] = useState({});
   const joinTeamRef = React.useRef();
@@ -74,7 +73,6 @@ function Home() {
       checkLogin(navigate).then(result => { setUser(result) });
 
       getData('/api/team/', setMyTeams)
-      getData('/api/team/?all=1', setTeams)
       getData('/api/games/?upcomingOnly', setMyGames)
 
       fetchedData.current = true;

@@ -1,3 +1,11 @@
+'''
+test_api
+
+Unit tests for basic team & game API validation. Note, the tests are not run in the order they are
+listed in the file, so they should not depend up on each other.
+
+To run: python -m unittest
+'''
 import datetime
 import json
 import unittest
@@ -74,7 +82,6 @@ class BasicTestCase(unittest.TestCase):
 
         if game == None:
             print(f'Adding test game')
-
 
             game = Game(game_id=self.GAME_TEST_ID,
                         scheduled_at=game_time,

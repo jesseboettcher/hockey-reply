@@ -1,3 +1,8 @@
+'''
+game
+
+All the webserver APIs for querying games and player replies.
+'''
 import datetime
 import os
 import sys

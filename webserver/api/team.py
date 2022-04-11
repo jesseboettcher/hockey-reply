@@ -1,3 +1,8 @@
+'''
+team
+
+All the webserver APIs for querying teams, their players, and making changes to team membership.
+'''
 from datetime import datetime
 import os
 import sys
@@ -15,7 +20,13 @@ APIs for managing team membership
 '''
 blueprint = Blueprint('team', __name__, url_prefix='/api')
 
+''' Errors that are parsed and handled by the frontend in the content of the 'result' field
+'''
+USER_NOT_ON_TEAM_ERROR = 'USER_NOT_ON_TEAM'
+
 def validate_role(role):
+    ''' Make sure that only known role strings make it into the database
+    '''
     if role != 'captain' and role != 'full' and role != 'half' and role != 'sub':
         return False
 
@@ -31,7 +42,9 @@ def find_player(team, user_id):
 @blueprint.route('/team/', methods=['GET'])
 @blueprint.route('/team/<team_id>', methods=['GET'])
 def get_teams(team_id=None):
-
+    ''' Returns an array of teams with [team_id, name, player_count]. If no team_id is specific
+        will return only the logged in users teams.
+    '''
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
@@ -78,7 +91,12 @@ def get_teams(team_id=None):
 
 @blueprint.route('/team-players/<team_name_or_id>', methods=['GET'])
 def get_team_players(team_name_or_id=None):
-
+    ''' Returns a list of players who are part of the provided team. Used for the roster page.
+        Results:
+            [] players
+            {} user details for currently logged in user
+               name of the team
+    '''
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
@@ -102,7 +120,7 @@ def get_team_players(team_name_or_id=None):
     team_player = db.get_team_player(team_id, get_current_user().user_id)
     if not team_player:
         result = {}
-        result['result'] = 'USER_NOT_ON_TEAM'
+        result['result'] = USER_NOT_ON_TEAM_ERROR
         result['team_id'] = team_id
         result['team_name'] = team.name
         return result, 200
@@ -137,75 +155,12 @@ def get_team_players(team_name_or_id=None):
     return make_response(result)
 
 
-@blueprint.route('/join-requests/', methods=['GET'])
-@blueprint.route('/join-requests/<team_id>', methods=['GET'])
-def get_join_requests(team_id=None):
-
-    if not check_login():
-        return { 'result' : 'needs login' }, 400
-
-    team_id = int(team_id)
-
-    db = get_db()
-
-    result = { 'join_requests': [] }
-
-    if get_current_user().admin and team_id is None:
-        for player in db.get_team_players():
-            if not player.pending_status:
-                continue
-
-            requesting_player = db.get_user_by_id(player.user_id)
-            player_name = requesting_player.first_name
-            if requesting_player.last_name:
-                player_name += f' {requesting_player.last_name}'
-
-            team = db.get_team_by_id(player.team_id)
-
-            request_dict = {
-                'team' : team.name,
-                'team_id': team.team_id,
-                'user_id': player.user_id,
-                'name': player_name,
-                'name': f'{requesting_player.first_name} {requesting_player.last_name}',
-                'email': requesting_player.email,
-                'requested_at': player.joined_at,
-                'player_count': len(team.players)
-            }
-            result['join_requests'].append(request_dict)
-    else:
-        team = db.get_team_by_id(team_id)
-
-        if not team:
-            write_log('ERROR', f'api/join-team: team {team_id} not found')
-            return {'result': 'error'}, 400
-
-        for player in team.players:
-            if not player.pending_status:
-                continue
-
-            requesting_player = db.get_user_by_id(player.user_id)
-            player_name = requesting_player.first_name
-            if requesting_player.last_name:
-                player_name += f' {requesting_player.last_name}'
-
-            request_dict = {
-                'team' : team.name,
-                'team_id': team.team_id,
-                'user_id': player.user_id,
-                'name': player_name,
-                'email': requesting_player.email,
-                'requested_at': player.joined_at,
-                'player_count': len(team.players)
-            }
-            result['join_requests'].append(request_dict)
-
-    return make_response(result)
-
-
 @blueprint.route('/join-team', methods=['POST'])
 def join_team():
-
+    ''' API for users to request to join a team. The first user to join a team automatically
+        becomes the captain. Subsequent users will not get a role until the existing captain(s)
+        assign one (or remove them).
+    '''
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
@@ -260,8 +215,10 @@ def join_team():
 
 
 @blueprint.route('/player-role', methods=['POST'])
-def accept_join():
-
+def update_player_role():
+    ''' Update the role of a player on the team. Only players with the role captain are able
+        to make this change.
+    '''
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
@@ -312,7 +269,9 @@ def accept_join():
 
 @blueprint.route('/remove-player', methods=['POST'])
 def remove_player():
-
+    ''' API to remove a player from a team. Only captains may remove other players from the team.
+        Users may remove themselves though (which is used for cancel-join-team UI).
+    '''
     if not check_login():
         return { 'result' : 'needs login' }, 400
 

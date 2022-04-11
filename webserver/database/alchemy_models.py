@@ -1,3 +1,10 @@
+'''
+alchemy_models
+
+Model classes to set up the SQLAlchemy bindings to the database. Instances of these classes are
+returned by all hockey_db.Database queries and changes to these objects are propagated back
+to the actual DB.
+'''
 import secrets
 from sqlalchemy import Column, Integer, String, ForeignKey, Table, DateTime, Boolean
 from sqlalchemy.orm import relationship, backref

@@ -1,3 +1,9 @@
+'''
+email
+
+Contains all of the methods for outgoing communication from the service. Currently just email.
+Maybe include SMS in the future.
+'''
 import datetime
 import os
 from zoneinfo import ZoneInfo
@@ -8,42 +14,15 @@ from sendgrid.helpers.mail import Mail
 from webserver.logging import write_log
 
 FROM_ADDRESS = 'jesse@hockeyreply.com'
+TEMPLATE_FORGOT_PASSWORD = 'd-16832cb2df954c6cba5cfc41db35a4e1'
 TEMPLATE_GAME_COMING_SOON = 'd-b94dc2cebcec407caf3c8e03789d4c34'
 TEMPLATE_JOIN_REQUEST = 'd-f3ad573de30f425aac2657377e7f06af'
 TEMPLATE_ROLE_UPDATED = 'd-683a41dc2a694123815a1fe3ea8a7881'
 TEMPLATE_REMOVED_FROM_TEAM = 'd-0e95577f623d4b5ca53307296856c0f9'
 
-def send_welcome():
-    message = Mail(
-        from_email='hockey.reply@ourano.com',
-        to_emails='jesse.boettcher@gmail.com',
-        subject='Welcome to Hockey Reply',
-        html_content='<strong>and easy to do anywhere, even with Python</strong>')
-        # TODO note about settings, link to join a team
-    try:
-        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-        response = sg.send(message)
-    except Exception as e:
-        print(e)
-
-def send_forgot_password(email, token):
-
-    message = Mail(
-        from_email=FROM_ADDRESS,
-        to_emails=email)
-
-    message.dynamic_template_data = {
-                "token" : token
-            }
-    message.template_id = "d-16832cb2df954c6cba5cfc41db35a4e1" # Forgot password
-
-    try:
-        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-        response = sg.send(message)
-    except Exception as e:
-        print(e)
-
 def send_email(template, data, to_emails):
+    ''' Sends out email to sendgrid. All emails funnel through this function
+    '''
     message = Mail(
         from_email=FROM_ADDRESS,
         to_emails=to_emails)
@@ -57,6 +36,17 @@ def send_email(template, data, to_emails):
     except Exception as e:
         print(e)
 
+def send_welcome():
+    ''' TODO send an abbreviated version of the docs?
+    '''
+    pass
+
+def send_forgot_password(email, token):
+    email_data = {
+        'token': token
+    }
+    send_email(TEMPLATE_FORGOT_PASSWORD, email_data, email)
+
 def send_game_schedule_change():
     pass
 
@@ -64,7 +54,8 @@ def send_new_games():
     pass
 
 def send_removed_from_team(team, removed_user, updated_by_user):
-
+    ''' condolences, you have been kicked off of the team
+    '''
     email_data = {
         'name': removed_user.first_name,
         'team': team.name,
@@ -75,7 +66,10 @@ def send_removed_from_team(team, removed_user, updated_by_user):
     write_log('INFO', f'Notify role change to {removed_user.email}')
 
 def send_team_role_change(team, updated_player, updated_by_user):
-
+    ''' Send email to a player whose role has changed (like sub -> full). This includes
+        players who requested to join teams who will receive this email when their request
+        is accepted.
+    '''
     email_data = {
         'name': updated_player.player.first_name,
         'team': team.name,
@@ -87,7 +81,8 @@ def send_team_role_change(team, updated_player, updated_by_user):
     write_log('INFO', f'Notify role change to {updated_player.player.email}')
 
 def send_player_join_request(requesting_player, team):
-
+    ''' Notifies all of the captains on a team whenever a new player requests to join their team
+    '''
     email_data = {
         'name': requesting_player.player.first_name,
         'team': team.name,
@@ -99,7 +94,6 @@ def send_player_join_request(requesting_player, team):
 
         if player.role == 'captain':
             to_emails.append(player.player.email)
-            # to_emails += f'{player.player.email},'
 
     send_email(TEMPLATE_JOIN_REQUEST, email_data, to_emails)
     write_log('INFO', f'Notify join request {requesting_player.player.email} to {to_emails}')
