@@ -1,3 +1,7 @@
+// SignOut
+//
+// Clears the current login token and redirects to the sign-in page
+
 import {
   Box,
   useColorModeValue,
@@ -18,4 +22,4 @@ export default function SignOut() {
     <Box bg={useColorModeValue('gray.50', 'gray.800')}>
     </Box>
   );
-  }
+}

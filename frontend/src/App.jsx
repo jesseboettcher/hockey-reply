@@ -1,7 +1,7 @@
-import React from 'react';
 import {
   ChakraProvider,
 } from '@chakra-ui/react';
+import React from 'react';
 import {
   BrowserRouter as Router,
   Route,
@@ -10,7 +10,6 @@ import {
 
 import Docs from './components/Docs'
 import Game from './components/Game'
-import Games from './components/Games'
 import Home from './components/Home';
 import ForgotPassword from './components/auth/ForgotPassword'
 import ResetPassword from './components/auth/ResetPassword'
@@ -35,7 +34,6 @@ function App() {
           <Route path='/docs' element={<Docs />} />
           <Route path='/home' element={<Home />} />
           <Route path='/game/:game_id/for-team/:team_id' element={<Game />} />
-          <Route path='/games' element={<Games />} />
           <Route path='/forgot-password' element={<ForgotPassword />} />
           <Route path='/reset-password' element={<ResetPassword />} />
           <Route path='/reply/:game_id/:team_id/:user_id/:response' element={<Reply />} />

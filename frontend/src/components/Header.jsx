@@ -1,49 +1,56 @@
-import React from 'react';
-import {
-  Badge,
-  Center,
-  ChakraProvider,
-  Box,
-  Divider,
-  Flex,
-  Text,
-  Link,
-  HStack,
-  VStack,
-  Code,
-  Grid,
-  Spacer,
-  Square,
-  Table,
-  Tbody,
-  Td,
-  Thead,
-  Th,
-  Tr,
-  theme,
-  useColorModeValue,
-} from '@chakra-ui/react';
-import { FaMoon, FaSun } from 'react-icons/fa';
-import { logout } from '../utils';
-import {
-  IconButton,
-  Button,
-  Stack,
-  Collapse,
-  Icon,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  useBreakpointValue,
-  useDisclosure,
-} from '@chakra-ui/react';
 import {
   HamburgerIcon,
   CloseIcon,
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@chakra-ui/icons';
-import { hasAuthToken } from '../utils';
+import {
+  Badge,
+  Box,
+  Button,
+  Center,
+  ChakraProvider,
+  Collapse,
+  Flex,
+  Icon,
+  IconButton,
+  Link,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Stack,
+  Text,
+  theme,
+  useColorModeValue,
+  useDisclosure,
+} from '@chakra-ui/react';
+import React from 'react';
+import { FaMoon, FaSun } from 'react-icons/fa';
+
+import { hasAuthToken, logout } from '../utils';
+
+// Navigation items
+interface NavItem {
+  label: string;
+  subLabel?: string;
+  children?: Array<NavItem>;
+  href?: string;
+}
+
+const NAV_ITEMS: Array<NavItem> = [
+  {
+    label: 'Home',
+    href: '/home',
+  },
+  {
+    label: 'Schedule',
+    href: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=1',
+  },
+  {
+    label: 'Docs',
+    href: '/docs',
+  },
+];
 
 export function Logo() {
   const titleGradient = useColorModeValue('linear(to-b, #A6C7FF, #90B3FF, #5D74A5, #5D74A5)', 'linear(to-b, #5D729F, #3B4968, #1A202C)')
@@ -64,7 +71,6 @@ export function Logo() {
       </Center>
     )
 }
-
 
 export const Header = props => {
   const { isOpen, onToggle } = useDisclosure();
@@ -289,25 +295,3 @@ const MobileNavItem = ({ label, children, href }: NavItem) => {
     </Stack>
   );
 };
-
-interface NavItem {
-  label: string;
-  subLabel?: string;
-  children?: Array<NavItem>;
-  href?: string;
-}
-
-const NAV_ITEMS: Array<NavItem> = [
-  {
-    label: 'Home',
-    href: '/home',
-  },
-  {
-    label: 'Schedule',
-    href: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=1',
-  },
-  {
-    label: 'Docs',
-    href: '/docs',
-  },
-];

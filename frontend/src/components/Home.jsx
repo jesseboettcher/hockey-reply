@@ -1,63 +1,57 @@
-import React, {useEffect, useRef, useState} from 'react';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 import {
+  Box,
+  Button,
   Center,
   ChakraProvider,
-  Box,
-  Divider,
-  Flex,
+  FormControl,
   IconButton,
-  Text,
+  Input,
   Link,
-  HStack,
-  VStack,
   Modal,
-  useDisclosure,
-  finalRef,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalCloseButton,
   ModalBody,
-  FormControl,
-  FormLabel,
-  Input,
   ModalFooter,
-  Button,
-  Code,
-  Grid,
-  Spacer,
-  Square,
   Table,
   Tbody,
   Td,
+  Text,
   Thead,
   Tooltip,
   Th,
   Tr,
   theme,
   useColorModeValue,
+  useDisclosure,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon } from '@chakra-ui/icons';
+import React, {useEffect, useRef, useState} from 'react';
+import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
+
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData, logout, MyLink } from '../utils';
-import TagManager from 'react-gtm-module'
 
 function Home() {
 
   let navigate = useNavigate();
+
+  // Modal dialog control (join team)
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  const joinTeamRef = React.useRef();
+
+  const tipBackground = useColorModeValue('#EDF2F7', 'whiteAlpha.200');
+  const tipTextColor = useColorModeValue('gray.500', 'gray.200');
+
+  // Fetch data
   const fetchedData = useRef(false);
   const [myTeams, setMyTeams] = useState([]);
   const [myGames, setMyGames] = useState([]);
   const [user, setUser] = useState({});
-  const joinTeamRef = React.useRef();
-
-  const { isOpen, onOpen, onClose } = useDisclosure()
-
-  const tipBackground = useColorModeValue('#EDF2F7', 'whiteAlpha.200');
-  const tipTextColor = useColorModeValue('gray.500', 'gray.200');
 
   useEffect(() => {
 
