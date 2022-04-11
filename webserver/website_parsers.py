@@ -1,8 +1,8 @@
 '''
-parser
+website_parsers
 
 Classes to handle parsing of html data and aggregate it into python data structures that are used
-to synchronize with the database.
+to synchronize with the database. Specifically for Sharks Ice at San Jose Adult League.
 '''
 
 import datetime
@@ -10,6 +10,7 @@ import traceback
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
+from webserver.logging import write_log
 
 class TeamPageParser:
 
@@ -158,7 +159,7 @@ class GameParser(BaseParser):
         # Wed Jan 19
         # 9:45 PM
         SEASON_NUM = 52
-        year = self.calculate_year(game_dict['Date'], SEASON_NUM) # TODO season_num to year
+        year = self.calculate_year(game_dict['Date'], SEASON_NUM)
         dt = datetime.datetime.strptime(f'{year} {game_dict["Date"]} {game_dict["Time"]}',
                                                   f'%Y %a %b %d %I:%M %p')
         pacific = ZoneInfo('US/Pacific')
@@ -190,15 +191,18 @@ class GameParser(BaseParser):
         return int(id_str)
 
     def calculate_year(self, date_str, season_num):
-        # dt = datetime.strptime(f'{date_str}', f'%a %b %d')
+        ''' The Sharks Ice site does not include years on their datetime indicators for games,
+            so the year needs to be inferred.
+
+            TODO: This current logic is rickety and needs to be updated
+        '''
         year = 0
 
         if season_num >= 52:
             # 3 seasons a year: winter/spring, summer, fall/winter
             year = 2022 + int((season_num - 52) / 3)
         else:
-            # TODO log errors
-            print("Unhandled year")
+            write_log('ERROR', f'Unhandled year')
         return year
 
     def __repr__(self):

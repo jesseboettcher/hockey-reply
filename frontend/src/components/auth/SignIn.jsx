@@ -1,24 +1,23 @@
 import {
-  Flex,
   Box,
+  Button,
+  Flex,
   FormControl,
   FormLabel,
   Input,
-  Checkbox,
-  Stack,
   Link,
-  Button,
-  Heading,
+  Stack,
   Text,
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
+import queryString from 'query-string'
 import React, { useEffect, useState, useRef } from 'react';
+import TagManager from 'react-gtm-module'
+import { useNavigate, useSearchParams } from "react-router-dom";
+
 import { Header } from '../Header';
 import { Footer } from '../Footer';
-import { useNavigate, useSearchParams } from "react-router-dom";
-import TagManager from 'react-gtm-module'
-import queryString from 'query-string'
 
 export default function SignIn() {
 
@@ -138,4 +137,4 @@ export default function SignIn() {
     <Footer/>
     </Box>
   );
-  }
+}

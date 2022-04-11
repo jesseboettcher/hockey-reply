@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import { ArrowForwardIcon, EditIcon } from '@chakra-ui/icons'
 import {
   Center,
   Checkbox,
@@ -7,8 +7,6 @@ import {
   Badge,
   Box,
   Button,
-  GridItem,
-  Flex,
   IconButton,
   Input,
   InputGroup,
@@ -18,42 +16,31 @@ import {
   List,
   ListIcon,
   ListItem,
-  VStack,
-  Code,
-  Grid,
   Popover,
   PopoverArrow,
   PopoverCloseButton,
   PopoverContent,
   PopoverTrigger,
-  theme,
   Select,
   SimpleGrid,
-  Stack,
-  StackDivider,
-  Spacer,
-  Wrap,
-  WrapItem,
-  useColorModeValue,
-  useToast,
-} from '@chakra-ui/react';
-import {
   Table,
   Thead,
+  theme,
   Tbody,
-  Tfoot,
   Tr,
   Th,
   Td,
-  TableCaption,
-} from "@chakra-ui/react"
-import { ArrowForwardIcon, EditIcon } from '@chakra-ui/icons'
+  useColorModeValue,
+  useToast,
+} from '@chakra-ui/react';
+import React, {useEffect, useRef, useState} from 'react';
+import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
+import _ from "lodash";
+
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
-import TagManager from 'react-gtm-module'
-import _ from "lodash";
 
 function InfoBox(props: React.PropsWithChildren<MyProps>) {
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
@@ -70,7 +57,6 @@ function InfoBox(props: React.PropsWithChildren<MyProps>) {
          mx="20px">
          {props.children}
     </Box>
-
     )
 }
 
@@ -78,6 +64,13 @@ function Game() {
 
   let { game_id, team_id } = useParams();
   let navigate = useNavigate();
+
+  // Popover control
+  const [openPopover, setOpenPopover] = React.useState(0)
+  const open = (user) => setOpenPopover(user);
+  const close = () => setOpenPopover(0);
+
+  // Fetch data
   const [game, setGame] = useState([]);
   const [user, setUser] = useState(0);
   const [replies, setReplies] = useState([]);
@@ -90,11 +83,27 @@ function Game() {
   const [userIsOnTeam, setUserIsOnTeam] = useState(true);
   const [isUserMembershipPending, setIsUserMembershipPending] = useState(false);
 
-  // Popover control
-  const [openPopover, setOpenPopover] = React.useState(0)
-  const open = (user) => setOpenPopover(user);
-  const close = () => setOpenPopover(0);
+  useEffect(() => {
+    if (!fetchedData.current) {
+      TagManager.dataLayer({
+        dataLayer: {
+          event: 'pageview',
+          pagePath: window.location.pathname,
+          pageTitle: 'Game',
+        },
+      });
 
+      checkLogin(navigate);
+
+      if (window.localStorage.getItem('is_goalie') != null) {
+        setUserIsGoalie(window.localStorage.getItem('is_goalie') === true.toString());
+      }
+
+      getData(`/api/game/${game_id}/for-team/${team_id}`, receiveGameData);
+      getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
+      fetchedData.current = true;
+    }
+  });
 
   function receiveReplyData(body) {
     let serverReplies = body;
@@ -144,28 +153,6 @@ function Game() {
     setUserIsOnTeam(body['games'][0]['is_user_on_team'])
     setIsUserMembershipPending(body['games'][0]['is_user_membership_pending'])
   }
-
-  useEffect(() => {
-    if (!fetchedData.current) {
-      TagManager.dataLayer({
-        dataLayer: {
-          event: 'pageview',
-          pagePath: window.location.pathname,
-          pageTitle: 'Game',
-        },
-      });
-
-      checkLogin(navigate);
-
-      if (window.localStorage.getItem('is_goalie') != null) {
-        setUserIsGoalie(window.localStorage.getItem('is_goalie') === true.toString());
-      }
-
-      getData(`/api/game/${game_id}/for-team/${team_id}`, receiveGameData);
-      getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
-      fetchedData.current = true;
-    }
-  });
 
   function submitReply(event, user_id, response, new_msg, is_goalie) {
 
@@ -218,6 +205,7 @@ function Game() {
     }
   }
 
+  // Precompute some content to include in the rendering
   const isUserCaptain = user['role'] == 'captain';
 
   let replyBadge = {};

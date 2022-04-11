@@ -1,5 +1,4 @@
 import {
-  Badge,
   Box,
   Center,
   Divider,
@@ -7,10 +6,10 @@ import {
   Image,
   Link,
   Stack,
-  Text,
   Tooltip,
   useColorModeValue
 } from '@chakra-ui/react';
+
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 
 export function IceHockeyGuy() {

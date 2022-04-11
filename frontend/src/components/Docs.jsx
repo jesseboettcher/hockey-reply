@@ -1,25 +1,24 @@
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 import {
   Box,
-  Center,
   ChakraProvider,
   List,
   ListItem,
   ListIcon,
-  OrderedList,
   Tag,
   Text,
   theme,
   UnorderedList,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon } from '@chakra-ui/icons';
-import { Header } from '../components/Header';
-import { Footer } from '../components/Footer';
 import React, {useEffect, useRef, useState} from 'react';
 import { useNavigate, useParams } from "react-router-dom";
-import { checkLogin, getAuthHeader, getData } from '../utils';
 import TagManager from 'react-gtm-module'
 import _ from "lodash";
+
+import { Header } from '../components/Header';
+import { Footer } from '../components/Footer';
+import { checkLogin, getAuthHeader, getData } from '../utils';
 
 function DocsText(props: React.PropsWithChildren<MyProps>) {
 

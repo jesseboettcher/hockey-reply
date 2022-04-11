@@ -5,7 +5,6 @@ import {
   Flex,
   FormControl,
   FormLabel,
-  Heading,
   HStack,
   Input,
   InputGroup,
@@ -17,10 +16,11 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useEffect, useState, useRef } from 'react';
+import TagManager from 'react-gtm-module'
+import { useNavigate } from "react-router-dom";
+
 import { Header } from '../Header';
 import { Footer } from '../Footer';
-import { useNavigate } from "react-router-dom";
-import TagManager from 'react-gtm-module'
 
 function checkEmail (email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)

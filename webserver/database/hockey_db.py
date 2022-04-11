@@ -1,3 +1,8 @@
+'''
+hockey_db
+
+Contains the Database class that's used for all queries in to the postgres DB.
+'''
 import datetime
 import os
 
@@ -10,6 +15,9 @@ from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamP
 global_db_instance = None
 
 def setup_test_db():
+    ''' There is no current flask request when run in unit test environments.
+        This function will set up a global DB instance for use in those cases.
+    '''
     global global_db_instance
 
     if global_db_instance is None:
@@ -18,12 +26,18 @@ def setup_test_db():
     return global_db_instance
 
 def get_current_user():
+    ''' There is no current flask request when run in unit test environments.
+        All g.user accesses go through here, so the APIs can also run in test environments
+    '''
     if current_app.config['TESTING']:
         return current_app.config['TESTING_USER']
 
     return g.user
 
 def get_db():
+    ''' Accessor for the current database instance. The db instance is stored with the flask
+        session storage. When unit tests are running this will return the global test db instance
+    '''
     if global_db_instance:
         return global_db_instance
 
@@ -158,6 +172,9 @@ class Database:
         return self.session.query(GameReply).filter(and_(GameReply.game_id == game_id, GameReply.team_id == team_id, GameReply.user_id == user_id)).one_or_none()
 
     def set_game_reply(self, game_id, team_id, user_id, reply, message, is_goalie):
+        ''' Game replies, messages, and the goalie flag are stored in the same record. The users
+            may not update each of them at the same time, so this must handle updates.
+        '''
         db_reply = self.session.query(GameReply).filter(and_(GameReply.game_id == game_id, GameReply.user_id == user_id)).one_or_none()
 
         if db_reply is None:

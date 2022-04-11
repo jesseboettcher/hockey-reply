@@ -1,3 +1,8 @@
+'''
+auth
+
+All webserver APIs for managing authentication, accounts, and credentials.
+'''
 import datetime
 import os
 import secrets
@@ -32,31 +37,19 @@ def decode_token():
 
 
 def create_token(external_id):
+    ''' Generates the JWT token that is stored in the frontend's localStorage and used by users
+        to access webserver APIs
+    '''
     token = jwt.encode({ 'external_id': external_id, 'date': datetime.datetime.now().isoformat() },
                        os.environ.get("SECRET_KEY", "placeholder_key"),
                        algorithm='HS256')
     return token
 
-def require_login(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if 'id' not in g.token:
-            print('No authorization provided', flush=True)
-            abort(401)
-
-        g.user = get_db().get_user_by_external_id(g.token['external_id'])
-
-        if not g.user:
-            response = make_response('', 401)
-            response.set_cookie('user', '')
-            return response
-
-        return func(*args, **kwargs)
-
-    return wrapper
-
 
 def check_login():
+    ''' Function for all API methods to call at the top to ensure that the user is properly signed
+        in before returning data. TODO turn into a function decorator to attach to routes.
+    '''
     if current_app.config['TESTING']:
         return True;
 
@@ -75,8 +68,9 @@ def check_login():
 
 
 @blueprint.route('/hello')
-def hello_world():
-
+def check_login_route():
+    ''' Route used by the front end to check whether the login token is valid
+    '''
     if not check_login():
         return { 'result' : 'needs login' }, 400
 
@@ -89,6 +83,8 @@ def hello_world():
 
 @blueprint.route('/new-user', methods=['POST'])
 def new_user():
+    ''' Route used by the sign-up page to create a new account
+    '''
     db = get_db()
 
     print(request.json, flush=True)
@@ -132,6 +128,8 @@ def new_user():
 
 @blueprint.route('/sign-in', methods=['POST'])
 def sign_in():
+    ''' Route used by the sign-in page log in and receive a token
+    '''
     db = get_db()
 
     # check for required fields

@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ExternalLinkIcon, ChatIcon } from '@chakra-ui/icons'
 import {
   AlertDialog,
   AlertDialogOverlay,
@@ -6,68 +6,48 @@ import {
   AlertDialogHeader,
   AlertDialogBody,
   AlertDialogFooter,
-  ChakraProvider,
-  Center,
-  Divider,
   Box,
   Button,
+  Center,
+  ChakraProvider,
+  HStack,
   Icon,
   IconButton,
-  HStack,
-  Text,
   Link,
-  List,
-  ListIcon,
-  ListItem,
   Popover,
   PopoverArrow,
   PopoverCloseButton,
   PopoverContent,
   PopoverTrigger,
-  VStack,
-  Code,
-  Grid,
-  theme,
   Select,
   Stack,
+  Table,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Thead,
+  Text,
+  theme,
   Tooltip,
   useColorModeValue,
   useDisclosure,
   useToast
 } from '@chakra-ui/react';
-import {
-  Table,
-  Thead,
-  Tbody,
-  Tfoot,
-  Tr,
-  Th,
-  Td,
-  TableCaption,
-} from "@chakra-ui/react"
-import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ExternalLinkIcon, ChatIcon } from '@chakra-ui/icons'
+import _ from "lodash";
+import React, {useEffect, useRef, useState} from 'react';
+import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
+
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
-import TagManager from 'react-gtm-module'
-import _ from "lodash";
 
 function Team() {
 
   let { team_name_or_id } = useParams();
   let navigate = useNavigate();
-  const [userIsOnTeam, setUserIsOnTeam] = useState(false);
-  const [teamId, setTeamId] = useState(0);
-  const [teamName, setTeamName] = useState(null);
-  const [players, setPlayers] = useState([]);
-  const [user, setUser] = useState(0);
-  const fetchedData = useRef(false);
-  const responseReceived = useRef(false);
   const toast = useToast();
-
-  const isUserCaptain = user['role'] == 'captain';
-  const isUserMembershipPending = user['role'] == '';
 
   // Remove Player alert
   const [playerPendingRemoval, setPlayerPendingRemoval] = React.useState({})
@@ -78,8 +58,78 @@ function Team() {
   const tipBackground = useColorModeValue('#EDF2F7', 'whiteAlpha.200');
   const tipTextColor = useColorModeValue('gray.500', 'gray.200');
 
+  // Popover control (player contact info)
   const { isOpen, onOpen, onClose } = useDisclosure()
   const cancelRef = React.useRef()
+  const [openPopover, setOpenPopover] = React.useState(0)
+  const open = (user) => setOpenPopover(user);
+  const close = () => setOpenPopover(0);
+
+  // Fetched data
+  const [userIsOnTeam, setUserIsOnTeam] = useState(false);
+  const [teamId, setTeamId] = useState(0);
+  const [teamName, setTeamName] = useState(null);
+  const [players, setPlayers] = useState([]);
+  const [user, setUser] = useState(0);
+  const isUserCaptain = user['role'] == 'captain';
+  const isUserMembershipPending = user['role'] == '';
+
+  const fetchedData = useRef(false);
+  const responseReceived = useRef(false);
+
+  useEffect(() => {
+
+    if (!fetchedData.current) {
+      checkLogin(navigate).then( data => {
+        setUser({ user_id: data['user_id' ]})
+      });
+
+      TagManager.dataLayer({
+        dataLayer: {
+          event: 'pageview',
+          pagePath: window.location.pathname,
+          pageTitle: 'Game',
+        },
+      });
+
+      getData(`/api/team-players/${team_name_or_id}`, receivePlayerData);
+      fetchedData.current = true;
+    }
+  });
+
+  function receivePlayerData(body) {
+
+    let serverReplies = body;
+    responseReceived.current = true;
+
+    if (serverReplies['result'] && serverReplies['result'] == 'USER_NOT_ON_TEAM') {
+      setUserIsOnTeam(false);
+      setTeamName(body['team_name']);
+      setTeamId(body['team_id']);
+      return;
+    }
+
+    if (!_.has(body, 'players')) {
+      return;
+    }
+
+    // Sort not replied (put logged in user on top)
+    serverReplies['players'] = serverReplies['players'].sort(function(a, b) {
+      if (a['user_id'] == serverReplies['user']['user_id']) {
+        return -1;
+      }
+      if (b['user_id'] == serverReplies['user']['user_id']) {
+        return 1;
+      }
+      return a['name'].localeCompare(b['name']);
+    });
+
+    setUserIsOnTeam(true);
+    setPlayers(body['players'])
+    setUser(body['user'])
+    setTeamId(body['team_id']);
+    setTeamName(body['team_name'])
+  }
 
   function cancelRemovePlayer() {
 
@@ -115,11 +165,14 @@ function Team() {
       }
       setPlayers(player_list);
 
+      // Save this player while we present a confirmation dialog which will complete (or clear)
+      // the operation
       setPlayerPendingRemoval(player);
       onOpen();
       return;
     }
 
+    // Otherwise, apply the player role change
     let data = {
       team_id: teamId,
       user_id: player['user_id'],
@@ -150,6 +203,7 @@ function Team() {
 
   function removePlayer(user_id) {
 
+    // Called by the confirm action in the confirmation dialog, perform the actual removal
     let data = {
       team_id: teamId,
       user_id: user_id
@@ -196,65 +250,6 @@ function Team() {
     });
     onClose();
   };
-
-
-  function receivePlayerData(body) {
-
-    let serverReplies = body;
-    responseReceived.current = true;
-
-    if (serverReplies['result'] && serverReplies['result'] == 'USER_NOT_ON_TEAM') {
-      setUserIsOnTeam(false);
-      setTeamName(body['team_name']);
-      setTeamId(body['team_id']);
-      return;
-    }
-
-    if (!_.has(body, 'players')) {
-      return;
-    }
-
-    // Sort not replied (put logged in user on top)
-    serverReplies['players'] = serverReplies['players'].sort(function(a, b) {
-      if (a['user_id'] == serverReplies['user']['user_id']) {
-        return -1;
-      }
-      if (b['user_id'] == serverReplies['user']['user_id']) {
-        return 1;
-      }
-      return a['name'].localeCompare(b['name']);
-    });
-
-    setUserIsOnTeam(true);
-    setPlayers(body['players'])
-    setUser(body['user'])
-    setTeamId(body['team_id']);
-    setTeamName(body['team_name'])
-  }
-
-  useEffect(() => {
-
-    if (!fetchedData.current) {
-      checkLogin(navigate).then( data => {
-        setUser({ user_id: data['user_id' ]})
-      });
-
-      TagManager.dataLayer({
-        dataLayer: {
-          event: 'pageview',
-          pagePath: window.location.pathname,
-          pageTitle: 'Game',
-        },
-      });
-      getData(`/api/team-players/${team_name_or_id}`, receivePlayerData);
-      fetchedData.current = true;
-    }
-  });
-
-  // Info Popover control
-  const [openPopover, setOpenPopover] = React.useState(0)
-  const open = (user) => setOpenPopover(user);
-  const close = () => setOpenPopover(0);
 
   return (
     <ChakraProvider theme={theme}>
@@ -389,6 +384,5 @@ function Team() {
 //     408-867-5309
 //   </Box>
 // </a>
-
 
 export default Team;
