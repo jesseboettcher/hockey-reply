@@ -16,6 +16,7 @@ from webserver.logging import write_log
 FROM_ADDRESS = 'jesse@hockeyreply.com'
 TEMPLATE_FORGOT_PASSWORD = 'd-16832cb2df954c6cba5cfc41db35a4e1'
 TEMPLATE_GAME_COMING_SOON = 'd-b94dc2cebcec407caf3c8e03789d4c34'
+TEMPLATE_GAME_TIME_CHANGED = 'd-a252a5f879964f9c88725f31475915a4'
 TEMPLATE_JOIN_REQUEST = 'd-f3ad573de30f425aac2657377e7f06af'
 TEMPLATE_ROLE_UPDATED = 'd-683a41dc2a694123815a1fe3ea8a7881'
 TEMPLATE_REMOVED_FROM_TEAM = 'd-0e95577f623d4b5ca53307296856c0f9'
@@ -148,3 +149,34 @@ def send_game_coming_soon(db, game):
 
             send_email(TEMPLATE_GAME_COMING_SOON, email_data, user.email)
             write_log('INFO', f'Notify coming soon {game.game_id} to {user.email}')
+
+def send_game_time_changed(db, game, old_scheduled_at):
+    '''
+    send_game_time_changed is called from the synchronizer worker thread, so use its db instance
+    rather than the global requests one
+    '''
+    for team_id in [game.home_team_id, game.away_team_id]:
+
+        team = db.get_team_by_id(team_id)
+        vs_team = db.get_team_by_id(game.home_team_id if team_id == game.away_team_id else game.away_team_id)
+
+        for player in team.players:
+
+            if player.role == '':
+                continue
+
+            pacific = ZoneInfo('US/Pacific')
+            user = db.get_user_by_id(player.user_id)
+            email_data = {
+                'name': user.first_name,
+                'user_id': user.user_id,
+                'game_id': game.game_id,
+                'user_team_id': team.team_id,
+                'team': team.name,
+                'vs': vs_team.name,
+                'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
+                'old_scheduled_at': old_scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
+            }
+
+            send_email(TEMPLATE_GAME_TIME_CHANGED, email_data, user.email)
+            write_log('INFO', f'Notify game time changed to {game.scheduled_at} from {old_scheduled_at} for {game.game_id}')

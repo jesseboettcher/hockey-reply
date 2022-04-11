@@ -135,7 +135,11 @@ class Database:
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()
 
         if game is not None:
-            # todo update if differences
+
+            if game.scheduled_at != game_parser.datetime:
+                write_log('INFO', f'Game schedule change to {game_parser.datetime} from {game.scheduled_at} for {game.game_id}')
+                game.scheduled_at = game_parser.datetime
+                self.session.commit()
             return
 
         home_team = self.get_team(game_parser.home_team)
