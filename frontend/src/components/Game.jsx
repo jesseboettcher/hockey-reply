@@ -23,6 +23,7 @@ import {
   PopoverTrigger,
   Select,
   SimpleGrid,
+  Stack,
   Table,
   Thead,
   theme,
@@ -156,6 +157,10 @@ function Game() {
 
   function submitReply(event, user_id, response, new_msg, is_goalie) {
 
+    if (new_msg) {
+      setMessage('')
+    }
+
     if (event) {
       event.preventDefault();
     }
@@ -279,6 +284,7 @@ function Game() {
                     type='text'
                     placeholder='Message'
                     onChange={(e) => setMessage(e.target.value)}
+                    value={message}
                     key="main"
                   />
                   <InputRightElement width='4.5rem'>
@@ -308,9 +314,8 @@ function Game() {
             <Table size="sml" maxWidth="1200px" mt="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
-                  <Th w="25%">Player</Th>
-                  <Th w="15%">Reply</Th>
-                  <Th w="70%">Message</Th>
+                  <Th w={{base:"25%", md:"15%"}}>Reply</Th>
+                  <Th w={{base:"75%", md:"85%"}}>Player</Th>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
@@ -318,19 +323,12 @@ function Game() {
                   replies['replies'] && replies['replies'].map((reply) => (
 
                     <Tr key={reply.user_id}>
-                      <Td py="6px">{reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}</Td>
-                      <Td>
-                        {replyBadge[reply.response]}
-                        { reply.is_goalie &&
-                          replyBadge['goalie']
-                        }
-                      </Td>
                       <Td>
                         {
                           isUserCaptain &&
                           <Popover isOpen={reply.user_id == openPopover}>
                             <PopoverTrigger>
-                              <IconButton size='xs' icon={<EditIcon />} onClick={() => open(reply.user_id)} my="5px" />
+                              <IconButton size='xs' icon={<EditIcon />} onClick={() => open(reply.user_id)} mr={4} my="5px" />
                             </PopoverTrigger>
                             <PopoverContent p={5} >
                                 <PopoverArrow />
@@ -372,8 +370,17 @@ function Game() {
                               </PopoverContent>
                             </Popover>
                         }
-                        <span>&nbsp;&nbsp;</span>
-                        {reply.message}
+                        {replyBadge[reply.response]}
+                        { reply.is_goalie &&
+                          replyBadge['goalie']
+                        }
+                      </Td>
+                      <Td py="6px">{reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}
+                        <Stack>
+                          { reply.message &&
+                          <Text color='gray.500'>"{reply.message}"</Text>
+                          }
+                        </Stack>
                       </Td>
                     </Tr>
 
@@ -388,8 +395,7 @@ function Game() {
             <Table size="sml" maxWidth="1200px" my="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
-                  <Th w="25%">No Reply</Th>
-                  <Th/>
+                  <Th>No Reply</Th>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
@@ -397,13 +403,12 @@ function Game() {
                   replies['no_response'] && replies['no_response'].map((reply) => (
 
                     <Tr key={reply.user_id}>
-                      <Td py="6px">{reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}</Td>
-                      <Td>
+                      <Td py="6px">
                         {
                           isUserCaptain &&
                           <Popover isOpen={reply.user_id == openPopover}>
                             <PopoverTrigger>
-                              <IconButton size='xs' icon={<EditIcon />} onClick={() => open(reply.user_id)} my="5px" />
+                              <IconButton size='xs' icon={<EditIcon />} onClick={() => open(reply.user_id)} mr={4} my="5px" />
                             </PopoverTrigger>
                             <PopoverContent p={5} >
                                 <PopoverArrow />
@@ -441,10 +446,8 @@ function Game() {
                               </PopoverContent>
                             </Popover>
                           }
-                        <span>&nbsp;&nbsp;</span>
-                        {replyBadge[reply.response]}
+                          {reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}
                       </Td>
-
                     </Tr>
 
                  ))
