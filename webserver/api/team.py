@@ -6,6 +6,7 @@ from flask import Blueprint, current_app, g, make_response, request
 
 from webserver.database.alchemy_models import User, Team, TeamPlayer
 from webserver.database.hockey_db import get_db, get_current_user
+from webserver.email import send_player_join_request, send_team_role_change, send_removed_from_team
 from webserver.logging import write_log
 from webserver.api.auth import check_login
 
@@ -252,6 +253,9 @@ def join_team():
     db.commit_changes()
 
     write_log('INFO', f'api/join-team: {request.json["user_id"]} requested {team.name}')
+    if player_role != 'captain':
+        send_player_join_request(join_team_as_player, team)
+
     return make_response({ 'result' : 'success' })
 
 
@@ -273,7 +277,7 @@ def accept_join():
     team = db.get_team_by_id(request.json['team_id'])
 
     if not team:
-        write_log('ERROR', f'api/join-team: team {request.json["team_id"]} not found')
+        write_log('ERROR', f'api/player-role: team {request.json["team_id"]} not found')
         return {'result': 'error'}, 400
 
     # get current user and check for authorization to accept join requests
@@ -298,6 +302,8 @@ def accept_join():
             db.commit_changes()
 
             write_log('INFO', f'api/player-role: {player.player.email} updated to {player.role} on {team.name} by {get_current_user().email}')
+            send_team_role_change(team, player, get_current_user())
+
             return make_response({ 'result' : 'success' })
 
     write_log('ERROR', f'api/player-role: player not found in team')
@@ -337,15 +343,21 @@ def remove_player():
 
     logged_in_user_player_obj = find_player(team, get_current_user().user_id)
 
-    if (not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain') and not get_current_user().admin:
+    if (not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain') and\
+        player_to_remove.player.user_id != get_current_user().user_id and\
+        not get_current_user().admin:
         write_log('ERROR', f'api/remove-player: logged in user does not have permissions to remove players')
         return {'result': 'error'}, 400
 
-    email = player_to_remove.player.email
+    removed_user = player_to_remove.player
+    email = removed_user.email
     who = get_current_user().email
 
     team.players.remove(player_to_remove)
     db.commit_changes()
 
     write_log('INFO', f'api/remove-player: {email} removed from {team.name} by {who}')
+    if removed_user.user_id != get_current_user().user_id:
+        send_removed_from_team(team, removed_user, get_current_user())
+
     return make_response({ 'result' : 'success' })

@@ -257,7 +257,7 @@ function Game() {
 
   return (
     <ChakraProvider theme={theme}>
-      <Header react_navigate={navigate} signed_in={user != {}}></Header>
+      <Header/>
       <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
             <InfoBox>

@@ -51,6 +51,7 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
 import TagManager from 'react-gtm-module'
+import _ from "lodash";
 
 function Team() {
 
@@ -209,6 +210,10 @@ function Team() {
       return;
     }
 
+    if (!_.has(body, 'players')) {
+      return;
+    }
+
     // Sort not replied (put logged in user on top)
     serverReplies['players'] = serverReplies['players'].sort(function(a, b) {
       if (a['user_id'] == serverReplies['user']['user_id']) {
@@ -253,7 +258,7 @@ function Team() {
 
   return (
     <ChakraProvider theme={theme}>
-      <Header react_navigate={navigate} signed_in={user != {}}></Header>
+      <Header react_navigate={navigate}/>
       <Box minH="500px" textAlign="center" fontSize="xl" mt="50px">
           { teamName &&
           <Center>

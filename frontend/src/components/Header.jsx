@@ -25,7 +25,6 @@ import {
 } from '@chakra-ui/react';
 import { FaMoon, FaSun } from 'react-icons/fa';
 import { logout } from '../utils';
-
 import {
   IconButton,
   Button,
@@ -44,6 +43,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@chakra-ui/icons';
+import { hasAuthToken } from '../utils';
 
 export function Logo() {
   const titleGradient = useColorModeValue('linear(to-b, #A6C7FF, #90B3FF, #5D74A5, #5D74A5)', 'linear(to-b, #5D729F, #3B4968, #1A202C)')
@@ -98,11 +98,11 @@ export const Header = props => {
         <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
           <Logo></Logo>
         </Flex>
-        <DesktopNav hide_sign_in={props.hide_sign_in} signed_in={props.signed_in} react_navigate={props.react_navigate}/>
+        <DesktopNav hide_sign_in={props.hide_sign_in} signed_in={hasAuthToken()}/>
       </Flex>
 
       <Collapse in={isOpen} animateOpacity>
-        <MobileNav hide_sign_in={props.hide_sign_in} signed_in={props.signed_in} react_navigate={props.react_navigate}/>
+        <MobileNav hide_sign_in={props.hide_sign_in} signed_in={hasAuthToken()}/>
       </Collapse>
     </Box>
   );
@@ -304,16 +304,7 @@ const NAV_ITEMS: Array<NavItem> = [
   },
   {
     label: 'Schedule',
-    children: [
-      {
-        label: 'San Jose',
-        href: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=1',
-      },
-      {
-        label: 'Fremont',
-        href: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=15',
-      },
-    ],
+    href: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=1',
   },
   {
     label: 'Docs',
