@@ -137,7 +137,7 @@ function Home() {
               <Thead fontSize="0.6em">
                 <Tr>
                   <Th w="70%">My Teams</Th>
-                  <Th w="20%"/>
+                  <Th w="30%"/>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">

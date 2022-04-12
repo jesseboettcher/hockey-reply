@@ -77,5 +77,6 @@ def get_calendar(team_name_or_id):
         out_cal += line
 
     response = make_response(out_cal)
-    response.headers["Content-Disposition"] = "attachment; filename=calendar.ics"
+    response.headers['Content-Disposition'] = 'attachment; filename=calendar.ics'
+    response.headers['Content-Type'] = 'text/calendar'
     return response
