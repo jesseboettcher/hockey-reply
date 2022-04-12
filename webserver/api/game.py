@@ -3,7 +3,7 @@ game
 
 All the webserver APIs for querying games and player replies.
 '''
-import datetime
+from datetime import datetime, timezone
 import os
 import sys
 from zoneinfo import ZoneInfo
@@ -76,7 +76,7 @@ def get_games(team_id = None):
 
         for game in games:
 
-            if upcomingOnly and game.completed == 1:
+            if upcomingOnly and (game.completed == 1 or game.scheduled_at < datetime.now(timezone.utc)):
                 continue
 
             home_team = db.get_team_by_id(game.home_team_id)
@@ -93,14 +93,13 @@ def get_games(team_id = None):
             user_is_home = False
             if is_logged_in_user_in_team(game.home_team_id, False):
                 user_is_home = True
-            print(f'{user_is_home} home id {game.home_team_id} away {game.away_team_id} user team {team.team_id}', flush=True)
 
             pacific = ZoneInfo('US/Pacific')
             game_dict = {
                 'game_id' : game.game_id,
                 'scheduled_at_dt': game.scheduled_at,
                 'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-                'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
+                'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.now(timezone.utc)).replace(' ', ' '),
                 'completed': game.completed,
                 'rink': game.rink,
                 'level': game.level,
@@ -159,7 +158,7 @@ def get_game(game_id, team_id):
     game_dict = {
         'game_id' : game.game_id,
         'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-        'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
+        'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.now(timezone.utc)).replace(' ', ' '),
         'completed': game.completed,
         'rink': game.rink,
         'level': game.level,

@@ -136,10 +136,14 @@ class Database:
 
         if game is not None:
 
+            if game.compled != game_parser.completed:
+                game.compled = game_parser.completed
+
             if game.scheduled_at != game_parser.datetime:
                 write_log('INFO', f'Game schedule change to {game_parser.datetime} from {game.scheduled_at} for {game.game_id}')
                 game.scheduled_at = game_parser.datetime
-                self.session.commit()
+
+            self.session.commit()
             return
 
         home_team = self.get_team(game_parser.home_team)
