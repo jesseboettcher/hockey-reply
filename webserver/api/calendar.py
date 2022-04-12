@@ -69,13 +69,12 @@ def get_calendar(team_name_or_id):
 
         calendar.events.add(event)
 
+    write_log('INFO', f'api/calendar: {team_name_or_id} ({team.name})')
+
     # Write to string
     out_cal = ''
     for line in calendar:
         out_cal += line
-
-    f = open('my.ics', 'w')
-    f.write(out_cal)
 
     response = make_response(out_cal)
     response.headers["Content-Disposition"] = "attachment; filename=calendar.ics"
