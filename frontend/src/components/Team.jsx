@@ -1,4 +1,4 @@
-import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ExternalLinkIcon, ChatIcon } from '@chakra-ui/icons'
+import { ArrowForwardIcon, CalendarIcon, ChevronDownIcon, EmailIcon, ExternalLinkIcon, ChatIcon } from '@chakra-ui/icons'
 import {
   AlertDialog,
   AlertDialogOverlay,
@@ -261,7 +261,12 @@ function Team() {
               <Text fontSize='xl' fontWeight='medium'>{teamName}</Text>
               <Tooltip label='Share link to join' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
                 <Link href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${teamName}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${teamName.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}>
-                  <IconButton ml={1} mb='3px' size='xs' icon={<ExternalLinkIcon/>}/>
+                  <IconButton ml={3} mr={3} mb='3px' size='xs' icon={<ExternalLinkIcon/>}/>
+                </Link>
+              </Tooltip>
+              <Tooltip label='Subscribe to the calendar' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
+                <Link href={`https://hockeyreply.com/api/calendar/${teamId}/hockey_calendar.ics`}>
+                  <IconButton size='xs' icon={<CalendarIcon/>} />
                 </Link>
               </Tooltip>
             </HStack>

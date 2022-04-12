@@ -1,5 +1,6 @@
 aniso8601==9.0.1
 APScheduler==3.9.1
+arrow==0.14.7
 beautifulsoup4==4.10.0
 blueprint==3.4.2
 bs4==0.0.1
@@ -22,6 +23,7 @@ grpc-google-iam-v1==0.12.3
 grpcio==1.44.0
 grpcio-status==1.44.0
 humanize==4.0.0
+ics==0.7
 idna==3.3
 isodate==0.6.1
 itsdangerous==2.1.1
@@ -40,6 +42,7 @@ pycparser==2.21
 Pygments==2.11.2
 PyJWT==2.3.0
 pyparsing==3.0.7
+python-dateutil==2.8.2
 python-http-client==3.3.7
 pytz==2022.1
 pytz-deprecation-shim==0.1.0.post0
@@ -51,6 +54,7 @@ six==1.16.0
 soupsieve==2.3.1
 SQLAlchemy==1.4.32
 starkbank-ecdsa==2.0.3
+TatSu==5.6.1
 tzdata==2022.1
 tzlocal==4.2
 urllib3==1.26.8

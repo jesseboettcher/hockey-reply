@@ -1,4 +1,4 @@
-import { ExternalLinkIcon } from '@chakra-ui/icons';
+import { CalendarIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import {
   Box,
   Button,
@@ -136,8 +136,8 @@ function Home() {
             <Table size="sml" maxWidth="800px" my="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
-                  <Th w="90%">My Teams</Th>
-                  <Th/>
+                  <Th w="70%">My Teams</Th>
+                  <Th w="20%"/>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
@@ -151,7 +151,12 @@ function Home() {
                       <Td py="6px">
                         <Tooltip label='Share link to join' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
                           <Link href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${team.name}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${team.name.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}>
-                            <IconButton size='xs' icon={<ExternalLinkIcon/>}/>
+                            <IconButton size='xs' icon={<ExternalLinkIcon/>} mx={3} />
+                          </Link>
+                        </Tooltip>
+                        <Tooltip label='Subscribe to the calendar' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
+                          <Link href={`https://hockeyreply.com/api/calendar/${team.team_id}/hockey_calendar.ics`}>
+                            <IconButton size='xs' icon={<CalendarIcon/>} mx={3}/>
                           </Link>
                         </Tooltip>
                       </Td>
