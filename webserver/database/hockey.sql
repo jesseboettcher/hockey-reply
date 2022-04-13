@@ -31,7 +31,8 @@ CREATE TABLE game_reply(
 
 CREATE TABLE team(
     team_id         SERIAL     PRIMARY KEY,
-    name            TEXT        NOT NULL
+    external_id     INTEGER    DEFAULT 0,
+    name            TEXT       NOT NULL
 );
 
 CREATE TABLE team_player(

@@ -67,12 +67,14 @@ function Team() {
 
   // Fetched data
   const [userIsOnTeam, setUserIsOnTeam] = useState(false);
+  const [team, setTeam] = useState([]);
   const [teamId, setTeamId] = useState(0);
   const [teamName, setTeamName] = useState(null);
   const [players, setPlayers] = useState([]);
   const [user, setUser] = useState(0);
   const isUserCaptain = user['role'] == 'captain';
   const isUserMembershipPending = user['role'] == '';
+  const calendar_url = team.teams ? team.teams[0].calendar_url : null;
 
   const fetchedData = useRef(false);
   const responseReceived = useRef(false);
@@ -129,6 +131,7 @@ function Team() {
     setUser(body['user'])
     setTeamId(body['team_id']);
     setTeamName(body['team_name'])
+    getData(`/api/team/${body['team_id']}`, setTeam);
   }
 
   function cancelRemovePlayer() {
@@ -264,11 +267,13 @@ function Team() {
                   <IconButton ml={3} mr={3} mb='3px' size='xs' icon={<ExternalLinkIcon/>}/>
                 </Link>
               </Tooltip>
+              { calendar_url &&
               <Tooltip label='Subscribe to the calendar' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
-                <Link href={`https://hockeyreply.com/api/calendar/${teamId}/hockey_calendar.ics`}>
+                <Link href={calendar_url}>
                   <IconButton size='xs' icon={<CalendarIcon/>} />
                 </Link>
               </Tooltip>
+              }
             </HStack>
             </Center>
           }

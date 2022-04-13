@@ -154,11 +154,13 @@ function Home() {
                             <IconButton size='xs' icon={<ExternalLinkIcon/>} mx={3} />
                           </Link>
                         </Tooltip>
+                        { team.calendar_url &&
                         <Tooltip label='Subscribe to the calendar' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
-                          <Link href={`https://hockeyreply.com/api/calendar/${team.team_id}/hockey_calendar.ics`}>
+                          <Link href={team.calendar_url}>
                             <IconButton size='xs' icon={<CalendarIcon/>} mx={3}/>
                           </Link>
                         </Tooltip>
+                        }
                       </Td>
                     </Tr>
                  ))

@@ -7,6 +7,7 @@ to synchronize with the database. Specifically for Sharks Ice at San Jose Adult 
 
 import datetime
 import traceback
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
@@ -35,9 +36,12 @@ class TeamPageParser:
         self.games = []
         self.player_stats = []
         self.goalie_stats = []
+        self.external_id = None
 
     def parse(self):
         ''' Finds the important tables in the teams page and initiates parsing of each of them '''
+        self.parse_url()
+
         for table in self.soup.body.find_all('table'):
 
             try:
@@ -51,6 +55,16 @@ class TeamPageParser:
                 return False
 
         return True
+
+    def parse_url(self):
+        query = urlparse(self.url).query
+        try:
+            for query_item in query.split('&'):
+                if query_item.split('=')[0] == 'team':
+                    self.external_id = int(query_item.split('=')[1])
+
+        except Exception as e:
+            write_log('ERROR', f'Failed to parse team external id from page url params {e}') 
 
     def table_name(self, table):
         ''' Retrieves the name of the table contained as the only cell in the top row '''

@@ -72,7 +72,9 @@ class Synchronizer:
                 print(f'SKIPPING {link}, not a team page')
                 continue
 
-            print(f'Parsing {link}')
+            team_name = link.string.strip()
+
+            print(f'Parsing {team_name} at {link}')
             team_source, team_soup = self.open_team_page(href)
             team_parser = TeamPageParser(team_source, team_soup)
             success = team_parser.parse()
@@ -80,6 +82,8 @@ class Synchronizer:
             if not success:
                 print(f'Failed synchronization of website')
                 return False
+
+            self.db.add_team(team_name, team_parser.external_id)
 
             for game in team_parser.games:
                 self.db.add_game(game)
