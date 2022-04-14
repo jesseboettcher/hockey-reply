@@ -1,10 +1,12 @@
-import { ExternalLinkIcon } from '@chakra-ui/icons';
+import { CalendarIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import {
+  Badge,
   Box,
   Button,
   Center,
   ChakraProvider,
   FormControl,
+  Grid,
   IconButton,
   Input,
   Link,
@@ -33,12 +35,18 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { Header } from '../components/Header';
+import { ReplyBox } from '../components/ReplyBox';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData, logout, MyLink } from '../utils';
 
 function Home() {
 
   let navigate = useNavigate();
+
+  // Popover control
+  const [openPopover, setOpenPopover] = React.useState(0)
+  const open = (user) => setOpenPopover(user);
+  const close = () => setOpenPopover(0);
 
   // Modal dialog control (join team)
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -95,6 +103,44 @@ function Home() {
     onClose();
   };
 
+  function submitReply(event, user_id, team_id, game_id, response, new_msg, is_goalie) {
+
+    if (event) {
+      event.preventDefault();
+    }
+    close();
+
+    let data = {
+      game_id: game_id,
+      team_id: team_id,
+      response: response,
+      message: new_msg,
+      is_goalie: is_goalie
+    };
+    if (user_id != 0) {
+      data.user_id = user_id;
+    }
+
+    fetch(`/api/game/reply/${game_id}/for-team/${team_id}`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status == 200) {
+        TagManager.dataLayer({
+          dataLayer: {
+            event: 'game_reply'
+          },
+        });
+
+        getData('/api/games/?upcomingOnly', setMyGames)
+        return;
+      }
+    });
+  };
+
   return (
     <ChakraProvider theme={theme}>
 
@@ -105,8 +151,8 @@ function Home() {
             <Table size="sml" maxWidth="800px" my="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
-                  <Th w="100%">My Games</Th>
-                  <Th/>
+                  <Th>My Games</Th>
+                  <Th w="115px"/>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
@@ -122,9 +168,24 @@ function Home() {
                                   color: "gray.800",
                                 }}>
                           <a href={`/game/${game.game_id}/for-team/${game.user_team_id}`}>
-                           {myTeams['teams'] && myTeams['teams'].length > 1 ? game.user_team : ''} vs {game.vs} >
+                           {myTeams['teams'] && myTeams['teams'].length > 1 ? game.user_team.replaceAll(' ', ' ') : ''} vs {game.vs.replaceAll(' ', ' ')}&nbsp;>
                           </a>
                         </Text>
+                      </Td>
+                      <Td>
+                      <Grid container justifyContent="flex-end">
+                          <ReplyBox
+                            isOpen={game.game_id == openPopover}
+                            openHandler={() => open(game.game_id)}
+                            closeHandler={close}
+                            user_id={user.user_id}
+                            team_id={game.user_team_id}
+                            game_id={game.game_id}
+                            submitHandler={submitReply}
+                            user_reply={game.user_reply}
+                            editable
+                          />
+                      </Grid>
                       </Td>
                     </Tr>
                  ))
@@ -136,8 +197,8 @@ function Home() {
             <Table size="sml" maxWidth="800px" my="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
-                  <Th w="90%">My Teams</Th>
-                  <Th/>
+                  <Th>My Teams</Th>
+                  <Th w='115px'/>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
@@ -151,9 +212,16 @@ function Home() {
                       <Td py="6px">
                         <Tooltip label='Share link to join' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
                           <Link href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${team.name}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${team.name.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}>
-                            <IconButton size='xs' icon={<ExternalLinkIcon/>}/>
+                            <IconButton size='xs' icon={<ExternalLinkIcon/>} mx={3} />
                           </Link>
                         </Tooltip>
+                        { team.calendar_url &&
+                        <Tooltip label='Subscribe to the calendar' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
+                          <Link href={team.calendar_url}>
+                            <IconButton size='xs' icon={<CalendarIcon/>} mx={3}/>
+                          </Link>
+                        </Tooltip>
+                        }
                       </Td>
                     </Tr>
                  ))

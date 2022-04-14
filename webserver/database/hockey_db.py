@@ -95,13 +95,16 @@ class Database:
     def get_team_by_id(self, team_id):
         return self.session.query(Team).filter(Team.team_id == team_id).one_or_none()
 
-    def add_team(self, team_name):
+    def add_team(self, team_name, external_id):
         team = self.session.query(Team).filter(Team.name == team_name).one_or_none()
 
         if team is not None:
+            if team.external_id == 0 and external_id != 0:
+                team.external_id = external_id
+                self.session.commit()
             return
 
-        team = Team(name=team_name)
+        team = Team(name=team_name, external_id=external_id)
 
         self.session.add(team)
         self.session.commit()
@@ -135,7 +138,15 @@ class Database:
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()
 
         if game is not None:
-            # todo update if differences
+
+            if game.compled != game_parser.completed:
+                game.compled = game_parser.completed
+
+            if game.scheduled_at != game_parser.datetime:
+                write_log('INFO', f'Game schedule change to {game_parser.datetime} from {game.scheduled_at} for {game.game_id}')
+                game.scheduled_at = game_parser.datetime
+
+            self.session.commit()
             return
 
         home_team = self.get_team(game_parser.home_team)

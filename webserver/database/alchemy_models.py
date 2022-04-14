@@ -28,6 +28,7 @@ class TeamPlayer(Base):
 class Team(Base):
     __tablename__ = "team"
     team_id = Column(Integer, primary_key=True)
+    external_id = Column(Integer, default='0')
     name = Column(String)
     players = relationship ("TeamPlayer", back_populates="team", cascade="all, delete-orphan")
 

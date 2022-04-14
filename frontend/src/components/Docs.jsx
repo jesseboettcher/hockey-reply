@@ -1,4 +1,4 @@
-import { ExternalLinkIcon } from '@chakra-ui/icons';
+import { CalendarIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import {
   Box,
   ChakraProvider,
@@ -52,6 +52,20 @@ send them the link to your team. Once they create an account, they'll be taken s
 button to join your team.
     </Text>
     <br/>
+
+    <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Calendar</Text>
+    <Text>
+Once you have joined a team. You can download the calendar by tapping the <CalendarIcon mx='2px' mb='4px'/> button
+next to your team on the home page. An .ics file will be downloaded that you can import into your
+calendar app.
+    </Text>
+    <Text mt={2}>
+You can also have new games automatically added to your calendar by
+subscribing to that link with your calendar app (right-click and select <i>Copy Link Address</i>).
+Check out these links to learn more about how to subscribe on your <Link color={linkColor} href='https://support.apple.com/en-us/HT202361'>Mac, iPhone,</Link> or <Link color={linkColor} href='https://support.google.com/calendar/answer/37100?hl=en&co=GENIE.Platform%3DDesktop'>Google calendar</Link>.
+    </Text>
+    <br/>
+
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor} my={2}>Team Management</Text>
     <Text>

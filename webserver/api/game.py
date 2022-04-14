@@ -3,7 +3,7 @@ game
 
 All the webserver APIs for querying games and player replies.
 '''
-import datetime
+from datetime import datetime, timezone
 import os
 import sys
 from zoneinfo import ZoneInfo
@@ -15,6 +15,7 @@ from webserver.database.alchemy_models import GameReply, User, Team
 from webserver.database.hockey_db import get_db, get_current_user
 from webserver.logging import write_log
 from webserver.api.auth import check_login
+from webserver.utils import timeuntil
 
 
 '''
@@ -40,7 +41,6 @@ def is_logged_in_user_in_team(team_id, and_has_been_accepted):
             return True
 
     return False
-
 
 @blueprint.route('/games/', methods=['GET'])
 @blueprint.route('/games/<team_id>', methods=['GET'])
@@ -76,7 +76,7 @@ def get_games(team_id = None):
 
         for game in games:
 
-            if upcomingOnly and game.completed == 1:
+            if upcomingOnly and (game.completed == 1 or game.scheduled_at < datetime.now(timezone.utc)):
                 continue
 
             home_team = db.get_team_by_id(game.home_team_id)
@@ -93,14 +93,23 @@ def get_games(team_id = None):
             user_is_home = False
             if is_logged_in_user_in_team(game.home_team_id, False):
                 user_is_home = True
-            print(f'{user_is_home} home id {game.home_team_id} away {game.away_team_id} user team {team.team_id}', flush=True)
+
+            user_team_id = game.away_team_id if not user_is_home else game.home_team_id,
+
+            user_reply = ''
+            replies = db.game_replies_for_game(game.game_id, user_team_id)
+
+            for reply in replies:
+                if reply.user_id == get_current_user().user_id:
+                    user_reply = reply.response
+                    break
 
             pacific = ZoneInfo('US/Pacific')
             game_dict = {
                 'game_id' : game.game_id,
                 'scheduled_at_dt': game.scheduled_at,
                 'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-                'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
+                'scheduled_how_soon': timeuntil(datetime.now(timezone.utc).astimezone(pacific), game.scheduled_at.astimezone(pacific)).replace(' ', ' '),
                 'completed': game.completed,
                 'rink': game.rink,
                 'level': game.level,
@@ -108,10 +117,11 @@ def get_games(team_id = None):
                 'away_team_id': game.away_team_id,
                 'user_team': home_team.name if user_is_home else away_team.name,
                 'vs': home_team.name if not user_is_home else away_team.name,
-                'user_team_id': game.away_team_id if not user_is_home else game.home_team_id,
+                'user_team_id': user_team_id,
                 'home_goals': game.home_goals,
                 'away_goals': game.away_goals,
-                'game_type': game.game_type
+                'game_type': game.game_type,
+                'user_reply': user_reply
             }
             result['games'].append(game_dict)
             result['games'] = sorted(result['games'], key=lambda game: game['scheduled_at_dt'])
@@ -153,13 +163,22 @@ def get_game(game_id, team_id):
     if player:
         user_role = player.role
 
+    user_reply = ''
+    if user_role != '':
+        replies = db.game_replies_for_game(game_id, team_id)
+
+        for reply in replies:
+            if reply.user_id == get_current_user().user_id:
+                user_reply = reply.response
+                break
+
     result = { 'games': [] }
 
     pacific = ZoneInfo('US/Pacific')
     game_dict = {
         'game_id' : game.game_id,
         'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-        'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
+        'scheduled_how_soon': timeuntil(datetime.now(timezone.utc).astimezone(pacific), game.scheduled_at.astimezone(pacific)).replace(' ', ' '),
         'completed': game.completed,
         'rink': game.rink,
         'level': game.level,
@@ -174,7 +193,8 @@ def get_game(game_id, team_id):
         'away_goals': game.away_goals,
         'game_type': game.game_type,
         'is_user_membership_pending': True if user_role == '' else False,
-        'is_user_on_team': is_logged_in_user_in_team(team_id, False)
+        'is_user_on_team': is_logged_in_user_in_team(team_id, False),
+        'user_reply': user_reply
     }
     result['games'].append(game_dict)
 

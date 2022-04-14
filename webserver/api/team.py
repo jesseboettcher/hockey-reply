@@ -69,6 +69,10 @@ def get_teams(team_id=None):
                 'name': team.name,
                 'player_count': len(team.players)
             }
+
+            if team.external_id != 0:
+                team_dict['calendar_url'] = f'https://stats.sharksice.timetoscore.com/team-cal.php?team={team.external_id}&tlev=0&tseq=0&format=iCal'
+
             result['teams'].append(team_dict)
     else:
         team_id = int(team_id)
@@ -84,6 +88,9 @@ def get_teams(team_id=None):
             'name': team.name,
             'player_count': len(team.players)
         }
+        if team.external_id != 0:
+            team_dict['calendar_url'] = f'https://stats.sharksice.timetoscore.com/team-cal.php?team={team.external_id}&tlev=0&tseq=0&format=iCal'
+
         result['teams'].append(team_dict)
 
     return make_response(result)

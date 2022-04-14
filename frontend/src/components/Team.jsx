@@ -1,4 +1,4 @@
-import { ArrowForwardIcon, ChevronDownIcon, EmailIcon, ExternalLinkIcon, ChatIcon } from '@chakra-ui/icons'
+import { ArrowForwardIcon, CalendarIcon, ChevronDownIcon, EmailIcon, ExternalLinkIcon, ChatIcon } from '@chakra-ui/icons'
 import {
   AlertDialog,
   AlertDialogOverlay,
@@ -67,12 +67,14 @@ function Team() {
 
   // Fetched data
   const [userIsOnTeam, setUserIsOnTeam] = useState(false);
+  const [team, setTeam] = useState([]);
   const [teamId, setTeamId] = useState(0);
   const [teamName, setTeamName] = useState(null);
   const [players, setPlayers] = useState([]);
   const [user, setUser] = useState(0);
   const isUserCaptain = user['role'] == 'captain';
   const isUserMembershipPending = user['role'] == '';
+  const calendar_url = team.teams ? team.teams[0].calendar_url : null;
 
   const fetchedData = useRef(false);
   const responseReceived = useRef(false);
@@ -129,6 +131,7 @@ function Team() {
     setUser(body['user'])
     setTeamId(body['team_id']);
     setTeamName(body['team_name'])
+    getData(`/api/team/${body['team_id']}`, setTeam);
   }
 
   function cancelRemovePlayer() {
@@ -261,9 +264,16 @@ function Team() {
               <Text fontSize='xl' fontWeight='medium'>{teamName}</Text>
               <Tooltip label='Share link to join' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
                 <Link href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${teamName}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${teamName.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}>
-                  <IconButton ml={1} mb='3px' size='xs' icon={<ExternalLinkIcon/>}/>
+                  <IconButton ml={3} mr={3} mb='3px' size='xs' icon={<ExternalLinkIcon/>}/>
                 </Link>
               </Tooltip>
+              { calendar_url &&
+              <Tooltip label='Subscribe to the calendar' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
+                <Link href={calendar_url}>
+                  <IconButton size='xs' icon={<CalendarIcon/>} />
+                </Link>
+              </Tooltip>
+              }
             </HStack>
             </Center>
           }
