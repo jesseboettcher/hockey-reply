@@ -1,4 +1,4 @@
-import { ArrowForwardIcon, EditIcon } from '@chakra-ui/icons'
+import { ArrowForwardIcon } from '@chakra-ui/icons'
 import {
   Center,
   Checkbox,
@@ -33,6 +33,7 @@ import {
   Td,
   useColorModeValue,
   useToast,
+  VStack,
 } from '@chakra-ui/react';
 import React, {useEffect, useRef, useState} from 'react';
 import TagManager from 'react-gtm-module'
@@ -42,6 +43,7 @@ import _ from "lodash";
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
+import { ReplyBox } from '../components/ReplyBox';
 
 function InfoBox(props: React.PropsWithChildren<MyProps>) {
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
@@ -155,7 +157,7 @@ function Game() {
     setIsUserMembershipPending(body['games'][0]['is_user_membership_pending'])
   }
 
-  function submitReply(event, user_id, response, new_msg, is_goalie) {
+  function submitReply(event, user_id, team_id, game_id, response, new_msg, is_goalie) {
 
     if (new_msg) {
       setMessage('')
@@ -214,10 +216,7 @@ function Game() {
   const isUserCaptain = user['role'] == 'captain';
 
   let replyBadge = {};
-  replyBadge['yes'] = <Badge colorScheme="green" my="0px">YES</Badge>;
-  replyBadge['no'] = <Badge colorScheme="red" my="0px">NO</Badge>;
-  replyBadge['maybe'] = <Badge colorScheme="blue" my="0px">Maybe</Badge>;
-  replyBadge['goalie'] = <Badge colorScheme="yellow" mx={1} my="0px">G</Badge>;
+  replyBadge['goalie'] = <Badge colorScheme="yellow" textAlign='center' width='80px' mx={2} my="0px">Goalie</Badge>;
 
   let yesCount = 0;
   let maybeCount = 0;
@@ -265,19 +264,19 @@ function Game() {
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
             <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
-              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'yes', null, userIsGoalie)}>
+              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, game_id, team_id, 'yes', null, userIsGoalie)}>
                 YES
               </Button>
-              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, 'maybe', null, userIsGoalie)}>
+              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, game_id, team_id, 'maybe', null, userIsGoalie)}>
                 Maybe
               </Button>
-              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, 'no', null, userIsGoalie)}>
+              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, game_id, team_id, 'no', null, userIsGoalie)}>
                 NO
               </Button>
               <Checkbox ml={8} mt='4px' colorScheme='green' isChecked={userIsGoalie} onChange={(e) => selectUserIsGoalie(e.target.checked)}>
                 Goalie?
               </Checkbox>
-              <form onSubmit={(e) => submitReply(e, 0, null, message)}>
+              <form onSubmit={(e) => submitReply(e, 0, game_id, team_id, null, message)}>
                 <InputGroup size='md' mt="28px">
                   <Input
                     pr='4.5rem'
@@ -314,8 +313,8 @@ function Game() {
             <Table size="sml" maxWidth="1200px" mt="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
-                  <Th w={{base:"25%", md:"15%"}}>Reply</Th>
-                  <Th w={{base:"75%", md:"85%"}}>Player</Th>
+                  <Th w='115px'>Reply</Th>
+                  <Th >Player</Th>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
@@ -324,53 +323,22 @@ function Game() {
 
                     <Tr key={reply.user_id}>
                       <Td>
-                        {
-                          isUserCaptain &&
-                          <Popover isOpen={reply.user_id == openPopover}>
-                            <PopoverTrigger>
-                              <IconButton size='xs' icon={<EditIcon />} onClick={() => open(reply.user_id)} mr={4} my="5px" />
-                            </PopoverTrigger>
-                            <PopoverContent p={5} >
-                                <PopoverArrow />
-                                <PopoverCloseButton onClick={close} />
-
-                                <Box textAlign="left" p="10px" mx="20px">
-                                  <Text fontSize="0.8em" mb="8px">Update status for {reply.name}:</Text>
-                                  <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, reply.user_id, 'yes', null)}>
-                                    YES
-                                  </Button>
-                                  <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, reply.user_id, 'maybe', null)}>
-                                    Maybe
-                                  </Button>
-                                  <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, reply.user_id, 'no', null)}>
-                                    NO
-                                  </Button>
-                                  <Checkbox ml={0} mt={6} colorScheme='green' isChecked={reply.is_goalie} onChange={(e) => submitReply(e, reply.user_id, null, null, e.target.checked)}>
-                                    Goalie?
-                                  </Checkbox>
-
-
-                                  <form onSubmit={(e) => submitReply(e, reply.user_id, null, message)}>
-                                    <InputGroup size='md' mt="28px">
-                                      <Input
-                                        pr='4.5rem'
-                                        type='text'
-                                        placeholder='Message'
-                                        onChange={(e) => setMessage(e.target.value)}
-                                        key="main"
-                                      />
-                                      <InputRightElement width='4.5rem'>
-                                        <Button h='1.75rem' size='sm' type="submit">
-                                          Send
-                                        </Button>
-                                      </InputRightElement>
-                                    </InputGroup>
-                                  </form>
-                                </Box>
-                              </PopoverContent>
-                            </Popover>
-                        }
-                        {replyBadge[reply.response]}
+                        <ReplyBox
+                          isOpen={reply.user_id == openPopover}
+                          openHandler={() => open(reply.user_id)}
+                          closeHandler={close}
+                          user_id={reply.user_id}
+                          team_id={team_id}
+                          game_id={game_id}
+                          user_reply={reply.response}
+                          goalie
+                          is_goalie={reply.is_goalie}
+                          name={reply.name}
+                          submitHandler={submitReply}
+                          message={message}
+                          setMessage={setMessage}
+                          editable={isUserCaptain}
+                        />
                         { reply.is_goalie &&
                           replyBadge['goalie']
                         }
@@ -395,7 +363,8 @@ function Game() {
             <Table size="sml" maxWidth="1200px" my="50px" mx="20px">
               <Thead fontSize="0.6em">
                 <Tr>
-                  <Th>No Reply</Th>
+                  <Th w='115px'>No Reply</Th>
+                  <Th ></Th>
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
@@ -404,49 +373,19 @@ function Game() {
 
                     <Tr key={reply.user_id}>
                       <Td py="6px">
-                        {
-                          isUserCaptain &&
-                          <Popover isOpen={reply.user_id == openPopover}>
-                            <PopoverTrigger>
-                              <IconButton size='xs' icon={<EditIcon />} onClick={() => open(reply.user_id)} mr={4} my="5px" />
-                            </PopoverTrigger>
-                            <PopoverContent p={5} >
-                                <PopoverArrow />
-                                <PopoverCloseButton onClick={close} />
-
-                                <Box textAlign="left" p="10px" mx="20px">
-                                  <Text fontSize="0.8em" mb="8px">Update status for {reply.name}:</Text>
-                                  <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, reply.user_id, 'yes', null)}>
-                                    YES
-                                  </Button>
-                                  <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, reply.user_id, 'maybe', null)}>
-                                    Maybe
-                                  </Button>
-                                  <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, reply.user_id, 'no', null)}>
-                                    NO
-                                  </Button>
-
-                                  <form onSubmit={(e) => submitReply(e, reply.user_id, null, message)}>
-                                    <InputGroup size='md' mt="28px">
-                                      <Input
-                                        pr='4.5rem'
-                                        type='text'
-                                        placeholder='Message'
-                                        onChange={(e) => setMessage(e.target.value)}
-                                        key="main"
-                                      />
-                                      <InputRightElement width='4.5rem'>
-                                        <Button h='1.75rem' size='sm' type="submit">
-                                          Send
-                                        </Button>
-                                      </InputRightElement>
-                                    </InputGroup>
-                                  </form>
-                                </Box>
-                              </PopoverContent>
-                            </Popover>
-                          }
-                          {reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}
+                          <ReplyBox
+                            isOpen={reply.user_id == openPopover}
+                            openHandler={() => open(reply.user_id)}
+                            closeHandler={close}
+                            user_id={reply.user_id}
+                            name={reply.name}
+                            user_reply=''
+                            submitHandler={submitReply}
+                            editable={isUserCaptain}
+                          />
+                      </Td>
+                      <Td py="6px">
+                        {reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}
                       </Td>
                     </Tr>
 

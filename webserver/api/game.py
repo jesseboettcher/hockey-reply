@@ -94,6 +94,18 @@ def get_games(team_id = None):
             if is_logged_in_user_in_team(game.home_team_id, False):
                 user_is_home = True
 
+            user_team_id = game.away_team_id if not user_is_home else game.home_team_id,
+
+            user_reply = ''
+            replies = db.game_replies_for_game(game.game_id, user_team_id)
+            print(f'{len(replies)} {game.game_id} {user_team_id}', flush=True)
+
+            for reply in replies:
+                print(f'{reply.user_id} {reply.response}', flush=True)
+                if reply.user_id == get_current_user().user_id:
+                    user_reply = reply.response
+                    break
+
             pacific = ZoneInfo('US/Pacific')
             game_dict = {
                 'game_id' : game.game_id,
@@ -107,10 +119,11 @@ def get_games(team_id = None):
                 'away_team_id': game.away_team_id,
                 'user_team': home_team.name if user_is_home else away_team.name,
                 'vs': home_team.name if not user_is_home else away_team.name,
-                'user_team_id': game.away_team_id if not user_is_home else game.home_team_id,
+                'user_team_id': user_team_id,
                 'home_goals': game.home_goals,
                 'away_goals': game.away_goals,
-                'game_type': game.game_type
+                'game_type': game.game_type,
+                'user_reply': user_reply
             }
             result['games'].append(game_dict)
             result['games'] = sorted(result['games'], key=lambda game: game['scheduled_at_dt'])
@@ -152,6 +165,15 @@ def get_game(game_id, team_id):
     if player:
         user_role = player.role
 
+    user_reply = ''
+    if user_role != '':
+        replies = db.game_replies_for_game(game_id, team_id)
+
+        for reply in replies:
+            if reply.user_id == get_current_user().user_id:
+                user_reply = reply.response
+                break
+
     result = { 'games': [] }
 
     pacific = ZoneInfo('US/Pacific')
@@ -173,7 +195,8 @@ def get_game(game_id, team_id):
         'away_goals': game.away_goals,
         'game_type': game.game_type,
         'is_user_membership_pending': True if user_role == '' else False,
-        'is_user_on_team': is_logged_in_user_in_team(team_id, False)
+        'is_user_on_team': is_logged_in_user_in_team(team_id, False),
+        'user_reply': user_reply
     }
     result['games'].append(game_dict)
 
