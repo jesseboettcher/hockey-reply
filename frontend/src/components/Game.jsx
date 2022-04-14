@@ -264,19 +264,19 @@ function Game() {
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
             <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
-              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, game_id, team_id, 'yes', null, userIsGoalie)}>
+              <Button colorScheme='green' size='sm' mr="15px" onClick={(e) => submitReply(e, user.user_id, team_id, game_id, 'yes', null, userIsGoalie)}>
                 YES
               </Button>
-              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, 0, game_id, team_id, 'maybe', null, userIsGoalie)}>
+              <Button colorScheme='blue' size='sm' mr="15px" onClick={(e) => submitReply(e, user.user_id, team_id, game_id, 'maybe', null, userIsGoalie)}>
                 Maybe
               </Button>
-              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, 0, game_id, team_id, 'no', null, userIsGoalie)}>
+              <Button colorScheme='red' size='sm' onClick={(e) => submitReply(e, user.user_id, team_id, game_id, 'no', null, userIsGoalie)}>
                 NO
               </Button>
               <Checkbox ml={8} mt='4px' colorScheme='green' isChecked={userIsGoalie} onChange={(e) => selectUserIsGoalie(e.target.checked)}>
                 Goalie?
               </Checkbox>
-              <form onSubmit={(e) => submitReply(e, 0, game_id, team_id, null, message)}>
+              <form onSubmit={(e) => submitReply(e, user.user_id, team_id, game_id, null, message)}>
                 <InputGroup size='md' mt="28px">
                   <Input
                     pr='4.5rem'
