@@ -15,6 +15,7 @@ from webserver.database.alchemy_models import GameReply, User, Team
 from webserver.database.hockey_db import get_db, get_current_user
 from webserver.logging import write_log
 from webserver.api.auth import check_login
+from webserver.utils import timeuntil
 
 
 '''
@@ -40,7 +41,6 @@ def is_logged_in_user_in_team(team_id, and_has_been_accepted):
             return True
 
     return False
-
 
 @blueprint.route('/games/', methods=['GET'])
 @blueprint.route('/games/<team_id>', methods=['GET'])
@@ -98,10 +98,8 @@ def get_games(team_id = None):
 
             user_reply = ''
             replies = db.game_replies_for_game(game.game_id, user_team_id)
-            print(f'{len(replies)} {game.game_id} {user_team_id}', flush=True)
 
             for reply in replies:
-                print(f'{reply.user_id} {reply.response}', flush=True)
                 if reply.user_id == get_current_user().user_id:
                     user_reply = reply.response
                     break
@@ -111,7 +109,7 @@ def get_games(team_id = None):
                 'game_id' : game.game_id,
                 'scheduled_at_dt': game.scheduled_at,
                 'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-                'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.now(timezone.utc)).replace(' ', ' '),
+                'scheduled_how_soon': timeuntil(datetime.now(timezone.utc).astimezone(pacific), game.scheduled_at.astimezone(pacific)).replace(' ', ' '),
                 'completed': game.completed,
                 'rink': game.rink,
                 'level': game.level,
@@ -180,7 +178,7 @@ def get_game(game_id, team_id):
     game_dict = {
         'game_id' : game.game_id,
         'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-        'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.now(timezone.utc)).replace(' ', ' '),
+        'scheduled_how_soon': timeuntil(datetime.now(timezone.utc).astimezone(pacific), game.scheduled_at.astimezone(pacific)).replace(' ', ' '),
         'completed': game.completed,
         'rink': game.rink,
         'level': game.level,

@@ -4,13 +4,13 @@ email
 Contains all of the methods for outgoing communication from the service. Currently just email.
 Maybe include SMS in the future.
 '''
-import datetime
+from datetime import datetime, timezone
 import os
 from zoneinfo import ZoneInfo
 
-import humanize
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+from webserver.utils import timeuntil
 from webserver.logging import write_log
 
 FROM_ADDRESS = 'jesse@hockeyreply.com'
@@ -139,7 +139,7 @@ def send_game_coming_soon(db, game):
                 'user_team_id': team.team_id,
                 'team': team.name,
                 'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-                'scheduled_how_soon': humanize.naturaldelta(game.scheduled_at - datetime.datetime.now(datetime.timezone.utc)).replace(' ', ' '),
+                'scheduled_how_soon': timeuntil(datetime.now(timezone.utc).astimezone(pacific), game.scheduled_at.astimezone(pacific)).replace(' ', ' '),
                 'rink': game.rink,
                 'vs': vs_team.name,
                 'reply': user_reply.capitalize(),
