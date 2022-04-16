@@ -1,4 +1,12 @@
-import { ArrowForwardIcon, CalendarIcon, ChevronDownIcon, EmailIcon, ExternalLinkIcon, ChatIcon } from '@chakra-ui/icons'
+import {
+  ArrowForwardIcon,
+  CalendarIcon,
+  ChatIcon,
+  ChevronDownIcon,
+  DownloadIcon,
+  EmailIcon,
+  ExternalLinkIcon,
+} from '@chakra-ui/icons'
 import {
   AlertDialog,
   AlertDialogOverlay,
@@ -12,6 +20,7 @@ import {
   ChakraProvider,
   HStack,
   Icon,
+  Input,
   IconButton,
   Link,
   Popover,
@@ -58,9 +67,13 @@ function Team() {
   const tipBackground = useColorModeValue('#EDF2F7', 'whiteAlpha.200');
   const tipTextColor = useColorModeValue('gray.500', 'gray.200');
 
+  // Player number updates
+  const submitPlayerChangesTimer = React.useRef();
+  const [pendingNumberChanges, setPendingNumberChanges] = React.useState({});
+
   // Popover control (player contact info)
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const cancelRef = React.useRef()
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = React.useRef();
   const [openPopover, setOpenPopover] = React.useState(0)
   const open = (user) => setOpenPopover(user);
   const close = () => setOpenPopover(0);
@@ -254,6 +267,65 @@ function Team() {
     onClose();
   };
 
+  function submitPendingPlayerNumberChanges() {
+
+    for (const [user_id, number] of Object.entries(pendingNumberChanges)) {
+
+      let data = {
+        team_name: teamName,
+        user_id: user_id,
+        team_id: teamId,
+        number: number
+      };
+
+      fetch(`/api/player-number`, {
+        method: "POST",
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+        body: JSON.stringify(data)
+      })
+      .then(response => {
+        if (response.status == 200) {
+          return;
+        }
+      });
+    }
+    setPendingNumberChanges({});
+  }
+
+  function playerNumberChange(user_id, number) {
+    clearTimeout(submitPlayerChangesTimer.current);
+
+    let pending = pendingNumberChanges;
+    pending[user_id] = number;
+    setPendingNumberChanges(pending);
+
+    submitPlayerChangesTimer.current = setTimeout(submitPendingPlayerNumberChanges, 1000); // 1s
+  };
+
+  function isPlayerNumberEditingAllowed(user_id) {
+
+    if (user.user_id == user_id) {
+      return true;
+    }
+    return isUserCaptain;
+  };
+
+  function downloadSigninSheet() {
+
+    fetch(`/api/signin-sheet/${teamId}`, {
+      method: "GET",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+    })
+    .then(result => result.blob())
+    .then(data => {
+      let file = window.URL.createObjectURL(data);
+      window.location.assign(file);
+    });
+    onClose();
+  };
+
   return (
     <ChakraProvider theme={theme}>
       <Header react_navigate={navigate}/>
@@ -274,6 +346,11 @@ function Team() {
                 </Link>
               </Tooltip>
               }
+              <Tooltip label='Download sign-in sheet' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
+                <Link onClick={() => downloadSigninSheet()} target='_blank' download>
+                  <IconButton ml={3} mr={3} mb='3px' size='xs' icon={<DownloadIcon/>}/>
+                </Link>
+              </Tooltip>
             </HStack>
             </Center>
           }
@@ -295,8 +372,9 @@ function Team() {
               <Table size="sml" maxWidth="600px" my="50px" mx="20px">
                 <Thead fontSize="0.6em">
                   <Tr>
-                    <Th w="33%">Player</Th>
-                    <Th w="33%">Role</Th>
+                    <Th w="50%">Player</Th>
+                    <Th w="30%">Role</Th>
+                    <Th w="20%">Number</Th>
                   </Tr>
                 </Thead>
                 <Tbody fontSize="0.8em">
@@ -346,7 +424,16 @@ function Team() {
                           !isUserCaptain &&
                           <Td>{player.role}</Td>
                         }
-
+                        <Td>
+                          <Input
+                            placeholder={player.number}
+                            size='xs'
+                            mt={1}
+                            ml={4}
+                            width='50px'
+                            isDisabled={!isPlayerNumberEditingAllowed(player.user_id)}
+                            onChange={e => playerNumberChange(player.user_id, e.target.value)}/>
+                        </Td>
                       </Tr>
                    ))
                   }

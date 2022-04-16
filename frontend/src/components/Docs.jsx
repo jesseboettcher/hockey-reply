@@ -1,4 +1,4 @@
-import { CalendarIcon, ExternalLinkIcon } from '@chakra-ui/icons';
+import { CalendarIcon, DownloadIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import {
   Box,
   ChakraProvider,
@@ -37,6 +37,7 @@ open source, the community can pick it up and keep it going whenever its builder
     </Text>
     <br/>
 
+
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Getting Started</Text>
     <Text>
 First create an account. Once you are signed in, select <Tag color='grey.300'>Join a Team</Tag> on
@@ -52,6 +53,7 @@ send them the link to your team. Once they create an account, they'll be taken s
 button to join your team.
     </Text>
     <br/>
+
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Calendar</Text>
     <Text>
@@ -71,14 +73,22 @@ Check out these links to learn more about how to subscribe on your <Link color={
     <Text>
   There are 3 roles available for players on a team. Roles are managed from the team page. On the team page the captains may (re)assign player roles or remove players from the team.
     </Text>
-<UnorderedList ml={10} my={2}>
-  <ListItem><b>Captain</b> - Has the ability to remove/confirm players, adjust player roles, and update player replies for games. The first person to join a team becomes the captain. Multiple players can share the captain role. </ListItem>
-  <ListItem><b>Full</b> - Indicates the player has paid for the full season. Player can only modify their own replies.</ListItem>
-  <ListItem><b>Half</b> - Indicates the player has paid for half of the season. Player can only modify their own replies.</ListItem>
-  <ListItem><b>Sub</b> - Indicates the player has is available to play if the team is short handed.</ListItem>
-  <ListItem><b>[blank]</b> - Players who have requested to join the team, show up with a blank role. These players cannot view the team roster or game replies until they have been added to the team by a captain, by assigning them one of the player roles (captain/full/half/sub).</ListItem>
-</UnorderedList>
+    <UnorderedList ml={10} my={2}>
+      <ListItem><b>Captain</b> - Has the ability to remove/confirm players, adjust player roles, and update player replies for games. The first person to join a team becomes the captain. Multiple players can share the captain role. </ListItem>
+      <ListItem><b>Full</b> - Indicates the player has paid for the full season. Player can only modify their own replies.</ListItem>
+      <ListItem><b>Half</b> - Indicates the player has paid for half of the season. Player can only modify their own replies.</ListItem>
+      <ListItem><b>Sub</b> - Indicates the player has is available to play if the team is short handed.</ListItem>
+      <ListItem><b>[blank]</b> - Players who have requested to join the team, show up with a blank role. These players cannot view the team roster or game replies until they have been added to the team by a captain, by assigning them one of the player roles (captain/full/half/sub).</ListItem>
+    </UnorderedList>
+    <Text fontSize='lg' fontWeight='medium' color={headerColor}>Sign-in Sheets</Text>
+    <Text>
+You can download a sign-in sheet for your team that has been pre-filled out with registered players and their
+jersey numbers. Go to the team page and tap the <DownloadIcon mb='4px'/> to display the sign-in sheet PDF.
+Player jersey numbers can be updated on the same page. Players can update their own numbers and captains
+can update the numbers for anyone on the team.
+    </Text>
     <br/>
+
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Notifications</Text>
     <Text>
@@ -99,6 +109,7 @@ Other notifications are in the works and will follow (game-time-has-changed, new
 the-goalie-switched-his-reply-to-no, etc).
     </Text>
     <br/>
+
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Contributing</Text>
     <Text>
