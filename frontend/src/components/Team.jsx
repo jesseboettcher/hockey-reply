@@ -3,6 +3,7 @@ import {
   CalendarIcon,
   ChatIcon,
   ChevronDownIcon,
+  CopyIcon,
   DownloadIcon,
   EmailIcon,
   ExternalLinkIcon,
@@ -52,6 +53,63 @@ import { ButtonWithTip } from '../components/ButtonWithTip';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
+
+export function PlayerInfo(props: React.PropsWithChildren<MyProps>) {
+
+  const hoverColor = useColorModeValue('gray.500', 'gray.400');
+
+  function usaHockeyAction() {
+
+    navigator.clipboard.writeText(props.usaHockeyNumber)
+    props.toast({
+          title: `Copied to clipboard`,
+          status: 'info', isClosable: true,
+      })
+  }
+
+  return (
+    <Popover isOpen={props.isOpen}>
+      <PopoverTrigger>
+        <div onClick={props.clickHandler} style={{cursor: 'pointer'}}>
+          <span>
+            {props.label}
+          </span>
+          <Icon as={ChevronDownIcon} w={4} h={4} />
+        </div>
+      </PopoverTrigger>
+      <PopoverContent p={5}>
+        <PopoverArrow />
+        <PopoverCloseButton onClick={props.closeHandler} />
+        <Stack>
+          <a href={`mailto:${props.email}`}>
+            <Box _hover={{color: hoverColor}}>
+              <IconButton size='xs' icon={<EmailIcon />} mr="10px"/>
+              {props.email}
+            </Box>
+          </a>
+          { props.phoneNumber &&
+          <a href={`sms:${props.phoneNumber}`}>
+            <Box _hover={{color: hoverColor}}>
+              <IconButton size='xs' icon={<ChatIcon />} mr="10px"/>
+              {props.phoneNumber}
+            </Box>
+          </a>
+          }
+          { props.usaHockeyNumber &&
+          <a onClick={usaHockeyAction} style={{cursor: 'pointer'}}>
+            <Box _hover={{color: hoverColor}}>
+              <IconButton size='xs' icon={<CopyIcon />} mr="10px"/>
+              {props.usaHockeyNumber}
+            </Box>
+          </a>
+          }
+        </Stack>
+
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 export function Team() {
 
@@ -389,29 +447,16 @@ export function Team() {
 
                       <Tr key={player.user_id}>
                         <Td py="10px">
-                            <Popover isOpen={player.user_id == openPopover}>
-                              <PopoverTrigger>
-                                <div onClick={() => open(player.user_id)} style={{cursor: 'pointer'}}>
-                                  <span>
-                                    {player.user_id == user['user_id'] ? <b>{player.name} (You)</b> : player.name}
-                                  </span>
-                                  <Icon as={ChevronDownIcon} w={4} h={4} />
-                                </div>
-                              </PopoverTrigger>
-                              <PopoverContent p={5} color='white' bg='blue.800' >
-                                <PopoverArrow />
-                                <PopoverCloseButton onClick={close} />
-                                <Stack>
-                                  <a href={`mailto:${player.email}`}>
-                                    <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
-                                      <IconButton size='xs' icon={<EmailIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
-                                      {player.email}
-                                    </Box>
-                                  </a>
-                                </Stack>
-
-                              </PopoverContent>
-                            </Popover>
+                          <PlayerInfo
+                            isOpen={player.user_id == openPopover}
+                            clickHandler={() => open(player.user_id)}
+                            label={player.user_id == user['user_id'] ? <b>{player.name} (You)</b> : player.name}
+                            closeHandler={() => close()}
+                            email={player.email}
+                            phoneNumber={player.phone_number}
+                            usaHockeyNumber={player.usa_hockey_number}
+                            toast={toast}
+                          />
                         </Td>
                         {
                           isUserCaptain &&
@@ -479,13 +524,5 @@ export function Team() {
     </ChakraProvider>
   );
 }
-
-// TODO add profile page, field for phone numbers, this panel
-// <a href={`sms:408-867-5309`}>
-//   <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
-//     <IconButton size='xs' icon={<ChatIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
-//     408-867-5309
-//   </Box>
-// </a>
 
 export default Team;

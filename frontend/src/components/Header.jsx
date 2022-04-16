@@ -166,12 +166,12 @@ const DesktopNav = props => {
             fontWeight={500}
             variant={'link'}
             color={linkColor}
-            href={'/sign-out'}
+            href={'/profile'}
             _hover={{
                     textDecoration: 'none',
                     color: linkHoverColor,
                   }}>
-            Sign Out
+            Profile
           </Button>
           }
           { !props.signed_in && !props.hide_sign_in &&
@@ -240,7 +240,7 @@ const MobileNav = props => {
         <MobileNavItem key='sign-in-mobile-nav' label='Sign In' href='/sign-in' />
       }
       { props.signed_in && !props.hide_sign_in &&
-        <MobileNavItem key='sign-out-mobile-nav' label='Sign Out' href='/sign-out' />
+        <MobileNavItem key='profile-mobile-nav' label='Profile' href='/profile' />
       }
     </Stack>
   );

@@ -37,7 +37,7 @@ import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { Header } from '../components/Header';
 import { ReplyBox } from '../components/ReplyBox';
 import { Footer } from '../components/Footer';
-import { checkLogin, getAuthHeader, getData, logout, MyLink } from '../utils';
+import { checkLogin, getAuthHeader, getData } from '../utils';
 
 function Home() {
 

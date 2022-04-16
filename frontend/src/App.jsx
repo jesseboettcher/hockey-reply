@@ -8,17 +8,18 @@ import {
   Routes,
 } from 'react-router-dom';
 
-import Docs from './components/Docs'
-import Game from './components/Game'
+import Docs from './components/Docs';
+import Game from './components/Game';
 import Home from './components/Home';
-import ForgotPassword from './components/auth/ForgotPassword'
-import ResetPassword from './components/auth/ResetPassword'
+import ForgotPassword from './components/auth/ForgotPassword';
+import Profile from './components/auth/Profile';
+import ResetPassword from './components/auth/ResetPassword';
 import Reply from './components/Reply';
 import SignIn from './components/auth/SignIn';
-import SignOut from './components/auth/SignOut'
-import SignUp from './components/auth/SignUp'
-import Team from './components/Team'
-import TagManager from 'react-gtm-module'
+import SignOut from './components/auth/SignOut';
+import SignUp from './components/auth/SignUp';
+import Team from './components/Team';
+import TagManager from 'react-gtm-module';
 
 const tagManagerArgs = {
     gtmId: 'GTM-PKF2HNB'
@@ -35,6 +36,7 @@ function App() {
           <Route path='/home' element={<Home />} />
           <Route path='/game/:game_id/for-team/:team_id' element={<Game />} />
           <Route path='/forgot-password' element={<ForgotPassword />} />
+          <Route path='/profile' element={<Profile />} />
           <Route path='/reset-password' element={<ResetPassword />} />
           <Route path='/reply/:game_id/:team_id/:user_id/:response' element={<Reply />} />
           <Route path='/sign-in' element={<SignIn />} />

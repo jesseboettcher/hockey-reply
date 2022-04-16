@@ -53,7 +53,13 @@ send them the link to your team. Once they create an account, they'll be taken s
 button to join your team.
     </Text>
     <br/>
-
+    <Text fontSize='lg' fontWeight='medium' color={headerColor}>Contact Info + USA Hockey Number</Text>
+    <Text>
+Update your profile with your cell phone and USA Hockey numbers so that they can be available to your team.
+You can access your teammates' contact info from the team page. Tap any teammate and a pop-up will appear
+that will let you send them an SMS, email, or copy their USA hockey number.
+    </Text>
+    <br/>
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Calendar</Text>
     <Text>

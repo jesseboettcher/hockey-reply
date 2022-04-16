@@ -6,6 +6,7 @@ def create_app(testing=False):
 	from webserver.api import auth
 	from webserver.api import calendar
 	from webserver.api import game
+	from webserver.api import profile
 	from webserver.api import routes
 	from webserver.api import signaturepdf
 	from webserver.api import team
@@ -13,6 +14,7 @@ def create_app(testing=False):
 	app.register_blueprint(auth.blueprint)
 	app.register_blueprint(calendar.blueprint)
 	app.register_blueprint(game.blueprint)
+	app.register_blueprint(profile.blueprint)
 	app.register_blueprint(routes.blueprint)
 	app.register_blueprint(team.blueprint)
 	app.register_blueprint(signaturepdf.blueprint)

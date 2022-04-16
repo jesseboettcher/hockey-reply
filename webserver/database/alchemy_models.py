@@ -77,6 +77,8 @@ class User(Base):
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
+    phone_number = Column(String)
+    usa_hockey_number = Column(String)
 
     created_at = Column(DateTime)
     logged_in_at = Column(DateTime)

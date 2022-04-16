@@ -147,6 +147,8 @@ def get_team_players(team_name_or_id=None):
             'user_id': player.user_id,
             'name': player_name,
             'email': requesting_player.email,
+            'phone_number': requesting_player.phone_number,
+            'usa_hockey_number': requesting_player.usa_hockey_number,
             'role': player.role,
             'number': player.number if player.number else '',
             'requested_at': player.joined_at,

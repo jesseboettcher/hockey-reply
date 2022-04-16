@@ -61,6 +61,8 @@ CREATE TABLE users(
     first_name      TEXT,
     last_name       TEXT,
     email           TEXT,
+    phone_number    TEXT,
+    usa_hockey_number TEXT,
 
     created_at      TIMESTAMP WITH TIME ZONE,
     logged_in_at    TIMESTAMP WITH TIME ZONE,
