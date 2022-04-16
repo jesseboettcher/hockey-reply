@@ -7,7 +7,7 @@ import {
   ChakraProvider,
   FormControl,
   Grid,
-  IconButton,
+  HStack,
   Input,
   Link,
   Modal,
@@ -22,7 +22,6 @@ import {
   Td,
   Text,
   Thead,
-  Tooltip,
   Th,
   Tr,
   theme,
@@ -33,11 +32,12 @@ import React, {useEffect, useRef, useState} from 'react';
 import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
 
+import { ButtonWithTip } from '../components/ButtonWithTip';
 import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { Header } from '../components/Header';
 import { ReplyBox } from '../components/ReplyBox';
 import { Footer } from '../components/Footer';
-import { checkLogin, getAuthHeader, getData, logout, MyLink } from '../utils';
+import { checkLogin, getAuthHeader, getData } from '../utils';
 
 function Home() {
 
@@ -51,9 +51,6 @@ function Home() {
   // Modal dialog control (join team)
   const { isOpen, onOpen, onClose } = useDisclosure()
   const joinTeamRef = React.useRef();
-
-  const tipBackground = useColorModeValue('#EDF2F7', 'whiteAlpha.200');
-  const tipTextColor = useColorModeValue('gray.500', 'gray.200');
 
   // Fetch data
   const fetchedData = useRef(false);
@@ -210,18 +207,24 @@ function Home() {
                         <a href={`/team/${team.name.replaceAll(' ', '-').toLowerCase()}`}>{team.name} ></a>
                       </Td>
                       <Td py="6px">
-                        <Tooltip label='Share link to join' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
-                          <Link href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${team.name}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${team.name.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}>
-                            <IconButton size='xs' icon={<ExternalLinkIcon/>} mx={3} />
-                          </Link>
-                        </Tooltip>
-                        { team.calendar_url &&
-                        <Tooltip label='Subscribe to the calendar' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
-                          <Link href={team.calendar_url}>
-                            <IconButton size='xs' icon={<CalendarIcon/>} mx={3}/>
-                          </Link>
-                        </Tooltip>
-                        }
+                        <HStack>
+                          <ButtonWithTip
+                            label='Share link to join'
+                            icon={<ExternalLinkIcon/>}
+                            href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${team.name}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${team.name.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}
+                            placement='top'
+                            mr={0}
+                            />
+                          { team.calendar_url &&
+                          <ButtonWithTip
+                            label='Subscribe to the calendar'
+                            icon={<CalendarIcon/>}
+                            href={team.calendar_url}
+                            placement='top'
+                            mr={0}
+                            />
+                          }
+                        </HStack>
                       </Td>
                     </Tr>
                  ))

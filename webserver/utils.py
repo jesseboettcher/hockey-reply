@@ -40,7 +40,7 @@ def timeuntil(start, end):
     '''
     delta = end - start
     delta = timedelta(days=delta.days,
-                      seconds=int(delta.seconds / 60 * 60), # round to minutes
+                      seconds=int(delta.seconds / 60) * 60, # round to minutes
                       microseconds=0)
 
     if delta.total_seconds() < 3600:
@@ -56,7 +56,7 @@ def timeuntil(start, end):
 
     if delta.days == 0:
         delta = timedelta(days=delta.days,
-                          seconds=int(delta.seconds / 3600 * 3600), # round to hours
+                          seconds=int(delta.seconds / 3600) * 3600, # round to hours
                           microseconds=0)
         return humanize.naturaldelta(delta)
         

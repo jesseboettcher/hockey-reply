@@ -20,6 +20,7 @@ class TeamPlayer(Base):
     team_id = Column(ForeignKey('team.team_id'), primary_key=True)
     user_id = Column(ForeignKey('users.user_id'), primary_key=True)
     role = Column(String)
+    number = Column(String)
     pending_status = Column(Boolean)
     joined_at = Column(DateTime)
     player = relationship("User", back_populates="teams") # TODO rename user
@@ -76,6 +77,8 @@ class User(Base):
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
+    phone_number = Column(String)
+    usa_hockey_number = Column(String)
 
     created_at = Column(DateTime)
     logged_in_at = Column(DateTime)

@@ -6,16 +6,18 @@ def create_app(testing=False):
 	from webserver.api import auth
 	from webserver.api import calendar
 	from webserver.api import game
+	from webserver.api import profile
 	from webserver.api import routes
+	from webserver.api import signaturepdf
 	from webserver.api import team
 
 	app.register_blueprint(auth.blueprint)
 	app.register_blueprint(calendar.blueprint)
 	app.register_blueprint(game.blueprint)
+	app.register_blueprint(profile.blueprint)
 	app.register_blueprint(routes.blueprint)
 	app.register_blueprint(team.blueprint)
-
-	app.config['TESTING'] = testing
+	app.register_blueprint(signaturepdf.blueprint)
 
 	from webserver.data_synchronizer import Synchronizer
 	app.config['synchronizer'] = Synchronizer()
@@ -32,6 +34,9 @@ def create_app(testing=False):
 			pass
 
 		write_log('INFO', f'Starting up {commit}')
+
+	app.config['TESTING'] = testing
+	app.config['DATA_DIR'] = os.path.join(app.root_path, 'data')
 
 	@app.teardown_appcontext
 	def close_connection(exception):

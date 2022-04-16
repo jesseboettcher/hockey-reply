@@ -1,4 +1,13 @@
-import { ArrowForwardIcon, CalendarIcon, ChevronDownIcon, EmailIcon, ExternalLinkIcon, ChatIcon } from '@chakra-ui/icons'
+import {
+  ArrowForwardIcon,
+  CalendarIcon,
+  ChatIcon,
+  ChevronDownIcon,
+  CopyIcon,
+  DownloadIcon,
+  EmailIcon,
+  ExternalLinkIcon,
+} from '@chakra-ui/icons'
 import {
   AlertDialog,
   AlertDialogOverlay,
@@ -12,6 +21,7 @@ import {
   ChakraProvider,
   HStack,
   Icon,
+  Input,
   IconButton,
   Link,
   Popover,
@@ -29,21 +39,79 @@ import {
   Thead,
   Text,
   theme,
-  Tooltip,
   useColorModeValue,
   useDisclosure,
-  useToast
+  useToast,
+  VStack
 } from '@chakra-ui/react';
 import _ from "lodash";
 import React, {useEffect, useRef, useState} from 'react';
 import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
 
+import { ButtonWithTip } from '../components/ButtonWithTip';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
 
-function Team() {
+export function PlayerInfo(props: React.PropsWithChildren<MyProps>) {
+
+  const hoverColor = useColorModeValue('gray.500', 'gray.400');
+
+  function usaHockeyAction() {
+
+    navigator.clipboard.writeText(props.usaHockeyNumber)
+    props.toast({
+          title: `Copied to clipboard`,
+          status: 'info', isClosable: true,
+      })
+  }
+
+  return (
+    <Popover isOpen={props.isOpen}>
+      <PopoverTrigger>
+        <div onClick={props.clickHandler} style={{cursor: 'pointer'}}>
+          <span>
+            {props.label}
+          </span>
+          <Icon as={ChevronDownIcon} w={4} h={4} />
+        </div>
+      </PopoverTrigger>
+      <PopoverContent p={5}>
+        <PopoverArrow />
+        <PopoverCloseButton onClick={props.closeHandler} />
+        <Stack>
+          <a href={`mailto:${props.email}`}>
+            <Box _hover={{color: hoverColor}}>
+              <IconButton size='xs' icon={<EmailIcon />} mr="10px"/>
+              {props.email}
+            </Box>
+          </a>
+          { props.phoneNumber &&
+          <a href={`sms:${props.phoneNumber}`}>
+            <Box _hover={{color: hoverColor}}>
+              <IconButton size='xs' icon={<ChatIcon />} mr="10px"/>
+              {props.phoneNumber}
+            </Box>
+          </a>
+          }
+          { props.usaHockeyNumber &&
+          <a onClick={usaHockeyAction} style={{cursor: 'pointer'}}>
+            <Box _hover={{color: hoverColor}}>
+              <IconButton size='xs' icon={<CopyIcon />} mr="10px"/>
+              {props.usaHockeyNumber}
+            </Box>
+          </a>
+          }
+        </Stack>
+
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
+export function Team() {
 
   let { team_name_or_id } = useParams();
   let navigate = useNavigate();
@@ -55,12 +123,13 @@ function Team() {
   const [openAlert, setOpenAlert] = React.useState(false)
   const cancelAlertRef = React.useRef()
 
-  const tipBackground = useColorModeValue('#EDF2F7', 'whiteAlpha.200');
-  const tipTextColor = useColorModeValue('gray.500', 'gray.200');
+  // Player number updates
+  const submitPlayerChangesTimer = React.useRef();
+  const [pendingNumberChanges, setPendingNumberChanges] = React.useState({});
 
   // Popover control (player contact info)
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const cancelRef = React.useRef()
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = React.useRef();
   const [openPopover, setOpenPopover] = React.useState(0)
   const open = (user) => setOpenPopover(user);
   const close = () => setOpenPopover(0);
@@ -254,27 +323,99 @@ function Team() {
     onClose();
   };
 
+  function submitPendingPlayerNumberChanges() {
+
+    for (const [user_id, number] of Object.entries(pendingNumberChanges)) {
+
+      let data = {
+        team_name: teamName,
+        user_id: user_id,
+        team_id: teamId,
+        number: number
+      };
+
+      fetch(`/api/player-number`, {
+        method: "POST",
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+        body: JSON.stringify(data)
+      })
+      .then(response => {
+        if (response.status == 200) {
+          return;
+        }
+      });
+    }
+    setPendingNumberChanges({});
+  }
+
+  function playerNumberChange(user_id, number) {
+    clearTimeout(submitPlayerChangesTimer.current);
+
+    let pending = pendingNumberChanges;
+    pending[user_id] = number;
+    setPendingNumberChanges(pending);
+
+    submitPlayerChangesTimer.current = setTimeout(submitPendingPlayerNumberChanges, 1000); // 1s
+  };
+
+  function isPlayerNumberEditingAllowed(user_id) {
+
+    if (user.user_id == user_id) {
+      return true;
+    }
+    return isUserCaptain;
+  };
+
+  function downloadSigninSheet() {
+
+    fetch(`/api/signin-sheet/${teamId}`, {
+      method: "GET",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+    })
+    .then(result => result.blob())
+    .then(data => {
+      let file = window.URL.createObjectURL(data);
+      window.location.assign(file);
+    });
+    onClose();
+  };
+
   return (
     <ChakraProvider theme={theme}>
       <Header react_navigate={navigate}/>
       <Box minH="500px" textAlign="center" fontSize="xl" mt="50px">
           { teamName &&
           <Center>
-            <HStack>
+            <VStack>
               <Text fontSize='xl' fontWeight='medium'>{teamName}</Text>
-              <Tooltip label='Share link to join' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
-                <Link href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${teamName}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${teamName.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}>
-                  <IconButton ml={3} mr={3} mb='3px' size='xs' icon={<ExternalLinkIcon/>}/>
-                </Link>
-              </Tooltip>
-              { calendar_url &&
-              <Tooltip label='Subscribe to the calendar' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
-                <Link href={calendar_url}>
-                  <IconButton size='xs' icon={<CalendarIcon/>} />
-                </Link>
-              </Tooltip>
-              }
-            </HStack>
+              <HStack>
+                <ButtonWithTip
+                  label='Share link to join'
+                  icon={<ExternalLinkIcon/>}
+                  href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${teamName}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${teamName.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}
+                  placement='bottom'
+                  mr={3}
+                  />
+                { calendar_url &&
+                <ButtonWithTip
+                  label='Subscribe to the calendar'
+                  icon={<CalendarIcon/>}
+                  href={calendar_url}
+                  placement='bottom'
+                  mr={3}
+                  />
+                }
+                <ButtonWithTip
+                  label='Download sign-in sheet'
+                  icon={<DownloadIcon/>}
+                  linkDownloadAction={() => downloadSigninSheet()}
+                  placement='bottom'
+                  mr={3}
+                  />
+              </HStack>
+            </VStack>
             </Center>
           }
           <Center>
@@ -295,8 +436,9 @@ function Team() {
               <Table size="sml" maxWidth="600px" my="50px" mx="20px">
                 <Thead fontSize="0.6em">
                   <Tr>
-                    <Th w="33%">Player</Th>
-                    <Th w="33%">Role</Th>
+                    <Th w="50%">Player</Th>
+                    <Th w="30%">Role</Th>
+                    <Th w="20%">Number</Th>
                   </Tr>
                 </Thead>
                 <Tbody fontSize="0.8em">
@@ -305,29 +447,16 @@ function Team() {
 
                       <Tr key={player.user_id}>
                         <Td py="10px">
-                            <Popover isOpen={player.user_id == openPopover}>
-                              <PopoverTrigger>
-                                <div onClick={() => open(player.user_id)} style={{cursor: 'pointer'}}>
-                                  <span>
-                                    {player.user_id == user['user_id'] ? <b>{player.name} (You)</b> : player.name}
-                                  </span>
-                                  <Icon as={ChevronDownIcon} w={4} h={4} />
-                                </div>
-                              </PopoverTrigger>
-                              <PopoverContent p={5} color='white' bg='blue.800' >
-                                <PopoverArrow />
-                                <PopoverCloseButton onClick={close} />
-                                <Stack>
-                                  <a href={`mailto:${player.email}`}>
-                                    <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
-                                      <IconButton size='xs' icon={<EmailIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
-                                      {player.email}
-                                    </Box>
-                                  </a>
-                                </Stack>
-
-                              </PopoverContent>
-                            </Popover>
+                          <PlayerInfo
+                            isOpen={player.user_id == openPopover}
+                            clickHandler={() => open(player.user_id)}
+                            label={player.user_id == user['user_id'] ? <b>{player.name} (You)</b> : player.name}
+                            closeHandler={() => close()}
+                            email={player.email}
+                            phoneNumber={player.phone_number}
+                            usaHockeyNumber={player.usa_hockey_number}
+                            toast={toast}
+                          />
                         </Td>
                         {
                           isUserCaptain &&
@@ -346,7 +475,16 @@ function Team() {
                           !isUserCaptain &&
                           <Td>{player.role}</Td>
                         }
-
+                        <Td>
+                          <Input
+                            placeholder={player.number}
+                            size='xs'
+                            mt={1}
+                            ml={4}
+                            width='50px'
+                            isDisabled={!isPlayerNumberEditingAllowed(player.user_id)}
+                            onChange={e => playerNumberChange(player.user_id, e.target.value)}/>
+                        </Td>
                       </Tr>
                    ))
                   }
@@ -386,13 +524,5 @@ function Team() {
     </ChakraProvider>
   );
 }
-
-// TODO add profile page, field for phone numbers, this panel
-// <a href={`sms:408-867-5309`}>
-//   <Box color="#ffffffbb" _hover={{color: "#ffffffff"}}>
-//     <IconButton size='xs' icon={<ChatIcon />} bg='#ffffff33' color="#ffffff99" mr="10px" _hover={{bg: "#ffffff55"}}/>
-//     408-867-5309
-//   </Box>
-// </a>
 
 export default Team;

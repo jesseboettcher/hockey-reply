@@ -147,7 +147,10 @@ def get_team_players(team_name_or_id=None):
             'user_id': player.user_id,
             'name': player_name,
             'email': requesting_player.email,
+            'phone_number': requesting_player.phone_number,
+            'usa_hockey_number': requesting_player.usa_hockey_number,
             'role': player.role,
+            'number': player.number if player.number else '',
             'requested_at': player.joined_at,
             'player_count': len(team.players)
         }
@@ -273,6 +276,54 @@ def update_player_role():
     write_log('ERROR', f'api/player-role: player not found in team')
     return {'result': 'error'}, 400
 
+
+@blueprint.route('/player-number', methods=['POST'])
+def update_player_number():
+    ''' Update the jersey number of a player on the team
+    '''
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
+    db = get_db()
+
+    # check for required fields
+    if 'team_id' not in request.json or \
+       'user_id' not in request.json or \
+       'number' not in request.json:
+
+        write_log('ERROR', f'api/player-number: missing request fields')
+        return {'result': 'error'}, 400
+
+    team = db.get_team_by_id(request.json['team_id'])
+
+    if not team:
+        write_log('ERROR', f'api/player-number: team {request.json["team_id"]} not found')
+        return {'result': 'error'}, 400
+
+    # get current user and check for authorization to accept join requests
+    logged_in_user_player_obj = find_player(team, get_current_user().user_id)
+    player_obj_to_update = find_player(team, request.json['user_id'])
+
+    # If the player to update is not the logged in user
+    # And the logged in user is not a captain
+    if (not player_obj_to_update or player_obj_to_update.player.user_id != get_current_user().user_id) and\
+       (not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain'):
+        write_log('ERROR', f'api/player-role: logged in user does not have permissions to modify player roles')
+        return {'result': 'error'}, 400
+
+    # find the player, make the change
+    for player in team.players:
+
+        if player.player.user_id == int(request.json['user_id']):
+
+            player.number = request.json['number'];
+            db.commit_changes()
+
+            write_log('INFO', f'api/player-number: {player.player.email} updated to {player.number} on {team.name} by {get_current_user().email}')
+            return make_response({ 'result' : 'success' })
+
+    write_log('ERROR', f'api/player-number: player not found in team')
+    return {'result': 'error'}, 400
 
 @blueprint.route('/remove-player', methods=['POST'])
 def remove_player():
