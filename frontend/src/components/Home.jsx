@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { CalendarIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import {
   Badge,
@@ -54,6 +55,7 @@ function Home() {
 
   // Fetch data
   const fetchedData = useRef(false);
+  const [lastRefresh, setLastRefresh] = React.useState(dayjs())
   const [myTeams, setMyTeams] = useState([]);
   const [myGames, setMyGames] = useState([]);
   const [user, setUser] = useState({});
@@ -141,7 +143,11 @@ function Home() {
   return (
     <ChakraProvider theme={theme}>
 
-      <Header react_navigate={navigate} signed_in={user != {}}></Header>
+      <Header
+        react_navigate={navigate}
+        signed_in={user != {}}
+        lastRefresh={lastRefresh}
+        />
 
       <Box fontSize="xl">
           <Center>

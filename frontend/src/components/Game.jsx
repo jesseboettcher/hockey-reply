@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { ArrowForwardIcon } from '@chakra-ui/icons'
 import {
   Center,
@@ -80,6 +81,7 @@ function Game() {
   const [message, setMessage] = useState([]);
   const [userIsGoalie, setUserIsGoalie] = useState(false);
   const fetchedData = useRef(false);
+  const [lastRefresh, setLastRefresh] = React.useState(dayjs())
   const responseReceived = useRef(false);
   const toast = useToast();
 
@@ -249,7 +251,7 @@ function Game() {
 
   return (
     <ChakraProvider theme={theme}>
-      <Header/>
+      <Header lastRefresh={lastRefresh}/>
       <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
             <InfoBox>
