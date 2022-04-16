@@ -60,8 +60,7 @@ You can access your teammates' contact info from the team page. Tap any teammate
 that will let you send them an SMS, email, or copy their USA hockey number.
     </Text>
     <br/>
-
-    <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Calendar</Text>
+    <Text fontSize='lg' fontWeight='medium' color={headerColor}>Calendar</Text>
     <Text>
 Once you have joined a team. You can download the calendar by tapping the <CalendarIcon mx='2px' mb='4px'/> button
 next to your team on the home page. An .ics file will be downloaded that you can import into your
