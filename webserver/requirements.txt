@@ -32,6 +32,7 @@ Jinja2==3.0.3
 MarkupSafe==2.1.0
 packaging==21.3
 parso==0.8.3
+Pillow==9.1.0
 proto-plus==1.20.3
 protobuf==3.19.4
 psycopg2-binary==2.9.3
@@ -42,10 +43,12 @@ pycparser==2.21
 Pygments==2.11.2
 PyJWT==2.3.0
 pyparsing==3.0.7
+PyPDF4==1.27.0
 python-dateutil==2.8.2
 python-http-client==3.3.7
 pytz==2022.1
 pytz-deprecation-shim==0.1.0.post0
+reportlab==3.6.9
 requests==2.27.1
 rsa==4.8
 sendgrid==6.9.7
