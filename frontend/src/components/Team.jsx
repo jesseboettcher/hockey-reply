@@ -38,21 +38,22 @@ import {
   Thead,
   Text,
   theme,
-  Tooltip,
   useColorModeValue,
   useDisclosure,
-  useToast
+  useToast,
+  VStack
 } from '@chakra-ui/react';
 import _ from "lodash";
 import React, {useEffect, useRef, useState} from 'react';
 import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
 
+import { ButtonWithTip } from '../components/ButtonWithTip';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
 
-function Team() {
+export function Team() {
 
   let { team_name_or_id } = useParams();
   let navigate = useNavigate();
@@ -63,9 +64,6 @@ function Team() {
   const { isAlertOpen, onAlertOpen, onAlertClose } = useDisclosure()
   const [openAlert, setOpenAlert] = React.useState(false)
   const cancelAlertRef = React.useRef()
-
-  const tipBackground = useColorModeValue('#EDF2F7', 'whiteAlpha.200');
-  const tipTextColor = useColorModeValue('gray.500', 'gray.200');
 
   // Player number updates
   const submitPlayerChangesTimer = React.useRef();
@@ -332,26 +330,34 @@ function Team() {
       <Box minH="500px" textAlign="center" fontSize="xl" mt="50px">
           { teamName &&
           <Center>
-            <HStack>
+            <VStack>
               <Text fontSize='xl' fontWeight='medium'>{teamName}</Text>
-              <Tooltip label='Share link to join' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
-                <Link href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${teamName}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${teamName.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}>
-                  <IconButton ml={3} mr={3} mb='3px' size='xs' icon={<ExternalLinkIcon/>}/>
-                </Link>
-              </Tooltip>
-              { calendar_url &&
-              <Tooltip label='Subscribe to the calendar' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
-                <Link href={calendar_url}>
-                  <IconButton size='xs' icon={<CalendarIcon/>} />
-                </Link>
-              </Tooltip>
-              }
-              <Tooltip label='Download sign-in sheet' placement='top' bg={tipBackground} color={tipTextColor} openDelay={500}>
-                <Link onClick={() => downloadSigninSheet()} target='_blank' download>
-                  <IconButton ml={3} mr={3} mb='3px' size='xs' icon={<DownloadIcon/>}/>
-                </Link>
-              </Tooltip>
-            </HStack>
+              <HStack>
+                <ButtonWithTip
+                  label='Share link to join'
+                  icon={<ExternalLinkIcon/>}
+                  href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${teamName}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${teamName.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}
+                  placement='bottom'
+                  mr={3}
+                  />
+                { calendar_url &&
+                <ButtonWithTip
+                  label='Subscribe to the calendar'
+                  icon={<CalendarIcon/>}
+                  href={calendar_url}
+                  placement='bottom'
+                  mr={3}
+                  />
+                }
+                <ButtonWithTip
+                  label='Download sign-in sheet'
+                  icon={<DownloadIcon/>}
+                  linkDownloadAction={() => downloadSigninSheet()}
+                  placement='bottom'
+                  mr={3}
+                  />
+              </HStack>
+            </VStack>
             </Center>
           }
           <Center>
