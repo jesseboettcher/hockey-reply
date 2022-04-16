@@ -32,6 +32,7 @@ export default function SignupCard() {
   const [password, setPassword] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const firstNameRef = React.useRef();
+  const lastNameRef = React.useRef();
   let navigate = useNavigate();
   const toast = useToast();
   const fetchedData = useRef(false);
@@ -43,6 +44,13 @@ export default function SignupCard() {
     if (firstNameRef.current.value.length == 0) {
       toast({
                 title: `Required field, first name`,
+                status: 'error', isClosable: true,
+            })
+      return;
+    }
+    if (lastNameRef.current.value.length == 0) {
+      toast({
+                title: `Required field, last name`,
                 status: 'error', isClosable: true,
             })
       return;
@@ -65,6 +73,7 @@ export default function SignupCard() {
     // TODO hash password before sending (HR-7)
     let data = {
       first_name: firstNameRef.current.value,
+      last_name: lastNameRef.current.value,
       email: userEmail,
       password: password,
     };
@@ -119,9 +128,9 @@ export default function SignupCard() {
                   </Box>
 
                   <Box>
-                    <FormControl id="lastName">
+                    <FormControl id="lastName" isRequired>
                       <FormLabel>Last Name</FormLabel>
-                      <Input type="text" />
+                      <Input type="text" ref={lastNameRef}/>
                     </FormControl>
                   </Box>
                 </HStack>

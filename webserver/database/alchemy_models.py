@@ -20,6 +20,7 @@ class TeamPlayer(Base):
     team_id = Column(ForeignKey('team.team_id'), primary_key=True)
     user_id = Column(ForeignKey('users.user_id'), primary_key=True)
     role = Column(String)
+    number = Column(String)
     pending_status = Column(Boolean)
     joined_at = Column(DateTime)
     player = relationship("User", back_populates="teams") # TODO rename user

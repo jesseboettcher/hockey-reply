@@ -38,7 +38,8 @@ CREATE TABLE team(
 CREATE TABLE team_player(
     user_id         INTEGER,
     team_id         INTEGER,
-    role            TEXT
+    role            TEXT,
+    number          INTEGER,
     pending_status  BOOLEAN,
     joined_at       TIMESTAMP WITH TIME ZONE
 );
