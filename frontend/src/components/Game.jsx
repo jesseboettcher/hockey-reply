@@ -154,9 +154,12 @@ function Game() {
 
   function receiveGameData(body) {
     responseReceived.current = true;
-    setGame(body['games'][0])
-    setUserIsOnTeam(body['games'][0]['is_user_on_team'])
-    setIsUserMembershipPending(body['games'][0]['is_user_membership_pending'])
+
+    if (_.has(body, 'games')) {
+      setGame(body['games'][0])
+      setUserIsOnTeam(body['games'][0]['is_user_on_team'])
+      setIsUserMembershipPending(body['games'][0]['is_user_membership_pending'])
+    }
   }
 
   function submitReply(event, user_id, team_id, game_id, response, new_msg, is_goalie) {

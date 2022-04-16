@@ -81,6 +81,7 @@ export const Logo = props => {
   }, []);
 
   return (
+      <VStack spacing={{base:'-16px', md:'-8px'}}>
       <Center height="80px">
       <Link ml="30px" mr="20px"
         bgGradient={titleGradient}
@@ -92,13 +93,12 @@ export const Logo = props => {
       >
         Hockey Reply
       </Link>
-      <VStack spacing={1}>
         <Badge variant='outline' colorScheme="gray" mt="8px" mr='auto'>BETA</Badge>
+      </Center>
         { lastRefreshString &&
           <Text fontSize='xs'>{lastRefreshString}</Text>
         }
       </VStack>
-      </Center>
     )
 }
 
