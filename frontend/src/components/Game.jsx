@@ -258,7 +258,7 @@ function Game() {
       <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
             <InfoBox>
-              <Text>TIME: {game['scheduled_at']} (in {game['scheduled_how_soon']})</Text>
+              <Text>TIME: {game['scheduled_at']} ({game['scheduled_how_soon']})</Text>
               <Text>RINK: {game['rink']}</Text>
               <Text>VS: {game['user_team']} {homeAwayLabel} vs {game['vs']}</Text>
               <Text>&nbsp;</Text>

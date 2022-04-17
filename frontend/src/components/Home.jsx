@@ -164,7 +164,7 @@ function Home() {
 
                     <Tr key={game.game_id}>
                       <Td py="6px">
-                         <Text fontWeight={500}>{game['scheduled_at']} (in&nbsp;{game['scheduled_how_soon']})</Text>
+                         <Text fontWeight={500}>{game['scheduled_at']} ({game['scheduled_how_soon']})</Text>
                          <Text color="gray.500"
                                _hover={{
                                   textDecoration: 'none',

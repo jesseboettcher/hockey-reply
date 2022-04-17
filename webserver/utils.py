@@ -38,6 +38,12 @@ def timeuntil(start, end):
 
         Important: Pass in local time for the calendar calculation to be correct
     '''
+    if start > end:
+        return f'{timeuntil_internal(start, end)} ago'
+
+    return f'in {timeuntil_internal(start, end)}'
+
+def timeuntil_internal(start, end):
     delta = end - start
     delta = timedelta(days=delta.days,
                       seconds=int(delta.seconds / 60) * 60, # round to minutes
