@@ -11,6 +11,8 @@ from sqlalchemy import create_engine, func, and_, or_
 from sqlalchemy.orm import sessionmaker
 
 from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamPlayer
+from webserver.email import send_game_time_changed
+from webserver.logging import write_log
 
 global_db_instance = None
 
@@ -135,16 +137,22 @@ class Database:
                                                     Game.scheduled_at <= soon)).all()
 
     def add_game(self, game_parser):
+        # print(game_parser, flush=True)
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()
 
         if game is not None:
 
-            if game.compled != game_parser.completed:
-                game.compled = game_parser.completed
+            if game.completed != game_parser.completed:
+                game.completed = game_parser.completed
 
             if game.scheduled_at != game_parser.datetime:
-                write_log('INFO', f'Game schedule change to {game_parser.datetime} from {game.scheduled_at} for {game.game_id}')
+
+                old_scheduled_at = game.scheduled_at
                 game.scheduled_at = game_parser.datetime
+                self.session.commit()
+
+                write_log('INFO', f'Game schedule change to {game_parser.datetime} from {old_scheduled_at} for {game.game_id}')
+                send_game_time_changed(self, game, old_scheduled_at)
 
             self.session.commit()
             return

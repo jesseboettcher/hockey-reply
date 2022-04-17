@@ -108,9 +108,10 @@ from within the message.
   <ListItem><b>Join Request</b> - When a new player requests to join a team, all captains on that team are sent a brief note.</ListItem>
   <ListItem><b>Role Change</b> - When your role is changed, you will receive a message. This is the message new players receive when their request is accepted.</ListItem>
   <ListItem><b>Removed from Team</b> - When (if?) you are removed from a team, you will receive a message.</ListItem>
+  <ListItem><b>Game Time Changed</b> - Every once and awhile there is a schedule change. You'll receive a note when it happens.</ListItem>
 </UnorderedList>
     <Text>
-Other notifications are in the works and will follow (game-time-has-changed, new-games-added-to-schedule,
+Other notifications are in the works and will follow (new-games-added-to-schedule,
 the-goalie-switched-his-reply-to-no, etc).
     </Text>
     <br/>
