@@ -141,7 +141,7 @@ export function Team() {
   const [teamName, setTeamName] = useState(null);
   const [players, setPlayers] = useState([]);
   const [user, setUser] = useState(0);
-  const isUserCaptain = user['role'] == 'captain';
+  const [isUserCaptain, setIsUserCaptain] = useState(null);
   const isUserMembershipPending = user['role'] == '';
   const calendar_url = team.teams ? team.teams[0].calendar_url : null;
 
@@ -198,6 +198,7 @@ export function Team() {
     setUserIsOnTeam(true);
     setPlayers(body['players'])
     setUser(body['user'])
+    setIsUserCaptain(body['user']['role'] == 'captain')
     setTeamId(body['team_id']);
     setTeamName(body['team_name'])
     getData(`/api/team/${body['team_id']}`, setTeam);
@@ -426,13 +427,13 @@ export function Team() {
                 <Button my={4} size='sm' onClick={ () => removePlayer(user['user_id']) }>Cancel Request</Button>
               </Box>
             }
-            { !userIsOnTeam && responseReceived.current &&
+            { !userIsOnTeam && isUserCaptain != null && responseReceived.current &&
               <Box mx={10} mt={20} mb={40}>
                 <Text fontSize="lg">You are not on <b>{teamName}</b>. Would you like to request to join?</Text>
                 <Button my={4} size='sm' onClick={ () => joinTeam() }>Join</Button>
               </Box>
             }
-            { userIsOnTeam && !isUserMembershipPending &&
+            { userIsOnTeam && isUserCaptain != null && !isUserMembershipPending &&
               <Table size="sml" maxWidth="600px" my="50px" mx="20px">
                 <Thead fontSize="0.6em">
                   <Tr>
