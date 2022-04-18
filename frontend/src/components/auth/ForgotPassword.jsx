@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   FormControl,
   Flex,
@@ -10,6 +11,9 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
+
+import { Header } from '../Header';
+import { Footer } from '../Footer';
 
 type ForgotPasswordFormInputs = {
   email: string;
@@ -56,11 +60,12 @@ export default function ForgotPasswordForm(): JSX.Element {
   };
 
   return (
+    <Box>
+    <Header hide_sign_in={true} />
     <Flex
-      minH={'100vh'}
+      minH={'50vh'}
       align={'center'}
-      justify={'center'}
-      bg={useColorModeValue('gray.50', 'gray.800')}>
+      justify={'center'}>
       <Stack
         spacing={4}
         w={'full'}
@@ -99,5 +104,7 @@ export default function ForgotPasswordForm(): JSX.Element {
         </Stack>
       </Stack>
     </Flex>
+    <Footer/>
+    </Box>
   );
 }

@@ -19,6 +19,9 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+import { Header } from '../Header';
+import { Footer } from '../Footer';
+
 export default function ResetPassword() {
 
   const [showPassword, setShowPassword] = useState(false);
@@ -78,23 +81,22 @@ export default function ResetPassword() {
   }, []);
 
   return (
+    <Box>
+    <Header hide_sign_in={true} />
     <Flex
-      minH={'100vh'}
+      minH={'50vh'}
       align={'center'}
-      justify={'center'}
-      bg={useColorModeValue('gray.50', 'gray.800')}>
+      justify={'center'}>
       <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
-        <Stack align={'center'}>
-          <Heading fontSize={'4xl'} textAlign={'center'}>
-            Reset Password
-          </Heading>
-        </Stack>
         <Box
           rounded={'lg'}
           bg={useColorModeValue('white', 'gray.700')}
           boxShadow={'lg'}
           p={8}>
           <Stack spacing={4}>
+          <Heading fontSize={'2xl'} textAlign={'center'}>
+            Reset Password
+          </Heading>
 
             <FormControl id="password" isRequired>
               <FormLabel>Password</FormLabel>
@@ -115,7 +117,6 @@ export default function ResetPassword() {
             <Stack spacing={10} pt={2}>
               <Button
                 loadingText="Submitting"
-                size="lg"
                 bg={'blue.400'}
                 color={'white'}
                 _hover={{
@@ -131,5 +132,7 @@ export default function ResetPassword() {
         </Box>
       </Stack>
     </Flex>
+    <Footer/>
+    </Box>
   );
 }
