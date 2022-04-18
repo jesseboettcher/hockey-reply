@@ -254,6 +254,11 @@ def update_player_role():
         write_log('ERROR', f'api/player-role: logged in user does not have permissions to modify player roles')
         return {'result': 'error'}, 400
 
+    captain_count = 0
+    for player in team.players:
+        if player.role == 'captain':
+            captain_count += 1
+
     # find the player, accept the request, and apply any role changes
     for player in team.players:
     
@@ -262,6 +267,10 @@ def update_player_role():
             if player.pending_status:
                 player.pending_status = False
                 player.joined_at = datetime.now()
+
+            if captain_count == 1 and player.role == 'captain' and request.json['role'] != 'captain':
+                write_log('WARNING', f'api/player-role: teams must have at least one captain')
+                return {'result': 'error: teams must have at least one captain'}, 400
 
             if 'role' in request.json and validate_role(request.json['role']):
                 player.role = request.json['role']
@@ -357,7 +366,6 @@ def remove_player():
         write_log('ERROR', f'api/remove-player: player is not on the team')
         return {'result': 'error'}, 400
 
-
     logged_in_user_player_obj = find_player(team, get_current_user().user_id)
 
     if (not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain') and\
@@ -365,6 +373,15 @@ def remove_player():
         not get_current_user().admin:
         write_log('ERROR', f'api/remove-player: logged in user does not have permissions to remove players')
         return {'result': 'error'}, 400
+
+    captain_count = 0
+    for player in team.players:
+        if player.role == 'captain':
+            captain_count += 1
+
+    if captain_count == 1 and player_to_remove.role == 'captain' and len(team.players) > 1:
+        write_log('WARNING', f'api/player-role: teams must have at least one captain')
+        return {'result': 'error: teams must have at least one captain'}, 400
 
     removed_user = player_to_remove.player
     email = removed_user.email
