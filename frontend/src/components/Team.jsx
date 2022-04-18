@@ -184,19 +184,18 @@ export function Team() {
       return;
     }
 
-    // Sort not replied (put logged in user on top)
-    serverReplies['players'] = serverReplies['players'].sort(function(a, b) {
-      if (a['user_id'] == serverReplies['user']['user_id']) {
-        return -1;
-      }
-      if (b['user_id'] == serverReplies['user']['user_id']) {
-        return 1;
-      }
-      return a['name'].localeCompare(b['name']);
+    let sorted = serverReplies['players'].sort(function(a, b) {
+      let a_split = a.name.split(' ');
+      let a_last = a_split[a_split.length - 1];
+
+      let b_split = b.name.split(' ');
+      let b_last = b_split[b_split.length - 1];
+
+      return a_last.localeCompare(b_last, undefined, { sensitivity: 'base' });
     });
 
     setUserIsOnTeam(true);
-    setPlayers(body['players'])
+    setPlayers(serverReplies['players']);//body['players'])
     setUser(body['user'])
     setIsUserCaptain(body['user']['role'] == 'captain')
     setTeamId(body['team_id']);
@@ -383,6 +382,22 @@ export function Team() {
     onClose();
   };
 
+  function dbRoleToDisplayRole(dbRole) {
+    if (dbRole == 'captain') {
+      return 'Captain';
+    }
+    if (dbRole == 'full') {
+      return 'Full Time';
+    }
+    if (dbRole == 'half') {
+      return 'Half Time';
+    }
+    if (dbRole == 'sub') {
+      return 'Sub';
+    }
+    return '';
+  }
+
   return (
     <ChakraProvider theme={theme}>
       <Header react_navigate={navigate}/>
@@ -474,7 +489,7 @@ export function Team() {
                         }
                         {
                           !isUserCaptain &&
-                          <Td>{player.role}</Td>
+                          <Td>{dbRoleToDisplayRole(player.role)}</Td>
                         }
                         <Td>
                           <Input
