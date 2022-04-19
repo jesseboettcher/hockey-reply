@@ -209,7 +209,7 @@ function Game() {
           },
         });
 
-        getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
+        getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData, true);
         return;
       }
     });

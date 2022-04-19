@@ -37,7 +37,7 @@ export function logout(navigate) {
   navigate('/sign-in', {replace: true})
 }
 
-export function getData(url, setFn) {
+export function getData(url, setFn, skipCached) {
 
     // Use localStorage to make site more responsive. Save fetch results in local storage.
     // When fetching in the future, this function will apply the currently cached results
@@ -45,9 +45,11 @@ export function getData(url, setFn) {
     //
     // sessionStorage is intentionally NOT used here (and for the auth token) because session
     // data is frequently unavailable on mobile where pages are always opened in new tabs.
-    const cachedData = getCacheData(url);
-    if (cachedData) {
-      setFn(cachedData);
+    if (!skipCached) {
+      const cachedData = getCacheData(url);
+      if (cachedData) {
+        setFn(cachedData);
+      }
     }
 
     function setFnWrapper(data) {
