@@ -213,7 +213,7 @@ function Game() {
     // Only submit the goalie flag, if there is already a response, so an empty response
     // is not created
     if (_.get(userReply, 'response', '') != '') {
-      submitReply(null, user.user_id, null, null, isGoalieChecked);
+      submitReply(null, user.user_id, team_id, game_id, null, null, isGoalieChecked);
     }
   }
 
