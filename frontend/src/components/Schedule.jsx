@@ -40,7 +40,7 @@ export default function Schedule() {
   return (
     <ChakraProvider theme={theme}>
       <Header react_navigate={navigate} signed_in={_.has(user, 'user_id', false)}></Header>
-      <Center height='100vh'>
+      <Center height='80vh'>
         <iframe overflow='hidden' height='100%' width='100%' src="https://stats.sharksice.timetoscore.com/display-stats.php?league=1" title="W3Schools Free Online Web Tutorials"></iframe>
       </Center>
       <Footer></Footer>
