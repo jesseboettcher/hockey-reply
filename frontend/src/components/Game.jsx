@@ -8,6 +8,7 @@ import {
   Badge,
   Box,
   Button,
+  extendTheme,
   IconButton,
   Input,
   InputGroup,
@@ -45,6 +46,16 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
 import { ReplyBox } from '../components/ReplyBox';
+
+const themeWithBadgeCustomization = extendTheme({
+  colors: {
+    gold: {
+      100: "#FFF1B9",
+      200: "#FFEDA9",
+      800: "#6E5E01",
+    },
+  },
+})
 
 function InfoBox(props: React.PropsWithChildren<MyProps>) {
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
@@ -221,7 +232,7 @@ function Game() {
   const isUserCaptain = user['role'] == 'captain';
 
   let replyBadge = {};
-  replyBadge['goalie'] = <Badge colorScheme="yellow" textAlign='center' width='80px' mx={2} my="0px">Goalie</Badge>;
+  replyBadge['goalie'] = <Badge colorScheme="gold" textAlign='center' width='80px' mx={2} my="0px">Goalie</Badge>;
 
   let yesCount = 0;
   let maybeCount = 0;
@@ -253,7 +264,7 @@ function Game() {
   }
 
   return (
-    <ChakraProvider theme={theme}>
+    <ChakraProvider theme={themeWithBadgeCustomization}>
       <Header lastRefresh={lastRefresh}/>
       <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
