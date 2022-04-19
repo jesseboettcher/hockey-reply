@@ -46,7 +46,7 @@ const NAV_ITEMS: Array<NavItem> = [
   },
   {
     label: 'Schedule',
-    href: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=1',
+    href: '/schedule',
   },
   {
     label: 'Docs',
