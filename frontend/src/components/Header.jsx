@@ -45,8 +45,8 @@ const NAV_ITEMS: Array<NavItem> = [
     href: '/home',
   },
   {
-    label: 'Schedule',
-    href: '/schedule',
+    label: 'Standings',
+    href: '/standings',
   },
   {
     label: 'Docs',

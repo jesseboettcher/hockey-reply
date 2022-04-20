@@ -15,10 +15,10 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import Profile from './components/auth/Profile';
 import ResetPassword from './components/auth/ResetPassword';
 import Reply from './components/Reply';
-import Schedule from './components/Schedule';
 import SignIn from './components/auth/SignIn';
 import SignOut from './components/auth/SignOut';
 import SignUp from './components/auth/SignUp';
+import Standings from './components/Standings';
 import Team from './components/Team';
 import TagManager from 'react-gtm-module';
 
@@ -40,10 +40,10 @@ function App() {
           <Route path='/profile' element={<Profile />} />
           <Route path='/reset-password' element={<ResetPassword />} />
           <Route path='/reply/:game_id/:team_id/:user_id/:response' element={<Reply />} />
-          <Route path='/schedule' element={<Schedule />} />
           <Route path='/sign-in' element={<SignIn />} />
           <Route path='/sign-out' element={<SignOut />} />
           <Route path='/sign-up' element={<SignUp />} />
+          <Route path='/standings' element={<Standings />} />
           <Route path='/team/:team_name_or_id' element={<Team />} />
           <Route path='/team/' element={<Team />} />
         </Routes>
