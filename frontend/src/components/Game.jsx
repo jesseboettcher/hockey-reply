@@ -44,7 +44,7 @@ import _ from "lodash";
 
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { checkLogin, getAuthHeader, getData } from '../utils';
+import { checkLogin, getAuthHeader, getData, getPageData } from '../utils';
 import { ReplyBox } from '../components/ReplyBox';
 
 const themeWithBadgeCustomization = extendTheme({
@@ -93,11 +93,21 @@ function Game() {
   const [userIsGoalie, setUserIsGoalie] = useState(false);
   const fetchedData = useRef(false);
   const [lastRefresh, setLastRefresh] = React.useState(dayjs())
+  const [pageError, setPageError] = React.useState(null)
   const responseReceived = useRef(false);
   const toast = useToast();
 
   const [userIsOnTeam, setUserIsOnTeam] = useState(true);
   const [isUserMembershipPending, setIsUserMembershipPending] = useState(false);
+
+  const loadPageData = async () => {
+      const loadDataResult = await getPageData([{url: `/api/game/${game_id}/for-team/${team_id}`, handler: receiveGameData},
+                                                {url: `/api/game/reply/${game_id}/for-team/${team_id}`, handler: receiveReplyData}],
+                                               setLastRefresh);
+      if (!loadDataResult) {
+        setPageError('Uh, oh. Could not get the latest data.');
+      }
+  }
 
   useEffect(() => {
     if (!fetchedData.current) {
@@ -115,8 +125,7 @@ function Game() {
         setUserIsGoalie(window.localStorage.getItem('is_goalie') === true.toString());
       }
 
-      getData(`/api/game/${game_id}/for-team/${team_id}`, receiveGameData);
-      getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
+      loadPageData();
       fetchedData.current = true;
     }
   });
@@ -208,9 +217,13 @@ function Game() {
             event: 'game_reply'
           },
         });
+        setPageError(null);
 
         getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData, true);
         return;
+      }
+      else {
+        setPageError('Uh, oh. Could not send your reponse.');
       }
     });
   };
@@ -265,7 +278,7 @@ function Game() {
 
   return (
     <ChakraProvider theme={themeWithBadgeCustomization}>
-      <Header lastRefresh={lastRefresh}/>
+      <Header lastRefresh={lastRefresh} pageError={pageError}/>
       <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
             <InfoBox>

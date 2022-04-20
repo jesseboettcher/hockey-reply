@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 
 // hasAuthToken is used as an indicator of whether is a user is logged in or not. It is
 // possible the auth token is invalid, but unlikely. Using this lets the UI adjust immediately,
@@ -20,9 +21,9 @@ export const checkLogin = async (navigate) => {
     credentials: 'include',
     headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
   });
-  const data = await response.json();
 
   if (response.status == 200) {
+    const data = await response.json();
     return data;
   }
 
@@ -37,34 +38,60 @@ export function logout(navigate) {
   navigate('/sign-in', {replace: true})
 }
 
-export function getData(url, setFn, skipCached) {
+export const getPageData = async (url_handler_list, setLastRefreshHandler) => {
 
-    // Use localStorage to make site more responsive. Save fetch results in local storage.
-    // When fetching in the future, this function will apply the currently cached results
-    // before making the request, and then update the results when the request completes.
-    //
-    // sessionStorage is intentionally NOT used here (and for the auth token) because session
-    // data is frequently unavailable on mobile where pages are always opened in new tabs.
-    if (!skipCached) {
-      const cachedData = getCacheData(url);
-      if (cachedData) {
-        setFn(cachedData);
-      }
+  // getPageData - Retrieve all the data required for a page, multiple endpoints
+
+  let allSucceeded = true;
+
+  // Apply cached data separately and immediately, so there are no delays with the async
+  // functions, in getting something in front of the user
+  for (const url_handler of url_handler_list) {
+    applyCachedData(url_handler.url, url_handler.handler);
+  }
+
+  for (const url_handler of url_handler_list) {
+    const responseStatus = await getData(url_handler.url, url_handler.handler, true);
+
+    if (responseStatus != 200) {
+      allSucceeded = false;
     }
+  }
+  if (allSucceeded) {
+    setLastRefreshHandler(dayjs());
+  }
+  return allSucceeded;
+}
 
-    function setFnWrapper(data) {
-        setCacheData(url, data);
-        setFn(data);
-    }
+export const getData = async (url, setFn, skipCached) => {
 
-    fetch(url, {
+  // getData - Retrieve the data for a URL and sotre the results in the cache.
+
+  // Use localStorage to make site more responsive. Save fetch results in local storage.
+  // When fetching in the future, this function will apply the currently cached results
+  // before making the request, and then update the results when the request completes.
+  //
+  // sessionStorage is intentionally NOT used here (and for the auth token) because session
+  // data is frequently unavailable on mobile where pages are always opened in new tabs.
+  if (!skipCached) {
+    applyCachedData(url, setFn);
+  }
+
+  function setFnWrapper(data) {
+      setCacheData(url, data);
+      setFn(data);
+  }
+
+  const response = await fetch(url, {
       credentials: 'include',
       headers: {'Authorization': getAuthHeader()},
-    })
-    .then(r =>  r.json().then(data => ({status: r.status, body: data})))
-      .then(obj => {
-          return setFnWrapper(obj.body)
-      });
+    });
+
+  if (response.status == 200) {
+    const data = await response.json();
+    setFnWrapper(data);
+  }
+  return response.status;
 }
 
 export function setCacheData(key, saveData) {
@@ -99,4 +126,12 @@ export function getCacheData(key) {
     return retrieved.data;
   }
   window.localStorage.getItem(key);
+}
+
+function applyCachedData(url, handler) {
+
+    const cachedData = getCacheData(url);
+    if (cachedData) {
+      handler(cachedData);
+    }
 }

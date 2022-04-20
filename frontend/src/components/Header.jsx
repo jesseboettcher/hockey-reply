@@ -95,8 +95,11 @@ export const Logo = props => {
       </Link>
         <Badge variant='outline' colorScheme="gray" mt="8px" mr='auto'>BETA</Badge>
       </Center>
-        { lastRefreshString &&
+        { lastRefreshString && !props.pageError &&
           <Text fontSize='xs'>{lastRefreshString}</Text>
+        }
+        { props.pageError &&
+          <Text fontSize='xs' color='#AB1A00'>{props.pageError}</Text>
         }
       </VStack>
     )
@@ -130,7 +133,7 @@ export const Header = props => {
           />
         </Box>
         <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
-          <Logo lastRefresh={props.lastRefresh}></Logo>
+          <Logo lastRefresh={props.lastRefresh} pageError={props.pageError}></Logo>
         </Flex>
         <DesktopNav hide_sign_in={props.hide_sign_in} signed_in={hasAuthToken()}/>
       </Flex>
