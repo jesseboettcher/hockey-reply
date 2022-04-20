@@ -27,6 +27,7 @@ class Synchronizer:
 
     def __init__(self):
         self.db = None
+        self.new_games_map = {}
 
         executors = {
             'default': {'type': 'threadpool', 'max_workers': 1},
@@ -50,6 +51,9 @@ class Synchronizer:
         write_log('INFO', f'Notify sync')
         self.db = Database()
 
+        for team_id in self.new_games_map.keys():
+            write_log('INFO', f'Games added {" ".join(self.new_games_map[team_id])}')
+
         coming_soon = self.db.get_games_coming_soon()
 
         for game in coming_soon:
@@ -63,6 +67,7 @@ class Synchronizer:
     def sync(self):
         write_log('INFO', f'Synchronization started')
         self.db = Database()
+        self.new_games_map = {}
 
         source, soup = self.open_season_page()
         for link in soup.find_all('a'):
@@ -86,7 +91,16 @@ class Synchronizer:
             self.db.add_team(team_name, team_parser.external_id)
 
             for game in team_parser.games:
-                self.db.add_game(game)
+                game_is_new = self.db.add_game(game)
+
+                if game_is_new:
+                    if not game.home_team_id in self.new_games_map[game.home_team_id]:
+                        self.new_games_map[game.home_team_id] = []
+                    if not game.away_team_id in self.new_games_map[game.away_team_id]:
+                        self.new_games_map[game.away_team_id] = []
+
+                    self.new_games_map[game.home_team_id].append(game.game_id)
+                    self.new_games_map[game.away_team_id].append(game.game_id)
 
         write_log('INFO', f'Synchronization complete')
         return True

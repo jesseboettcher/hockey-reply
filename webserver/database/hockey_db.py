@@ -137,7 +137,9 @@ class Database:
                                                     Game.scheduled_at <= soon)).all()
 
     def add_game(self, game_parser):
-        # print(game_parser, flush=True)
+        ''' Looks for the game_parser object in the db. Adds the game if it is new or otherwise
+            updates its changed fields. Returns True if the game was new, False otherwise
+        '''
         game = self.session.query(Game).filter(Game.game_id == game_parser.id).one_or_none()
 
         if game is not None:
@@ -155,7 +157,7 @@ class Database:
                 send_game_time_changed(self, game, old_scheduled_at)
 
             self.session.commit()
-            return
+            return False
 
         home_team = self.get_team(game_parser.home_team)
         if home_team is None:
@@ -178,6 +180,7 @@ class Database:
 
         self.session.add(game)
         self.session.commit()
+        return True
 
     def add_game_object(self, game):
         self.session.add(game)
