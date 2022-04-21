@@ -89,11 +89,21 @@ def send_team_role_change(team, updated_player, updated_by_user):
         players who requested to join teams who will receive this email when their request
         is accepted.
     '''
+    role = ''
+    if updated_player.role == 'captain':
+        role = 'Captain'
+    elif updated_player.role == 'full':
+        role = 'Full Time'
+    elif updated_player.role == 'half':
+        role = 'Half Time'
+    elif updated_player.role == 'sub':
+        role = 'Sub'
+
     email_data = {
         'name': updated_player.player.first_name,
         'team': team.name,
         'updated_by': updated_by_user.first_name,
-        'role': updated_player.role
+        'role': role
     }
 
     send_email(TEMPLATE_ROLE_UPDATED, email_data, updated_player.player.email)
