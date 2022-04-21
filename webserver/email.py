@@ -64,6 +64,8 @@ def send_reply_was_changed(db, user, team, game, reply, updated_by_user):
     email_data = {
         'name': user.first_name,
         'team': team.name,
+        'team_id': team.team_id,
+        'game_id': game.game_id,
         'vs': vs_team.name,
         'reply': reply.capitalize(),
         'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p")
