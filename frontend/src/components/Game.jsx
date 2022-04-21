@@ -281,6 +281,7 @@ function Game() {
       <Header lastRefresh={lastRefresh} pageError={pageError}/>
       <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
+          { responseReceived.current &&
             <InfoBox>
               <Text>TIME: {game['scheduled_at']} ({game['scheduled_how_soon']})</Text>
               <Text>RINK: {game['rink']}</Text>
@@ -289,7 +290,7 @@ function Game() {
               <Text>Players: {yesCount} {maybeCountStr}</Text>
               <Text>Goalie: {goalieLabel}</Text>
             </InfoBox>
-
+          }
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
             <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
