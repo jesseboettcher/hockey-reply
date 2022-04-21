@@ -407,6 +407,8 @@ function Game() {
                             openHandler={() => open(reply.user_id)}
                             closeHandler={close}
                             user_id={reply.user_id}
+                            team_id={team_id}
+                            game_id={game_id}
                             name={reply.name}
                             user_reply=''
                             submitHandler={submitReply}
