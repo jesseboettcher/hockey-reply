@@ -92,15 +92,16 @@ class Synchronizer:
 
             for game in team_parser.games:
                 game_is_new = self.db.add_game(game)
+                db_game = self.db.get_game_by_id(game.id)
 
                 if game_is_new:
-                    if not game.home_team_id in self.new_games_map[game.home_team_id]:
-                        self.new_games_map[game.home_team_id] = []
-                    if not game.away_team_id in self.new_games_map[game.away_team_id]:
-                        self.new_games_map[game.away_team_id] = []
+                    if not db_game.home_team_id in self.new_games_map:
+                        self.new_games_map[db_game.home_team_id] = []
+                    if not db_game.away_team_id in self.new_games_map:
+                        self.new_games_map[db_game.away_team_id] = []
 
-                    self.new_games_map[game.home_team_id].append(game.game_id)
-                    self.new_games_map[game.away_team_id].append(game.game_id)
+                    self.new_games_map[db_game.home_team_id].append(db_game.game_id)
+                    self.new_games_map[db_game.away_team_id].append(db_game.game_id)
 
         write_log('INFO', f'Synchronization complete')
         return True
