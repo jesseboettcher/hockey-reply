@@ -52,7 +52,8 @@ class Synchronizer:
         self.db = Database()
 
         for team_id in self.new_games_map.keys():
-            write_log('INFO', f'Games added {" ".join(self.new_games_map[team_id])}')
+            write_log('INFO', f'Games added {self.new_games_map[team_id]}')
+        self.new_games_map = {}
 
         coming_soon = self.db.get_games_coming_soon()
 
