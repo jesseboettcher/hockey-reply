@@ -47,7 +47,7 @@ class Game(Base):
     game_type = Column(String)
     scoresheet_html_url = Column(String)
     scoresheet_pdf_url = Column(String)
-    did_notify_coming_soon = Column(Boolean)
+    did_notify_coming_soon = Column(Boolean, default=False)
 
 class GameReply(Base):
     __tablename__ = "game_reply"
