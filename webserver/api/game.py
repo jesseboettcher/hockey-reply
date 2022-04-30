@@ -13,6 +13,7 @@ import humanize
 
 from webserver.database.alchemy_models import GameReply, User, Team
 from webserver.database.hockey_db import get_db, get_current_user
+from webserver.email import send_reply_was_changed
 from webserver.logging import write_log
 from webserver.api.auth import check_login
 from webserver.utils import timeuntil
@@ -321,5 +322,13 @@ def game_reply(game_id, team_id):
                           message,
                           is_goalie)
 
-        write_log('INFO', f'api/game/reply: {user_id} says {response} for game {game_id}')
+        if get_current_user().user_id != user_id and response != None:
+
+            user = db.get_user_by_id(user_id)
+            team = db.get_team_by_id(team_id)
+            game = db.get_game_by_id(game_id)
+
+            send_reply_was_changed(db, user, team, game, response, get_current_user())
+
+        write_log('INFO', f'api/game/reply: {user_id} says {response} for game {game_id} set by {get_current_user().user_id}')
         return make_response({ 'result' : 'success' })

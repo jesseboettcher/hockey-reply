@@ -10,8 +10,8 @@ from zoneinfo import ZoneInfo
 
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-from webserver.utils import timeuntil
 from webserver.logging import write_log
+from webserver.utils import timeuntil
 
 FROM_ADDRESS = 'jesse@hockeyreply.com'
 TEMPLATE_FORGOT_PASSWORD = 'd-16832cb2df954c6cba5cfc41db35a4e1'
@@ -20,6 +20,7 @@ TEMPLATE_GAME_TIME_CHANGED = 'd-a252a5f879964f9c88725f31475915a4'
 TEMPLATE_JOIN_REQUEST = 'd-f3ad573de30f425aac2657377e7f06af'
 TEMPLATE_ROLE_UPDATED = 'd-683a41dc2a694123815a1fe3ea8a7881'
 TEMPLATE_REMOVED_FROM_TEAM = 'd-0e95577f623d4b5ca53307296856c0f9'
+TEMPLATE_REPLY_CHANGED = 'd-a837b5fd27544b688ce72a5315f6bd65'
 
 def send_email(template, data, to_emails):
     ''' Sends out email to sendgrid. All emails funnel through this function
@@ -54,6 +55,25 @@ def send_game_schedule_change():
 def send_new_games():
     pass
 
+def send_reply_was_changed(db, user, team, game, reply, updated_by_user):
+    ''' Notify that your reply was changed by someone else (captain)
+    '''
+    vs_team = db.get_team_by_id(game.home_team_id if team.team_id == game.away_team_id else game.away_team_id)
+
+    pacific = ZoneInfo('US/Pacific')
+    email_data = {
+        'name': user.first_name,
+        'team': team.name,
+        'team_id': team.team_id,
+        'game_id': game.game_id,
+        'vs': vs_team.name,
+        'reply': reply.capitalize(),
+        'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p")
+    }
+
+    send_email(TEMPLATE_REPLY_CHANGED, email_data, user.email)
+    write_log('INFO', f'Notify reply was changed to {user.email}')
+
 def send_removed_from_team(team, removed_user, updated_by_user):
     ''' condolences, you have been kicked off of the team
     '''
@@ -71,11 +91,21 @@ def send_team_role_change(team, updated_player, updated_by_user):
         players who requested to join teams who will receive this email when their request
         is accepted.
     '''
+    role = ''
+    if updated_player.role == 'captain':
+        role = 'Captain'
+    elif updated_player.role == 'full':
+        role = 'Full Time'
+    elif updated_player.role == 'half':
+        role = 'Half Time'
+    elif updated_player.role == 'sub':
+        role = 'Sub'
+
     email_data = {
         'name': updated_player.player.first_name,
         'team': team.name,
         'updated_by': updated_by_user.first_name,
-        'role': updated_player.role
+        'role': role
     }
 
     send_email(TEMPLATE_ROLE_UPDATED, email_data, updated_player.player.email)

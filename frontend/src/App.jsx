@@ -18,6 +18,7 @@ import Reply from './components/Reply';
 import SignIn from './components/auth/SignIn';
 import SignOut from './components/auth/SignOut';
 import SignUp from './components/auth/SignUp';
+import Standings from './components/Standings';
 import Team from './components/Team';
 import TagManager from 'react-gtm-module';
 
@@ -42,6 +43,7 @@ function App() {
           <Route path='/sign-in' element={<SignIn />} />
           <Route path='/sign-out' element={<SignOut />} />
           <Route path='/sign-up' element={<SignUp />} />
+          <Route path='/standings' element={<Standings />} />
           <Route path='/team/:team_name_or_id' element={<Team />} />
           <Route path='/team/' element={<Team />} />
         </Routes>

@@ -11,6 +11,7 @@
     "@testing-library/jest-dom": "^5.16.2",
     "@testing-library/react": "^10.4.9",
     "@testing-library/user-event": "^12.8.3",
+    "dayjs": "^1.11.1",
     "framer-motion": "^4.1.17",
     "lodash": "^4.17.21",
     "query-string": "^7.1.1",

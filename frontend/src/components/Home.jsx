@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { CalendarIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import {
   Badge,
@@ -37,7 +38,7 @@ import { ColorModeSwitcher } from '../components/ColorModeSwitcher';
 import { Header } from '../components/Header';
 import { ReplyBox } from '../components/ReplyBox';
 import { Footer } from '../components/Footer';
-import { checkLogin, getAuthHeader, getData } from '../utils';
+import { checkLogin, getAuthHeader, getData, getPageData } from '../utils';
 
 function Home() {
 
@@ -54,9 +55,20 @@ function Home() {
 
   // Fetch data
   const fetchedData = useRef(false);
-  const [myTeams, setMyTeams] = useState([]);
-  const [myGames, setMyGames] = useState([]);
+  const [lastRefresh, setLastRefresh] = React.useState(null)
+  const [pageError, setPageError] = React.useState(null)
+  const [myTeams, setMyTeams] = useState(null);
+  const [myGames, setMyGames] = useState(null);
   const [user, setUser] = useState({});
+
+  const loadPageData = async () => {
+      const loadDataResult = await getPageData([{url: '/api/team/', handler: setMyTeams},
+                                                {url: '/api/games/?upcomingOnly', handler: setMyGames}],
+                                               setLastRefresh);
+      if (!loadDataResult) {
+        setPageError('Uh, oh. Could not get the latest data.');
+      }
+  }
 
   useEffect(() => {
 
@@ -71,9 +83,7 @@ function Home() {
 
       checkLogin(navigate).then(result => { setUser(result) });
 
-      getData('/api/team/', setMyTeams)
-      getData('/api/games/?upcomingOnly', setMyGames)
-
+      loadPageData();
       fetchedData.current = true;
     }
   });
@@ -141,7 +151,12 @@ function Home() {
   return (
     <ChakraProvider theme={theme}>
 
-      <Header react_navigate={navigate} signed_in={user != {}}></Header>
+      <Header
+        react_navigate={navigate}
+        signed_in={user != {}}
+        lastRefresh={lastRefresh}
+        pageError={pageError}
+        />
 
       <Box fontSize="xl">
           <Center>
@@ -153,12 +168,12 @@ function Home() {
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
-                {
+                { myGames &&
                   myGames['games'] && myGames['games'].map((game) => (
 
                     <Tr key={game.game_id}>
                       <Td py="6px">
-                         <Text fontWeight={500}>{game['scheduled_at']} (in&nbsp;{game['scheduled_how_soon']})</Text>
+                         <Text fontWeight={500}>{game['scheduled_at']} ({game['scheduled_how_soon']})</Text>
                          <Text color="gray.500"
                                _hover={{
                                   textDecoration: 'none',
@@ -199,7 +214,7 @@ function Home() {
                 </Tr>
               </Thead>
               <Tbody fontSize="0.8em">
-                {
+                { myTeams &&
                   myTeams['teams'] && myTeams['teams'].map((team) => (
 
                     <Tr key={team.team_id}>

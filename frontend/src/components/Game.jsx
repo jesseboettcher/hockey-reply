@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { ArrowForwardIcon } from '@chakra-ui/icons'
 import {
   Center,
@@ -7,6 +8,7 @@ import {
   Badge,
   Box,
   Button,
+  extendTheme,
   IconButton,
   Input,
   InputGroup,
@@ -42,8 +44,18 @@ import _ from "lodash";
 
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { checkLogin, getAuthHeader, getData } from '../utils';
+import { checkLogin, getAuthHeader, getData, getPageData } from '../utils';
 import { ReplyBox } from '../components/ReplyBox';
+
+const themeWithBadgeCustomization = extendTheme({
+  colors: {
+    gold: {
+      100: "#FFF1B9",
+      200: "#FFEDA9",
+      800: "#6E5E01",
+    },
+  },
+})
 
 function InfoBox(props: React.PropsWithChildren<MyProps>) {
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
@@ -80,11 +92,22 @@ function Game() {
   const [message, setMessage] = useState([]);
   const [userIsGoalie, setUserIsGoalie] = useState(false);
   const fetchedData = useRef(false);
+  const [lastRefresh, setLastRefresh] = React.useState(dayjs())
+  const [pageError, setPageError] = React.useState(null)
   const responseReceived = useRef(false);
   const toast = useToast();
 
   const [userIsOnTeam, setUserIsOnTeam] = useState(true);
   const [isUserMembershipPending, setIsUserMembershipPending] = useState(false);
+
+  const loadPageData = async () => {
+      const loadDataResult = await getPageData([{url: `/api/game/${game_id}/for-team/${team_id}`, handler: receiveGameData},
+                                                {url: `/api/game/reply/${game_id}/for-team/${team_id}`, handler: receiveReplyData}],
+                                               setLastRefresh);
+      if (!loadDataResult) {
+        setPageError('Uh, oh. Could not get the latest data.');
+      }
+  }
 
   useEffect(() => {
     if (!fetchedData.current) {
@@ -102,8 +125,7 @@ function Game() {
         setUserIsGoalie(window.localStorage.getItem('is_goalie') === true.toString());
       }
 
-      getData(`/api/game/${game_id}/for-team/${team_id}`, receiveGameData);
-      getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
+      loadPageData();
       fetchedData.current = true;
     }
   });
@@ -152,9 +174,12 @@ function Game() {
 
   function receiveGameData(body) {
     responseReceived.current = true;
-    setGame(body['games'][0])
-    setUserIsOnTeam(body['games'][0]['is_user_on_team'])
-    setIsUserMembershipPending(body['games'][0]['is_user_membership_pending'])
+
+    if (_.has(body, 'games')) {
+      setGame(body['games'][0])
+      setUserIsOnTeam(body['games'][0]['is_user_on_team'])
+      setIsUserMembershipPending(body['games'][0]['is_user_membership_pending'])
+    }
   }
 
   function submitReply(event, user_id, team_id, game_id, response, new_msg, is_goalie) {
@@ -192,9 +217,13 @@ function Game() {
             event: 'game_reply'
           },
         });
+        setPageError(null);
 
-        getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData);
+        getData(`/api/game/reply/${game_id}/for-team/${team_id}`, receiveReplyData, true);
         return;
+      }
+      else {
+        setPageError('Uh, oh. Could not send your reponse.');
       }
     });
   };
@@ -208,7 +237,7 @@ function Game() {
     // Only submit the goalie flag, if there is already a response, so an empty response
     // is not created
     if (_.get(userReply, 'response', '') != '') {
-      submitReply(null, user.user_id, null, null, isGoalieChecked);
+      submitReply(null, user.user_id, team_id, game_id, null, null, isGoalieChecked);
     }
   }
 
@@ -216,7 +245,7 @@ function Game() {
   const isUserCaptain = user['role'] == 'captain';
 
   let replyBadge = {};
-  replyBadge['goalie'] = <Badge colorScheme="yellow" textAlign='center' width='80px' mx={2} my="0px">Goalie</Badge>;
+  replyBadge['goalie'] = <Badge colorScheme="gold" textAlign='center' width='80px' mx={2} my="0px">Goalie</Badge>;
 
   let yesCount = 0;
   let maybeCount = 0;
@@ -248,19 +277,20 @@ function Game() {
   }
 
   return (
-    <ChakraProvider theme={theme}>
-      <Header/>
+    <ChakraProvider theme={themeWithBadgeCustomization}>
+      <Header lastRefresh={lastRefresh} pageError={pageError}/>
       <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
+          { responseReceived.current &&
             <InfoBox>
-              <Text>TIME: {game['scheduled_at']} (in {game['scheduled_how_soon']})</Text>
+              <Text>TIME: {game['scheduled_at']} ({game['scheduled_how_soon']})</Text>
               <Text>RINK: {game['rink']}</Text>
               <Text>VS: {game['user_team']} {homeAwayLabel} vs {game['vs']}</Text>
               <Text>&nbsp;</Text>
               <Text>Players: {yesCount} {maybeCountStr}</Text>
               <Text>Goalie: {goalieLabel}</Text>
             </InfoBox>
-
+          }
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
             <Box textAlign="left" p="10px" mx="20px">
               <Text fontSize="0.8em" mb="8px">Update your status:</Text>
@@ -378,6 +408,8 @@ function Game() {
                             openHandler={() => open(reply.user_id)}
                             closeHandler={close}
                             user_id={reply.user_id}
+                            team_id={team_id}
+                            game_id={game_id}
                             name={reply.name}
                             user_reply=''
                             submitHandler={submitReply}

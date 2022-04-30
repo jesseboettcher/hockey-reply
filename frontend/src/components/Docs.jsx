@@ -60,8 +60,7 @@ You can access your teammates' contact info from the team page. Tap any teammate
 that will let you send them an SMS, email, or copy their USA hockey number.
     </Text>
     <br/>
-
-    <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Calendar</Text>
+    <Text fontSize='lg' fontWeight='medium' color={headerColor}>Calendar</Text>
     <Text>
 Once you have joined a team. You can download the calendar by tapping the <CalendarIcon mx='2px' mb='4px'/> button
 next to your team on the home page. An .ics file will be downloaded that you can import into your
@@ -106,14 +105,12 @@ Upcoming game notifications are sent via email and you can easily add your reply
 &nbsp;<Tag colorScheme="green">Yes</Tag>&nbsp;&nbsp;<Tag colorScheme="red">No</Tag>&nbsp;or&nbsp;<Tag colorScheme="blue">Maybe</Tag>&nbsp;options
 from within the message.
   </ListItem>
+  <ListItem><b>Game Time Changed</b> - Every once and awhile there is a schedule change. You'll receive a note when it happens.</ListItem>
   <ListItem><b>Join Request</b> - When a new player requests to join a team, all captains on that team are sent a brief note.</ListItem>
   <ListItem><b>Role Change</b> - When your role is changed, you will receive a message. This is the message new players receive when their request is accepted.</ListItem>
+  <ListItem><b>Game Reply Changed</b> - When your reply is changed by someone else (a captain), you'll be notified.</ListItem>
   <ListItem><b>Removed from Team</b> - When (if?) you are removed from a team, you will receive a message.</ListItem>
 </UnorderedList>
-    <Text>
-Other notifications are in the works and will follow (game-time-has-changed, new-games-added-to-schedule,
-the-goalie-switched-his-reply-to-no, etc).
-    </Text>
     <br/>
 
 

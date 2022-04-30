@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import {
   HamburgerIcon,
   CloseIcon,
@@ -23,8 +24,9 @@ import {
   theme,
   useColorModeValue,
   useDisclosure,
+  VStack,
 } from '@chakra-ui/react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaMoon, FaSun } from 'react-icons/fa';
 
 import { hasAuthToken, logout } from '../utils';
@@ -43,8 +45,8 @@ const NAV_ITEMS: Array<NavItem> = [
     href: '/home',
   },
   {
-    label: 'Schedule',
-    href: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=1',
+    label: 'Standings',
+    href: '/standings',
   },
   {
     label: 'Docs',
@@ -52,10 +54,34 @@ const NAV_ITEMS: Array<NavItem> = [
   },
 ];
 
-export function Logo() {
+export const Logo = props => {
+
   const titleGradient = useColorModeValue('linear(to-b, #A6C7FF, #90B3FF, #5D74A5, #5D74A5)', 'linear(to-b, #5D729F, #3B4968, #1A202C)')
 
+  const [lastRefreshString, setLastRefreshString] = React.useState(null);
+  var relativeTime = require('dayjs/plugin/relativeTime')
+  dayjs.extend(relativeTime)
+
+  function updateLastRefresh() {
+    let thirty_min_ago = dayjs().subtract(30, 'minute');
+
+    if (!props.lastRefresh || props.lastRefresh.isAfter(thirty_min_ago)) {
+      setLastRefreshString(null)
+    }
+    else {
+      setLastRefreshString(`Refreshed ${dayjs(props.lastRefresh).fromNow()}`)
+    }
+  }
+
+  useEffect(() => {
+      const interval = setInterval(() => updateLastRefresh(), 1000); // update every 1s
+      return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
+      <VStack spacing={{base:'-16px', md:'-8px'}}>
       <Center height="80px">
       <Link ml="30px" mr="20px"
         bgGradient={titleGradient}
@@ -67,15 +93,20 @@ export function Logo() {
       >
         Hockey Reply
       </Link>
-      <Badge variant='outline' colorScheme="gray" mt="8px">BETA</Badge>
+        <Badge variant='outline' colorScheme="gray" mt="8px" mr='auto'>BETA</Badge>
       </Center>
+        { lastRefreshString && !props.pageError &&
+          <Text fontSize='xs'>{lastRefreshString}</Text>
+        }
+        { props.pageError &&
+          <Text fontSize='xs' color='#AB1A00'>{props.pageError}</Text>
+        }
+      </VStack>
     )
 }
 
 export const Header = props => {
   const { isOpen, onToggle } = useDisclosure();
-  const linkColor = useColorModeValue('blue.400', 'blue.300');
-  const linkHoverColor = useColorModeValue('blue.600', 'blue.100');
 
   return (
     <Box>
@@ -102,7 +133,7 @@ export const Header = props => {
           />
         </Box>
         <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
-          <Logo></Logo>
+          <Logo lastRefresh={props.lastRefresh} pageError={props.pageError}></Logo>
         </Flex>
         <DesktopNav hide_sign_in={props.hide_sign_in} signed_in={hasAuthToken()}/>
       </Flex>
