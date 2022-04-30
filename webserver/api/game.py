@@ -279,7 +279,7 @@ def game_reply(game_id, team_id):
 
         user_id = get_current_user().user_id if not current_app.config['TESTING'] else None
         if 'user_id' in request.json:
-            user_id = request.json['user_id']
+            user_id = int(request.json['user_id'])
 
         message = None
         if 'message' in request.json:
