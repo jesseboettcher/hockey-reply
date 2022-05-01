@@ -304,7 +304,7 @@ def game_reply(game_id, team_id):
 
         # check if logged in user == user_id || loged in user == captain on team
         team_player = db.get_team_player(team_id, user_id)
-        if team_player is None:
+        if team_player is None or team_player.role == '':
             write_log('ERROR', f'api/reply: player is not on team')
             return {'result': 'error'}, 400
 
