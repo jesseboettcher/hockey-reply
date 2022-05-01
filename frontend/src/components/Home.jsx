@@ -186,6 +186,7 @@ function Home() {
                       </Td>
                       <Td>
                       <Grid container justifyContent="flex-end">
+                          { game.user_role != '' &&
                           <ReplyBox
                             isOpen={game.game_id == openPopover}
                             openHandler={() => open(game.game_id)}
@@ -197,6 +198,7 @@ function Home() {
                             user_reply={game.user_reply}
                             editable
                           />
+                          }
                       </Grid>
                       </Td>
                     </Tr>

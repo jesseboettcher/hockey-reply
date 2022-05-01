@@ -100,6 +100,14 @@ def get_games(team_id = None):
             user_reply = ''
             replies = db.game_replies_for_game(game.game_id, user_team_id)
 
+            # Send user role to the front end for the case where the user has not been accepted
+            # to the team yet. In that case, it will hide the reply box.
+            user_role = ''
+            user_team = db.get_team_by_id(user_team_id)
+            for player in user_team.players:
+                if player.user_id == get_current_user().user_id:
+                    user_role = player.role
+
             for reply in replies:
                 if reply.user_id == get_current_user().user_id:
                     user_reply = reply.response
@@ -122,7 +130,8 @@ def get_games(team_id = None):
                 'home_goals': game.home_goals,
                 'away_goals': game.away_goals,
                 'game_type': game.game_type,
-                'user_reply': user_reply
+                'user_reply': user_reply,
+                'user_role': user_role
             }
             result['games'].append(game_dict)
             result['games'] = sorted(result['games'], key=lambda game: game['scheduled_at_dt'])
