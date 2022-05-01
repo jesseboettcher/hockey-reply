@@ -53,7 +53,9 @@ export const getPageData = async (url_handler_list, setLastRefreshHandler) => {
   for (const url_handler of url_handler_list) {
     const responseStatus = await getData(url_handler.url, url_handler.handler, true);
 
-    if (responseStatus != 200) {
+    // If user is pending membership, some endpoints will return a 401. Do not show
+    // the load error in that case.
+    if (responseStatus != 200 && responseStatus != 401) {
       allSucceeded = false;
     }
   }
