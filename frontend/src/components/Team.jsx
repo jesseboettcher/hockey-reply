@@ -398,6 +398,8 @@ export function Team() {
     return '';
   }
 
+  const allEmails = players.map(player => player.email);
+
   return (
     <ChakraProvider theme={theme}>
       <Header react_navigate={navigate}/>
@@ -427,6 +429,13 @@ export function Team() {
                   label='Download sign-in sheet'
                   icon={<DownloadIcon/>}
                   linkDownloadAction={() => downloadSigninSheet()}
+                  placement='bottom'
+                  mr={3}
+                  />
+                <ButtonWithTip
+                  label='Email everyone'
+                  icon={<EmailIcon/>}
+                  href={`mailto:${allEmails.join(',')}?subject=${teamName}:`}
                   placement='bottom'
                   mr={3}
                   />
