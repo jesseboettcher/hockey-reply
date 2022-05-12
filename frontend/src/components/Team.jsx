@@ -519,7 +519,14 @@ export function Team() {
           </Center>
             { userIsOnTeam && isUserCaptain != null && !isUserMembershipPending &&
               <Center mt="10px">
-                <Button my={4} size='sm' onClick={ () => removePlayer(user['user_id']) }>Leave Team</Button>
+                <Button my={4} size='sm' onClick={ () => {
+                    let myself = {};
+                    myself.user_id = user.user_id;
+                    myself.name = "yourself";
+                    myself.email = null;
+                    setPlayerPendingRemoval(myself);
+                    onOpen();
+                  } }>Leave Team</Button>
               </Center>
             }
       </Box>
@@ -530,14 +537,22 @@ export function Team() {
         onClose={onClose}>
         <AlertDialogOverlay>
           <AlertDialogContent>
-            <AlertDialogHeader fontSize='lg' fontWeight='bold'>
-              Remove {`${playerPendingRemoval.name} (${playerPendingRemoval.email})`} from the team?
-            </AlertDialogHeader>
+            { playerPendingRemoval.email &&
+              <AlertDialogHeader fontSize='lg' fontWeight='bold'>
+                Remove {`${playerPendingRemoval.name} (${playerPendingRemoval.email})`} from the team?
+              </AlertDialogHeader>
+            }
+            { !playerPendingRemoval.email &&
+              <AlertDialogHeader fontSize='lg' fontWeight='bold'>
+              Remove {`${playerPendingRemoval.name}`} from the team?
+              </AlertDialogHeader>
+            }
 
-            <AlertDialogBody>
-              You cannot undo this action. {playerPendingRemoval.name} will need to re-request team access to return.
-            </AlertDialogBody>
-
+            { playerPendingRemoval.email &&
+              <AlertDialogBody>
+                You cannot undo this action. {playerPendingRemoval.name} will need to re-request team access to return.
+              </AlertDialogBody>
+            }
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={cancelRemovePlayer}>
                 Cancel
