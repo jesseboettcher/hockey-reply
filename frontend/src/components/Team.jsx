@@ -435,7 +435,7 @@ export function Team() {
                 <ButtonWithTip
                   label='Email everyone'
                   icon={<EmailIcon/>}
-                  href={`mailto:${allEmails.join(',')}?subject=${teamName}:`}
+                  href={`mailto:${allEmails.join(',')},?subject=${teamName}:`}
                   placement='bottom'
                   mr={3}
                   />
@@ -458,7 +458,7 @@ export function Team() {
               </Box>
             }
             { userIsOnTeam && isUserCaptain != null && !isUserMembershipPending &&
-              <Table size="sml" maxWidth="600px" my="50px" mx="20px">
+              <Table size="sml" maxWidth="600px" mt="50px" mx="20px">
                 <Thead fontSize="0.6em">
                   <Tr>
                     <Th w="50%">Player</Th>
@@ -517,6 +517,11 @@ export function Team() {
               </Table>
             }
           </Center>
+            { userIsOnTeam && isUserCaptain != null && !isUserMembershipPending &&
+              <Center mt="10px">
+                <Button my={4} size='sm' onClick={ () => removePlayer(user['user_id']) }>Leave Team</Button>
+              </Center>
+            }
       </Box>
 
       <AlertDialog
