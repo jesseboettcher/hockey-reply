@@ -251,7 +251,7 @@ def game_reply(game_id, team_id):
                 'reply_id': reply.reply_id,
                 'game_id': reply.game_id,
                 'user_id': reply.user_id,
-                'name': f'{reply_player.player.first_name} ({reply_player.role})',
+                'name': f'{reply_player.player.first_name} {reply_player.player.last_name} ({reply_player.role})',
                 'response': reply.response,
                 'message': reply.message,
                 'is_goalie': reply.is_goalie
@@ -267,7 +267,7 @@ def game_reply(game_id, team_id):
                 reply_dict = {
                     'reply_id': 0,
                     'user_id': player.user_id,
-                    'name': f'{player.player.first_name} ({player.role})'
+                    'name': f'{player.player.first_name} {player.player.last_name} ({player.role})'
                 }
                 result['no_response'].append(reply_dict)
 
