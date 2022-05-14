@@ -18,6 +18,7 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
+  Select,
   Table,
   Tbody,
   Td,
@@ -51,7 +52,7 @@ function Home() {
 
   // Modal dialog control (join team)
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const joinTeamRef = React.useRef();
+  const [pendingJoinTeamId, setPendingJoinTeamId] = useState(null);
 
   // Fetch data
   const fetchedData = useRef(false);
@@ -59,11 +60,13 @@ function Home() {
   const [pageError, setPageError] = React.useState(null)
   const [myTeams, setMyTeams] = useState(null);
   const [myGames, setMyGames] = useState(null);
+  const [allTeams, setAllTeams] = useState(null);
   const [user, setUser] = useState({});
 
   const loadPageData = async () => {
       const loadDataResult = await getPageData([{url: '/api/team/', handler: setMyTeams},
-                                                {url: '/api/games/?upcomingOnly', handler: setMyGames}],
+                                                {url: '/api/games/?upcomingOnly', handler: setMyGames},
+                                                {url: '/api/team/?all', handler: setAllTeams}],
                                                setLastRefresh);
       if (!loadDataResult) {
         setPageError('Uh, oh. Could not get the latest data.');
@@ -90,7 +93,7 @@ function Home() {
 
   function joinTeam() {
     let data = {
-      team_name: joinTeamRef.current.value,
+      team_id: pendingJoinTeamId,
       user_id: user['user_id'],
     };
 
@@ -266,9 +269,16 @@ function Home() {
           <ModalHeader>Join a team</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <FormControl>
-              <Input ref={joinTeamRef} placeholder='Team name' />
-            </FormControl>
+            <Select
+              placeholder='Teams'
+              onChange={(event) => setPendingJoinTeamId(event.target.value)}
+              >
+              { allTeams &&
+                allTeams.teams.map((team) => (
+                <option value={team.team_id}>{team.name}</option>
+                  ))
+                }
+            </Select>
           </ModalBody>
 
           <ModalFooter>
