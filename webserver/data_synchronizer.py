@@ -21,7 +21,7 @@ class Synchronizer:
     SHARKS_ICE_BASE_URL = 'https://stats.sharksice.timetoscore.com/'
     SHARKS_ICE_SEASON_ENDPOINTS = [
         'display-stats.php?league=1',
-        'display-stats.php?league=1&season=52' # winter 2022 playoffs, overlapped with spring start
+        # 'display-stats.php?league=1&season=52' # winter 2022 playoffs, overlapped with spring start
     ]
     SHARKS_ICE_TEAM_ENDPOINT = 'display-schedule'
 
@@ -98,7 +98,7 @@ class Synchronizer:
             success = team_parser.parse()
 
             if not success:
-                print(f'Failed synchronization of website')
+                write_log('ERROR', f'Failed synchronization of website at {url}')
                 return False
 
             self.db.add_team(team_name, team_parser.external_id)

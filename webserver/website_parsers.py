@@ -50,8 +50,7 @@ class TeamPageParser:
                     self.parsers[name](table)
 
             except Exception as error:
-                print(f'Failed parsing of {self.url}')
-                traceback.print_exc()
+                write_log('ERROR', f'Failed parsing of {self.url} {traceback.print_exc()}')
                 return False
 
         return True
@@ -174,7 +173,11 @@ class GameParser(BaseParser):
         # 9:45 PM
         SEASON_NUM = 52
         year = self.calculate_year(game_dict['Date'], SEASON_NUM)
-        dt = datetime.datetime.strptime(f'{year} {game_dict["Date"]} {game_dict["Time"]}',
+
+        # Noon formatting breaks the parser. Replace with a valid time string
+        time_str = game_dict['Time'].replace('12 Noon', '12:00 PM')
+
+        dt = datetime.datetime.strptime(f'{year} {game_dict["Date"]} {time_str}',
                                                   f'%Y %a %b %d %I:%M %p')
         pacific = ZoneInfo('US/Pacific')
 
