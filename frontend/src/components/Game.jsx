@@ -139,10 +139,19 @@ function Game() {
 
     // Sort replies
     serverReplies['replies'] = serverReplies['replies'].sort(function(a, b) {
-      if (a['reply_id'] < b['reply_id']) {
+
+      // Push no replies all the way to the bottom so the order is yes -> maybe -> no
+      if (a['response'] == 'no' && b['response'] != 'no') {
+        return 1;
+      }
+      if (b['response'] == 'no' && a['response'] != 'no') {
         return -1;
       }
-      if (a['reply_id'] > b['reply_id']) {
+
+      if (a['response'] > b['response']) {
+        return -1;
+      }
+      if (a['response'] < b['response']) {
         return 1;
       }
       return 0;
