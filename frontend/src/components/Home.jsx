@@ -41,6 +41,20 @@ import { ReplyBox } from '../components/ReplyBox';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData, getPageData } from '../utils';
 
+
+export function HoverTr(props: React.PropsWithChildren<MyProps>) {
+
+  const hoverColor = useColorModeValue('gray.50', 'whiteAlpha.50');
+
+  return (
+      <Tr key={props.key}
+        _hover={{bg: hoverColor}}>
+        {props.children}
+      </Tr>
+  );
+}
+
+
 function Home() {
 
   let navigate = useNavigate();
@@ -174,37 +188,35 @@ function Home() {
                 { myGames &&
                   myGames['games'] && myGames['games'].map((game) => (
 
-                    <Tr key={game.game_id}>
+                    <HoverTr key={game.game_id} >
                       <Td py="6px">
-                         <Text fontWeight={500}>{game['scheduled_at']} ({game['scheduled_how_soon']})</Text>
-                         <Text color="gray.500"
-                               _hover={{
-                                  textDecoration: 'none',
-                                  color: "gray.800",
-                                }}>
                           <a href={`/game/${game.game_id}/for-team/${game.user_team_id}`}>
-                           {myTeams['teams'] && myTeams['teams'].length > 1 ? game.user_team.replaceAll(' ', ' ') : ''} vs {game.vs.replaceAll(' ', ' ')}&nbsp;>
-                          </a>
-                        </Text>
+                           <Text fontWeight={500}>{game['scheduled_at']} ({game['scheduled_how_soon']})</Text>
+                           <Text color="gray.500">
+                            <a href={`/game/${game.game_id}/for-team/${game.user_team_id}`}>
+                             {myTeams['teams'] && myTeams['teams'].length > 1 ? game.user_team.replaceAll(' ', ' ') : ''} vs {game.vs.replaceAll(' ', ' ')}&nbsp;>
+                            </a>
+                          </Text>
+                        </a>
                       </Td>
                       <Td>
-                      <Grid container justifyContent="flex-end">
-                          { game.user_role != '' &&
-                          <ReplyBox
-                            isOpen={game.game_id == openPopover}
-                            openHandler={() => open(game.game_id)}
-                            closeHandler={close}
-                            user_id={user.user_id}
-                            team_id={game.user_team_id}
-                            game_id={game.game_id}
-                            submitHandler={submitReply}
-                            user_reply={game.user_reply}
-                            editable
-                          />
-                          }
-                      </Grid>
+                        <Grid container justifyContent="flex-end">
+                            { game.user_role != '' &&
+                            <ReplyBox
+                              isOpen={game.game_id == openPopover}
+                              openHandler={() => open(game.game_id)}
+                              closeHandler={close}
+                              user_id={user.user_id}
+                              team_id={game.user_team_id}
+                              game_id={game.game_id}
+                              submitHandler={submitReply}
+                              user_reply={game.user_reply}
+                              editable
+                            />
+                            }
+                        </Grid>
                       </Td>
-                    </Tr>
+                    </HoverTr>
                  ))
                 }
               </Tbody>
