@@ -84,9 +84,15 @@ export default function SignupCard() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(data)
     })
+    .then(r =>  r.json().then(data => ({status: r.status, body: data})))
     .then(response => {
       if (response.status == 200) {
-        navigate('/games', {replace: true});
+
+        if (response.body.token) {
+          window.localStorage.setItem('token', response.body.token);
+        }
+
+        navigate('/home', {replace: true});
       }
     });
   };

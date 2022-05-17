@@ -398,6 +398,8 @@ export function Team() {
     return '';
   }
 
+  const allEmails = players.map(player => player.email);
+
   return (
     <ChakraProvider theme={theme}>
       <Header react_navigate={navigate}/>
@@ -430,6 +432,13 @@ export function Team() {
                   placement='bottom'
                   mr={3}
                   />
+                <ButtonWithTip
+                  label='Email everyone'
+                  icon={<EmailIcon/>}
+                  href={`mailto:${allEmails.join(',')},?subject=${teamName}:`}
+                  placement='bottom'
+                  mr={3}
+                  />
               </HStack>
             </VStack>
             </Center>
@@ -449,7 +458,7 @@ export function Team() {
               </Box>
             }
             { userIsOnTeam && isUserCaptain != null && !isUserMembershipPending &&
-              <Table size="sml" maxWidth="600px" my="50px" mx="20px">
+              <Table size="sml" maxWidth="600px" mt="50px" mx="20px">
                 <Thead fontSize="0.6em">
                   <Tr>
                     <Th w="50%">Player</Th>
@@ -508,6 +517,18 @@ export function Team() {
               </Table>
             }
           </Center>
+            { userIsOnTeam && isUserCaptain != null && !isUserMembershipPending &&
+              <Center mt="10px">
+                <Button my={4} size='sm' onClick={ () => {
+                    let myself = {};
+                    myself.user_id = user.user_id;
+                    myself.name = "yourself";
+                    myself.email = null;
+                    setPlayerPendingRemoval(myself);
+                    onOpen();
+                  } }>Leave Team</Button>
+              </Center>
+            }
       </Box>
 
       <AlertDialog
@@ -516,14 +537,22 @@ export function Team() {
         onClose={onClose}>
         <AlertDialogOverlay>
           <AlertDialogContent>
-            <AlertDialogHeader fontSize='lg' fontWeight='bold'>
-              Remove {`${playerPendingRemoval.name} (${playerPendingRemoval.email})`} from the team?
-            </AlertDialogHeader>
+            { playerPendingRemoval.email &&
+              <AlertDialogHeader fontSize='lg' fontWeight='bold'>
+                Remove {`${playerPendingRemoval.name} (${playerPendingRemoval.email})`} from the team?
+              </AlertDialogHeader>
+            }
+            { !playerPendingRemoval.email &&
+              <AlertDialogHeader fontSize='lg' fontWeight='bold'>
+              Remove {`${playerPendingRemoval.name}`} from the team?
+              </AlertDialogHeader>
+            }
 
-            <AlertDialogBody>
-              You cannot undo this action. {playerPendingRemoval.name} will need to re-request team access to return.
-            </AlertDialogBody>
-
+            { playerPendingRemoval.email &&
+              <AlertDialogBody>
+                You cannot undo this action. {playerPendingRemoval.name} will need to re-request team access to return.
+              </AlertDialogBody>
+            }
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={cancelRemovePlayer}>
                 Cancel

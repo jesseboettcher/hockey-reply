@@ -161,11 +161,11 @@ class Database:
 
         home_team = self.get_team(game_parser.home_team)
         if home_team is None:
-            home_team = self.add_team(game_parser.home_team)
+            home_team = self.add_team(game_parser.home_team, 0)
 
         away_team = self.get_team(game_parser.away_team)
         if away_team is None:
-            away_team = self.add_team(game_parser.away_team)
+            away_team = self.add_team(game_parser.away_team, 0)
 
         game = Game(game_id=game_parser.id,
                     scheduled_at=game_parser.datetime,

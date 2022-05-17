@@ -53,14 +53,15 @@ def get_teams(team_id=None):
 
     result = { 'teams': [] }
 
-    if request.args.get('all'):
+    if 'all' in request.args:
         for team in teams:
             team_dict = {
                 'team_id': team.team_id,
-                'name': team.name,
-                'player_count': len(team.players)
+                'name': team.name
             }
             result['teams'].append(team_dict)
+        result['teams'] = sorted(result['teams'], key=lambda team: team['name'])
+
     elif team_id is None:
         for player_team in get_current_user().teams:
             team = db.get_team_by_id(player_team.team_id)

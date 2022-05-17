@@ -19,7 +19,10 @@ from webserver.logging import write_log
 class Synchronizer:
 
     SHARKS_ICE_BASE_URL = 'https://stats.sharksice.timetoscore.com/'
-    SHARKS_ICE_SEASON_ENDPOINT = 'display-stats.php?league=1'
+    SHARKS_ICE_SEASON_ENDPOINTS = [
+        'display-stats.php?league=1',
+        # 'display-stats.php?league=1&season=52' # winter 2022 playoffs, overlapped with spring start
+    ]
     SHARKS_ICE_TEAM_ENDPOINT = 'display-schedule'
 
     SYNCHRONIZE_INTERVAL_HOURS = 4
@@ -70,7 +73,16 @@ class Synchronizer:
         self.db = Database()
         self.new_games_map = {}
 
-        source, soup = self.open_season_page()
+        for season in self.SHARKS_ICE_SEASON_ENDPOINTS:
+            url = f'{self.SHARKS_ICE_BASE_URL}{season}'
+            self.sync_season(url)
+
+        write_log('INFO', f'Synchronization complete')
+        return True
+
+    def sync_season(self, url):
+
+        source, soup = self.open_season_page(url)
         for link in soup.find_all('a'):
             
             href = link.get('href')
@@ -86,7 +98,7 @@ class Synchronizer:
             success = team_parser.parse()
 
             if not success:
-                print(f'Failed synchronization of website')
+                write_log('ERROR', f'Failed synchronization of website at {url}')
                 return False
 
             self.db.add_team(team_name, team_parser.external_id)
@@ -104,11 +116,7 @@ class Synchronizer:
                     self.new_games_map[db_game.home_team_id].append(db_game.game_id)
                     self.new_games_map[db_game.away_team_id].append(db_game.game_id)
 
-        write_log('INFO', f'Synchronization complete')
-        return True
-
-    def open_season_page(self):
-        url = f'{self.SHARKS_ICE_BASE_URL}{self.SHARKS_ICE_SEASON_ENDPOINT}'
+    def open_season_page(self, url):
         req = requests.get(url)
         data = req.content
         soup = BeautifulSoup(data, 'html.parser')

@@ -100,6 +100,14 @@ def get_games(team_id = None):
             user_reply = ''
             replies = db.game_replies_for_game(game.game_id, user_team_id)
 
+            # Send user role to the front end for the case where the user has not been accepted
+            # to the team yet. In that case, it will hide the reply box.
+            user_role = ''
+            user_team = db.get_team_by_id(user_team_id)
+            for player in user_team.players:
+                if player.user_id == get_current_user().user_id:
+                    user_role = player.role
+
             for reply in replies:
                 if reply.user_id == get_current_user().user_id:
                     user_reply = reply.response
@@ -122,7 +130,8 @@ def get_games(team_id = None):
                 'home_goals': game.home_goals,
                 'away_goals': game.away_goals,
                 'game_type': game.game_type,
-                'user_reply': user_reply
+                'user_reply': user_reply,
+                'user_role': user_role
             }
             result['games'].append(game_dict)
             result['games'] = sorted(result['games'], key=lambda game: game['scheduled_at_dt'])
@@ -242,7 +251,7 @@ def game_reply(game_id, team_id):
                 'reply_id': reply.reply_id,
                 'game_id': reply.game_id,
                 'user_id': reply.user_id,
-                'name': f'{reply_player.player.first_name} ({reply_player.role})',
+                'name': f'{reply_player.player.first_name} {reply_player.player.last_name} ({reply_player.role})',
                 'response': reply.response,
                 'message': reply.message,
                 'is_goalie': reply.is_goalie
@@ -258,7 +267,7 @@ def game_reply(game_id, team_id):
                 reply_dict = {
                     'reply_id': 0,
                     'user_id': player.user_id,
-                    'name': f'{player.player.first_name} ({player.role})'
+                    'name': f'{player.player.first_name} {player.player.last_name} ({player.role})'
                 }
                 result['no_response'].append(reply_dict)
 
@@ -279,7 +288,7 @@ def game_reply(game_id, team_id):
 
         user_id = get_current_user().user_id if not current_app.config['TESTING'] else None
         if 'user_id' in request.json:
-            user_id = request.json['user_id']
+            user_id = int(request.json['user_id'])
 
         message = None
         if 'message' in request.json:
@@ -295,7 +304,7 @@ def game_reply(game_id, team_id):
 
         # check if logged in user == user_id || loged in user == captain on team
         team_player = db.get_team_player(team_id, user_id)
-        if team_player is None:
+        if team_player is None or team_player.role == '':
             write_log('ERROR', f'api/reply: player is not on team')
             return {'result': 'error'}, 400
 
