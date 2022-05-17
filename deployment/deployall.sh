@@ -1,6 +1,6 @@
 # DEPLOY frontend and webserver to ec2
 # Expects cwd is root of project /hockey-reply
-# Requires a file of env exports in hockey-reply/kes/prod_env.txt
+# Requires a file of env exports in hockey-reply/keys/prod_env.txt
 
 echo "* Beginning deploy to ec2"
 
