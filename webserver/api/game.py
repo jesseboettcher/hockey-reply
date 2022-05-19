@@ -164,7 +164,7 @@ def get_game(game_id, team_id):
         write_log('ERROR', f'/api/game/<game>: Team for game {game_id} is not found')
         return {'result': 'error'}, 400
 
-    if game.home_team_id is not team_id and game.away_team_id is not team_id:
+    if game.home_team_id != team_id and game.away_team_id != team_id:
         write_log('ERROR', f'/api/game/<game>: Team ({team_id}) is not in game {game_id}')
         return {'result': 'error'}, 400
 
