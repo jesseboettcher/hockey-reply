@@ -131,7 +131,7 @@ class Database:
 
     def get_games_coming_soon(self):
         today = datetime.datetime.now()
-        soon = today + datetime.timedelta(hours=72)
+        soon = today + datetime.timedelta(hours=84)
         return self.session.query(Game).filter(and_(Game.did_notify_coming_soon == False,
                                                     Game.scheduled_at > today,
                                                     Game.scheduled_at <= soon)).all()
