@@ -72,7 +72,7 @@ def send_reply_was_changed(db, user, team, game, reply, updated_by_user):
     }
 
     send_email(TEMPLATE_REPLY_CHANGED, email_data, user.email)
-    write_log('INFO', f'Notify reply was changed to {user.email}')
+    write_log('INFO', f'Notify reply was changed for {user.email}')
 
 def send_removed_from_team(team, removed_user, updated_by_user):
     ''' condolences, you have been kicked off of the team
