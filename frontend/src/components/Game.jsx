@@ -292,6 +292,17 @@ function Game() {
     goalieLabel = <span>&#x1F44D;</span>;
   }
 
+  let no_response_users = [];
+  if (replies['no_response']) {
+    no_response_users = no_response_users.concat(replies['no_response'])
+  }
+
+  let next_anonymous_sub_id = undefined;
+  if (replies['replies']) {
+    next_anonymous_sub_id = -1 * replies['replies'].length;
+    no_response_users.push({user_id:next_anonymous_sub_id, name:'Anonymous Sub'});
+  }
+
   return (
     <ChakraProvider theme={themeWithBadgeCustomization}>
       <Header lastRefresh={lastRefresh} pageError={pageError}/>
@@ -381,7 +392,7 @@ function Game() {
                           is_goalie={reply.is_goalie}
                           name={reply.name}
                           submitHandler={submitReply}
-                          message={message}
+                          showMessageBox={true}
                           setMessage={setMessage}
                           editable={isUserCaptain}
                         />
@@ -415,7 +426,7 @@ function Game() {
               </Thead>
               <Tbody fontSize="0.8em">
                 {
-                  replies['no_response'] && replies['no_response'].map((reply) => (
+                  no_response_users.map((reply) => (
 
                     <Tr key={reply.user_id}>
                       <Td py="6px">

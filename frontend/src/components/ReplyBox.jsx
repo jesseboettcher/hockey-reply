@@ -17,7 +17,7 @@ import {
   useColorMode,
   useColorModeValue,
 } from '@chakra-ui/react';
-import React from 'react';
+import React, {useState} from 'react';
 import { FaMoon, FaSun } from 'react-icons/fa';
 
 export function ReplyBox(props: React.PropsWithChildren<MyProps>) {
@@ -25,6 +25,8 @@ export function ReplyBox(props: React.PropsWithChildren<MyProps>) {
   let replyBadge = {};
   let editIcon = props.editable ? <EditIcon mr="4px" mb="2px" /> : null;
   let openHandler = props.editable ? props.openHandler : null;
+
+  const [replyMessage, setReplyMessage] = useState('');
 
   replyBadge[''] = <Badge colorScheme="gray" width='80px' my="0px">&nbsp;&nbsp;{editIcon}</Badge>;
   replyBadge['yes'] = <Badge colorScheme="green" width='80px' my="0px">{editIcon}YES</Badge>;
@@ -67,14 +69,14 @@ export function ReplyBox(props: React.PropsWithChildren<MyProps>) {
                   }
                   </Box>
 
-                  { props.message &&
-                    <form onSubmit={(e) => props.submitHandler(e, props.user_id, props.team_id, props.game_id, null, props.message)}>
+                  { props.showMessageBox &&
+                    <form onSubmit={(e) => props.submitHandler(e, props.user_id, props.team_id, props.game_id, null, replyMessage, props.is_goalie)}>
                       <InputGroup size='md' mt={4}>
                         <Input
                           pr='4.5rem'
                           type='text'
                           placeholder='Message'
-                          onChange={(e) => props.setMessage(e.target.value)}
+                          onChange={(e) => setReplyMessage(e.target.value)}
                           key="main"
                         />
                         <InputRightElement width='4.5rem'>
