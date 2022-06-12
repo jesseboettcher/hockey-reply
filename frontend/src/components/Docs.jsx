@@ -85,6 +85,15 @@ Check out these links to learn more about how to subscribe on your <Link color={
       <ListItem><b>Sub</b> - Indicates the player has is available to play if the team is short handed.</ListItem>
       <ListItem><b>[blank]</b> - Players who have requested to join the team, show up with a blank role. These players cannot view the team roster or game replies until they have been added to the team by a captain, by assigning them one of the player roles (captain/full/half/sub).</ListItem>
     </UnorderedList>
+    <Text fontSize='lg' fontWeight='medium' color={headerColor}>Unrostered Subs</Text>
+    <Text>
+Unrostered subs can be added on a per game basis. This means you can have a person represented in the game
+replies, player counts, and goalie status without requiring them to create an account and join the team.
+To add an unrostered sub, simply change the status of the <i>"Anonymous Sub"</i> player listed in the NO REPLY
+section of the game page. Multiple anonymous subs can be added per game, and they can be marked as goalie.
+Editable by captains only.
+    </Text>
+    <br/>
     <Text fontSize='lg' fontWeight='medium' color={headerColor}>Sign-in Sheets</Text>
     <Text>
 You can download a sign-in sheet for your team that has been pre-filled out with registered players and their
