@@ -209,4 +209,4 @@ def send_game_time_changed(db, game, old_scheduled_at):
             }
 
             send_email(TEMPLATE_GAME_TIME_CHANGED, email_data, user.email)
-            write_log('INFO', f'Notify game time changed to {game.scheduled_at} from {old_scheduled_at} for {game.game_id}')
+            write_log('INFO', f'Notify game time changed to {game.scheduled_at} from {old_scheduled_at} for {game.game_id} to {user.email}')
