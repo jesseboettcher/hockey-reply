@@ -176,7 +176,8 @@ class Database:
                     away_team_id=away_team.team_id,
                     home_goals=game_parser.home_goals,
                     away_goals=game_parser.away_goals,
-                    game_type=game_parser.type)
+                    game_type=game_parser.type,
+                    created_at=datetime.datetime.now())
 
         self.session.add(game)
         self.session.commit()

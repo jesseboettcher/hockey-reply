@@ -92,7 +92,8 @@ class BasicTestCase(unittest.TestCase):
                         away_team_id=self.team_id_2,
                         home_goals=0,
                         away_goals=0,
-                        game_type='Championship')
+                        game_type='Championship',
+                        created_at=datetime.datetime.now())
             db.add_game_object(game)
 
         game.scheduled_at = game_time

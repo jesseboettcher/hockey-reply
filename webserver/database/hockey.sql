@@ -15,7 +15,9 @@ CREATE TABLE game(
     game_type       TEXT,
     scoresheet_html_url TEXT,
     scoresheet_pdf_url TEXT,
-    did_notify_coming_soon BOOLEAN
+    did_notify_coming_soon BOOLEAN,
+
+    created_at      TIMESTAMP WITH TIME ZONE,
 );
 
 CREATE TABLE game_reply(
