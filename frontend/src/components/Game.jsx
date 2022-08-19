@@ -299,7 +299,7 @@ function Game() {
 
   let next_anonymous_sub_id = undefined;
   if (replies['replies']) {
-    next_anonymous_sub_id = -1 * replies['replies'].length;
+    next_anonymous_sub_id = -1 * (replies['replies'].length + 1);
     no_response_users.push({user_id:next_anonymous_sub_id, name:'Anonymous Sub'});
   }
 
