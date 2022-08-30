@@ -34,15 +34,17 @@ def sync():
 
     return { 'result' : 'success' }
 
-@blueprint.route('/test-email')
-def test_email():
+@blueprint.route('/send-email-reminder/<game_id>')
+def test_email(game_id):
     '''
     Test route for validating email changes. If using this make sure to add a whitelist
     in email.send_email to guard against spamming real users with tests.
     '''
+    game_id = int(game_id)
+
     if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
         return { 'result' : 'not allowed' }
 
-    game = get_db().get_game_by_id(326360)
+    game = get_db().get_game_by_id(game_id)
     send_game_coming_soon(get_db(), game)
     return { 'result' : 'success' }
