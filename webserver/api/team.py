@@ -118,6 +118,12 @@ def get_team_players(team_name_or_id=None):
         team = db.get_team(team_name_or_id.replace('-', ' '))
         if team:
             team_id = team.team_id
+        else:
+            # try again for teams with hypens in the name
+            team = db.get_team(team_name_or_id)
+            if team:
+                team_id = team.team_id
+
 
     team = db.get_team_by_id(team_id)
 
