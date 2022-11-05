@@ -156,6 +156,20 @@ class Database:
                 write_log('INFO', f'Game schedule change to {game_parser.datetime} from {old_scheduled_at} for {game.game_id}')
                 send_game_time_changed(self, game, old_scheduled_at)
 
+            # Check if team ids match, update if they do not. Teams can change during playoffs
+            # when games are posted with one or both of the teams ommitted until games in the
+            # earlier rounds have completed.
+            parsed_home_team = self.get_team(game_parser.home_team)
+            parsed_away_team = self.get_team(game_parser.away_team)
+
+            if parsed_away_team.team_id != game.away_team_id:
+                write_log('INFO', f'Away team changed from {game.away_team_id} to {parsed_away_team.team_id} for {game.game_id}')
+                game.away_team_id = parsed_away_team.team_id
+
+            if parsed_home_team.team_id != game.home_team_id:
+                write_log('INFO', f'Home team changed from {game.home_team_id} to {parsed_home_team.team_id} for {game.game_id}')
+                game.home_team_id = parsed_home_team.team_id
+
             self.session.commit()
             return False
 
