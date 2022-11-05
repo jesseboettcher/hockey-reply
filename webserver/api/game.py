@@ -87,7 +87,7 @@ def get_games(team_id = None):
                 write_log('ERROR', f'/api/game/<game>: Team for game {game.game_id} is not found')
                 return {'result': 'error'}, 400
 
-            if game.home_team_id is not team.team_id and game.away_team_id is not team.team_id:
+            if game.home_team_id != team.team_id and game.away_team_id != team.team_id:
                 write_log('ERROR', f'/api/game/<game>: Team ({team.team_id}) is not in game {game.game_id}')
                 return {'result': 'error'}, 400
 
@@ -164,7 +164,7 @@ def get_game(game_id, team_id):
         write_log('ERROR', f'/api/game/<game>: Team for game {game_id} is not found')
         return {'result': 'error'}, 400
 
-    if game.home_team_id is not team_id and game.away_team_id is not team_id:
+    if game.home_team_id != team_id and game.away_team_id != team_id:
         write_log('ERROR', f'/api/game/<game>: Team ({team_id}) is not in game {game_id}')
         return {'result': 'error'}, 400
 
@@ -224,6 +224,10 @@ def game_reply(game_id, team_id):
 
     db = get_db()
 
+    # user_id < 0 is used to represent one-time subs
+    def is_anonymous_sub(check_user_id):
+        return check_user_id < 0
+
     if request.method == 'GET':
 
         if not is_logged_in_user_in_team(team_id, True):
@@ -243,15 +247,23 @@ def game_reply(game_id, team_id):
         for reply in replies:
             reply_player = db.get_team_player(team_id, reply.user_id)
 
-            if reply_player is None:
+            if reply_player is None and not is_anonymous_sub(reply.user_id):
                 # player was removed from the team
+                continue
+
+            player_name = 'Anonymous Sub'
+            if reply_player:
+                player_name = f'{reply_player.player.first_name} {reply_player.player.last_name} ({reply_player.role})'
+
+            if reply.response == None:
+                # this user has a message, but no reponse. Put them in the no_response dictionary
                 continue
 
             reply_dict = {
                 'reply_id': reply.reply_id,
                 'game_id': reply.game_id,
                 'user_id': reply.user_id,
-                'name': f'{reply_player.player.first_name} {reply_player.player.last_name} ({reply_player.role})',
+                'name': player_name,
                 'response': reply.response,
                 'message': reply.message,
                 'is_goalie': reply.is_goalie
@@ -304,14 +316,14 @@ def game_reply(game_id, team_id):
 
         # check if logged in user == user_id || loged in user == captain on team
         team_player = db.get_team_player(team_id, user_id)
-        if team_player is None or team_player.role == '':
+        if (team_player is None or team_player.role == '') and not is_anonymous_sub(user_id):
             write_log('ERROR', f'api/reply: player is not on team')
             return {'result': 'error'}, 400
 
         if not current_app.config['TESTING'] and user_id != get_current_user().user_id:
 
             logged_in_player = db.get_team_player(team_id, get_current_user().user_id)
-            if logged_in_player is None:
+            if logged_in_player is None and not is_anonymous_sub(user_id):
                 write_log('ERROR', f'api/reply: player is not on team')
                 return {'result': 'error'}, 400
 
@@ -331,7 +343,7 @@ def game_reply(game_id, team_id):
                           message,
                           is_goalie)
 
-        if get_current_user().user_id != user_id and response != None:
+        if get_current_user().user_id != user_id and response != None and not is_anonymous_sub(user_id):
 
             user = db.get_user_by_id(user_id)
             team = db.get_team_by_id(team_id)

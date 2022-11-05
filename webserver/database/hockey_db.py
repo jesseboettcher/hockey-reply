@@ -131,7 +131,7 @@ class Database:
 
     def get_games_coming_soon(self):
         today = datetime.datetime.now()
-        soon = today + datetime.timedelta(hours=72)
+        soon = today + datetime.timedelta(hours=84)
         return self.session.query(Game).filter(and_(Game.did_notify_coming_soon == False,
                                                     Game.scheduled_at > today,
                                                     Game.scheduled_at <= soon)).all()
@@ -156,6 +156,20 @@ class Database:
                 write_log('INFO', f'Game schedule change to {game_parser.datetime} from {old_scheduled_at} for {game.game_id}')
                 send_game_time_changed(self, game, old_scheduled_at)
 
+            # Check if team ids match, update if they do not. Teams can change during playoffs
+            # when games are posted with one or both of the teams ommitted until games in the
+            # earlier rounds have completed.
+            parsed_home_team = self.get_team(game_parser.home_team)
+            parsed_away_team = self.get_team(game_parser.away_team)
+
+            if parsed_away_team.team_id != game.away_team_id:
+                write_log('INFO', f'Away team changed from {game.away_team_id} to {parsed_away_team.team_id} for {game.game_id}')
+                game.away_team_id = parsed_away_team.team_id
+
+            if parsed_home_team.team_id != game.home_team_id:
+                write_log('INFO', f'Home team changed from {game.home_team_id} to {parsed_home_team.team_id} for {game.game_id}')
+                game.home_team_id = parsed_home_team.team_id
+
             self.session.commit()
             return False
 
@@ -176,7 +190,8 @@ class Database:
                     away_team_id=away_team.team_id,
                     home_goals=game_parser.home_goals,
                     away_goals=game_parser.away_goals,
-                    game_type=game_parser.type)
+                    game_type=game_parser.type,
+                    created_at=datetime.datetime.now())
 
         self.session.add(game)
         self.session.commit()
