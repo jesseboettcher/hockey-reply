@@ -37,6 +37,7 @@ class TeamPageParser:
         self.player_stats = []
         self.goalie_stats = []
         self.external_id = None
+        self.season_num = None
 
     def parse(self):
         ''' Finds the important tables in the teams page and initiates parsing of each of them '''
@@ -61,6 +62,8 @@ class TeamPageParser:
             for query_item in query.split('&'):
                 if query_item.split('=')[0] == 'team':
                     self.external_id = int(query_item.split('=')[1])
+                if query_item.split('=')[0] == 'season':
+                    self.season_num = int(query_item.split('=')[1])
 
         except Exception as e:
             write_log('ERROR', f'Failed to parse team external id from page url params {e}') 
@@ -114,7 +117,7 @@ class TeamPageParser:
 
             game_details = self.table_row_contents(row)
             game_dict = dict(zip(column_names, game_details))
-            game_parser = GameParser(game_dict)
+            game_parser = GameParser(game_dict, self.season_num)
 
             self.games.append(game_parser)
 
@@ -164,14 +167,14 @@ class BaseParser:
 
 class GameParser(BaseParser):
 
-    def __init__(self, game_dict):
+    def __init__(self, game_dict, parsed_season_num):
 
         self.id = self.parse_id(game_dict['Game'])
         self.completed = 0 if game_dict['Game'].find('*') == -1 else 1
 
         # Wed Jan 19
         # 9:45 PM
-        SEASON_NUM = 52
+        SEASON_NUM = parsed_season_num
         year = self.calculate_year(game_dict['Date'], SEASON_NUM)
 
         # Noon formatting breaks the parser. Replace with a valid time string
@@ -215,7 +218,7 @@ class GameParser(BaseParser):
         '''
         year = 0
 
-        if season_num >= 52:
+        if season_num != None and season_num >= 52:
             # 3 seasons a year: winter/spring, summer, fall/winter
             year = 2022 + int((season_num - 52) / 3)
         else:
