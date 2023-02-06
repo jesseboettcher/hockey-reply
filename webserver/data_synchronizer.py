@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 
 from webserver.database.hockey_db import Database, get_db
 from webserver.email import send_game_coming_soon
-from webserver.website_parsers import TeamPageParser
+from webserver.website_parsers import LockerRoomPageParser, TeamPageParser
 from webserver.logging import write_log
 
 class Synchronizer:
@@ -24,6 +24,7 @@ class Synchronizer:
         # 'display-stats.php?league=1&season=52' # winter 2022 playoffs, overlapped with spring start
     ]
     SHARKS_ICE_TEAM_ENDPOINT = 'display-schedule'
+    SHARKS_ICE_LOCKROOM_ENDPOINT = 'display-lr-assignments.php'
 
     SYNCHRONIZE_INTERVAL_HOURS = 4
     NOTIFY_CHECK_INTERVAL_HOURS = 1
@@ -82,6 +83,10 @@ class Synchronizer:
 
     def sync_season(self, url):
 
+        locker_room_source, locker_room_soup = self.open_page(f'{self.SHARKS_ICE_BASE_URL}{self.SHARKS_ICE_LOCKROOM_ENDPOINT}')
+        locker_room_parser = LockerRoomPageParser(locker_room_source, locker_room_soup)
+        locker_room_parser.parse()
+
         source, soup = self.open_season_page(url)
         for link in soup.find_all('a'):
             
@@ -104,7 +109,7 @@ class Synchronizer:
             self.db.add_team(team_name, team_parser.external_id)
 
             for game in team_parser.games:
-                game_is_new = self.db.add_game(game)
+                game_is_new = self.db.add_game(game, locker_room_parser)
                 db_game = self.db.get_game_by_id(game.id)
 
                 if game_is_new:
@@ -123,8 +128,16 @@ class Synchronizer:
 
         return url, soup
 
+
     def open_team_page(self, team_endpoint):
         url = f'{self.SHARKS_ICE_BASE_URL}{team_endpoint}'
+        req = requests.get(url)
+        data = req.content
+        soup = BeautifulSoup(data, 'html.parser')
+
+        return url, soup
+
+    def open_page(self, url):
         req = requests.get(url)
         data = req.content
         soup = BeautifulSoup(data, 'html.parser')
@@ -146,7 +159,7 @@ class Synchronizer:
             return
 
         for game in team_parser.games:
-            self.db.add_game(game)
+            self.db.add_game(game, None)
 
         print(f'Synchronization complete')
 

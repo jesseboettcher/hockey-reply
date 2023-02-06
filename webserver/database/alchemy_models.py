@@ -49,6 +49,8 @@ class Game(Base):
     scoresheet_pdf_url = Column(String)
     did_notify_coming_soon = Column(Boolean, default=False)
     created_at = Column(DateTime)
+    home_locker_room = Column(String)
+    away_locker_room = Column(String)
 
 class GameReply(Base):
     __tablename__ = "game_reply"

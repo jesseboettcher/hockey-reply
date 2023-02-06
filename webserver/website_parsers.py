@@ -230,3 +230,122 @@ class GameParser(BaseParser):
 
     def __str__(self):
         print(self.instance_attributes_string())
+
+class LockerRoomPageParser:
+    """
+    Parses a Sharks Ice page for locker room assignments for each game.
+    """
+
+    # row 0 -> -> column headers, row 3+ -> data
+    TABLE_DATA_COLUMN_HEADERS_INDEX = 0
+    TABLE_DATA_START_INDEX = 1
+
+    def __init__(self, url, team_soup):
+        """
+        Initializes the class with the URL and BeautifulSoup object of the Sharks Ice page to be parsed.
+
+        Args:
+        url (str): URL of the Sharks Ice page to be parsed.
+        team_soup (bs4.BeautifulSoup): BeautifulSoup object representing the content of the Sharks Ice page.
+        """
+        self.url = url
+        self.soup = team_soup
+
+        self.locker_rooms = {}
+
+    def parse(self):
+        """
+        Finds the important tables in the Sharks Ice page and initiates parsing of each of them.
+
+        Returns:
+        bool: Always returns True.
+        """
+        for table in self.soup.body.find_all('table'):
+
+            self.parse_locker_rooms(table)
+
+        return True
+
+    def cell_contents(self, cell):
+        """
+        Returns a string with the contents of a table cell.
+
+        Args:
+        cell (bs4.Tag): BeautifulSoup tag representing a table cell.
+
+        Returns:
+        str: Contents of the table cell, stripped of any whitespace.
+        """
+        result = cell.get_text()
+        result = result.strip()
+
+        return result
+
+    def table_row_contents(self, row):
+        """
+        Returns an array with the contents of each cell in a table row.
+
+        Args:
+        row (bs4.Tag): BeautifulSoup tag representing a table row.
+
+        Returns:
+        List[str]: List of strings, each representing the contents of a cell in the row.
+        """
+        result_array = []
+
+        cell_type = 'td' if row.td else 'th'
+
+        for cell in row.find_all(cell_type):
+            result_array.append(self.cell_contents(cell))
+
+        return result_array
+
+    def parse_locker_rooms(self, table):
+        """
+        Parses the locker room information from the HTML table.
+        The locker room information is stored in the dictionary 'self.locker_rooms' with the game ID as the key.
+        The game ID maps to a dictionary with keys 'Home LR' and 'Away LR' that contain the corresponding locker room numbers.
+
+        :param table: The BeautifulSoup HTML table element that contains the locker room information.
+        :return: None
+        """
+        rows = table.find_all('tr')
+        column_names = self.table_row_contents(rows[self.TABLE_DATA_COLUMN_HEADERS_INDEX])
+        print(column_names)
+
+        # adjust duplicate column names of "LR" to "Home LR" and "Away LR"
+        for i in range(len(column_names)):
+            if column_names[i] == 'LR':
+
+                if column_names[i - 1] == 'Aray': # TYPO in sharks ice page
+                    column_names[i] = f'Away LR'
+                elif column_names[i - 1] == 'Away' or column_names[i - 1] == 'Home':
+                    column_names[i] = f'{column_names[i - 1]} LR'
+                else:
+                    raise Exception(f'Unexpected ordering of games table columns')
+
+        self.games = []
+        for row in rows[self.TABLE_DATA_START_INDEX:]:
+
+            details = self.table_row_contents(row)
+            print(details)
+
+            lr_assignment = {}
+            lr_assignment['Away LR'] = details[column_names.index('Away LR')]
+            lr_assignment['Home LR'] = details[column_names.index('Home LR')]
+
+            self.locker_rooms[details[column_names.index('Game')]] = lr_assignment
+
+        print(self.locker_rooms)
+
+    def get_locker_rooms_for_game(self, game_id):
+        """
+        Returns the home and away locker room numbers for a given game ID.
+
+        :param game_id: The ID of the game to get the locker room numbers for.
+        :return: A tuple (home_lr, away_lr) containing the home and away locker room numbers, or (None, None) if the game ID is not found in 'self.locker_rooms'.
+        """
+        if game_id not in self.locker_rooms:
+            return None, None
+
+        return self.locker_rooms[game_id]['Home LR'], self.locker_rooms[game_id]['Away LR']

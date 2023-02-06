@@ -136,7 +136,7 @@ class Database:
                                                     Game.scheduled_at > today,
                                                     Game.scheduled_at <= soon)).all()
 
-    def add_game(self, game_parser):
+    def add_game(self, game_parser, locker_room_parser):
         ''' Looks for the game_parser object in the db. Adds the game if it is new or otherwise
             updates its changed fields. Returns True if the game was new, False otherwise
         '''
@@ -162,13 +162,23 @@ class Database:
             parsed_home_team = self.get_team(game_parser.home_team)
             parsed_away_team = self.get_team(game_parser.away_team)
 
-            if parsed_away_team.team_id != game.away_team_id:
+            if parsed_away_team and parsed_away_team.team_id != game.away_team_id:
                 write_log('INFO', f'Away team changed from {game.away_team_id} to {parsed_away_team.team_id} for {game.game_id}')
                 game.away_team_id = parsed_away_team.team_id
 
-            if parsed_home_team.team_id != game.home_team_id:
+            if parsed_home_team and parsed_home_team.team_id != game.home_team_id:
                 write_log('INFO', f'Home team changed from {game.home_team_id} to {parsed_home_team.team_id} for {game.game_id}')
                 game.home_team_id = parsed_home_team.team_id
+
+            # Fill in locker room info
+            if locker_room_parser:
+                home_lr, away_lr = locker_room_parser.get_locker_rooms_for_game(game.game_id)
+
+                if home_lr != game.home_locker_room:
+                    game.home_locker_room = home_lr
+
+                if away_lr != game.away_locker_room:
+                    game.away_locker_room = away_lr
 
             self.session.commit()
             return False
