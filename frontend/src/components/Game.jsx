@@ -313,6 +313,7 @@ function Game() {
               <Text>TIME: {game['scheduled_at']} ({game['scheduled_how_soon']})</Text>
               <Text>RINK: {game['rink']}</Text>
               <Text>VS: {game['user_team']} {homeAwayLabel} vs {game['vs']}</Text>
+              <Text>Locker Room: {game['locker_room']}</Text>
               <Text>&nbsp;</Text>
               <Text>Players: {yesCount} {maybeCountStr}</Text>
               <Text>Goalie: {goalieLabel}</Text>

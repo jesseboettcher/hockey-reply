@@ -202,6 +202,7 @@ def get_game(game_id, team_id):
         'home_goals': game.home_goals,
         'away_goals': game.away_goals,
         'game_type': game.game_type,
+        'locker_room': game.home_locker_room if game.home_team_id == team_id else game.away_locker_room,
         'is_user_membership_pending': True if user_role == '' else False,
         'is_user_on_team': is_logged_in_user_in_team(team_id, False),
         'user_reply': user_reply
