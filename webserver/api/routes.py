@@ -34,6 +34,21 @@ def sync():
 
     return { 'result' : 'success' }
 
+
+@blueprint.route('/sync-locker-rooms')
+def sync_locker_rooms():
+    '''
+    Initiates a synchronization of the database with the Sharks Ice website. Just used for
+    testing, so will return an error if accessed on production.
+    '''
+    if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
+        return { 'result' : 'not allowed' }
+
+    synchronizer = Synchronizer()
+    synchronizer.locker_room_assignment_check()
+
+    return { 'result' : 'success' }
+
 @blueprint.route('/send-email-reminder/<game_id>')
 def test_email(game_id):
     '''

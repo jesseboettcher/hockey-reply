@@ -136,7 +136,7 @@ class Database:
                                                     Game.scheduled_at > today,
                                                     Game.scheduled_at <= soon)).all()
 
-    def add_game(self, game_parser, locker_room_parser):
+    def add_game(self, game_parser):
         ''' Looks for the game_parser object in the db. Adds the game if it is new or otherwise
             updates its changed fields. Returns True if the game was new, False otherwise
         '''
@@ -170,16 +170,6 @@ class Database:
                 write_log('INFO', f'Home team changed from {game.home_team_id} to {parsed_home_team.team_id} for {game.game_id}')
                 game.home_team_id = parsed_home_team.team_id
 
-            # Fill in locker room info
-            if locker_room_parser:
-                home_lr, away_lr = locker_room_parser.get_locker_rooms_for_game(game.game_id)
-
-                if home_lr != game.home_locker_room:
-                    game.home_locker_room = home_lr
-
-                if away_lr != game.away_locker_room:
-                    game.away_locker_room = away_lr
-
             self.session.commit()
             return False
 
@@ -209,6 +199,28 @@ class Database:
 
     def add_game_object(self, game):
         self.session.add(game)
+        self.session.commit()
+
+    def update_locker_rooms(self, locker_room_parser):
+
+        for game_id in locker_room_parser.get_games_with_locker_rooms():
+
+            game = self.session.query(Game).filter(Game.game_id == game_id).one_or_none()
+            if game is None:
+                continue
+
+            print(f'Found game {game_id}')
+
+            home_lr, away_lr = locker_room_parser.get_locker_rooms_for_game(game_id)
+
+            if home_lr != game.home_locker_room:
+                print(f'Updating home LR for {game_id} to {home_lr}')
+                game.home_locker_room = home_lr
+
+            if away_lr != game.away_locker_room:
+                print(f'Updating away LR for {game_id} to {away_lr}')
+                game.away_locker_room = away_lr
+
         self.session.commit()
 
     ### Reply methods

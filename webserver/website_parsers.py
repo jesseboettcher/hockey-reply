@@ -349,3 +349,6 @@ class LockerRoomPageParser:
             return None, None
 
         return self.locker_rooms[game_id]['Home LR'], self.locker_rooms[game_id]['Away LR']
+
+    def get_games_with_locker_rooms(self):
+        return self.locker_rooms.keys()

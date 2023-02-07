@@ -28,6 +28,7 @@ class Synchronizer:
 
     SYNCHRONIZE_INTERVAL_HOURS = 4
     NOTIFY_CHECK_INTERVAL_HOURS = 1
+    LOCKER_ROOM_INTERVAL_MINUTES = 15
 
     def __init__(self):
         self.db = None
@@ -45,9 +46,19 @@ class Synchronizer:
         self.scheduler.configure(executors=executors, job_defaults=job_defaults)
         self.scheduler.add_job(self.sync, 'interval', hours=self.SYNCHRONIZE_INTERVAL_HOURS)
         self.scheduler.add_job(self.notify, 'interval', hours=self.NOTIFY_CHECK_INTERVAL_HOURS)
+        self.scheduler.add_job(self.locker_room_assignment_check, 'interval', hours=self.LOCKER_ROOM_INTERVAL_MINUTES)
 
         if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
             self.scheduler.start()
+
+    def locker_room_assignment_check(self):
+        self.db = Database()
+
+        locker_room_source, locker_room_soup = self.open_page(f'{self.SHARKS_ICE_BASE_URL}{self.SHARKS_ICE_LOCKROOM_ENDPOINT}')
+        locker_room_parser = LockerRoomPageParser(locker_room_source, locker_room_soup)
+        locker_room_parser.parse()
+
+        self.db.update_locker_rooms(locker_room_parser)
 
     def notify(self):
         ''' notify runs periodically to the check the datetime of upcoming games
@@ -83,10 +94,6 @@ class Synchronizer:
 
     def sync_season(self, url):
 
-        locker_room_source, locker_room_soup = self.open_page(f'{self.SHARKS_ICE_BASE_URL}{self.SHARKS_ICE_LOCKROOM_ENDPOINT}')
-        locker_room_parser = LockerRoomPageParser(locker_room_source, locker_room_soup)
-        locker_room_parser.parse()
-
         source, soup = self.open_season_page(url)
         for link in soup.find_all('a'):
             
@@ -109,7 +116,7 @@ class Synchronizer:
             self.db.add_team(team_name, team_parser.external_id)
 
             for game in team_parser.games:
-                game_is_new = self.db.add_game(game, locker_room_parser)
+                game_is_new = self.db.add_game(game)
                 db_game = self.db.get_game_by_id(game.id)
 
                 if game_is_new:
@@ -159,7 +166,7 @@ class Synchronizer:
             return
 
         for game in team_parser.games:
-            self.db.add_game(game, None)
+            self.db.add_game(game)
 
         print(f'Synchronization complete')
 
