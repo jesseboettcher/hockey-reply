@@ -46,7 +46,7 @@ class Synchronizer:
         self.scheduler.configure(executors=executors, job_defaults=job_defaults)
         self.scheduler.add_job(self.sync, 'interval', hours=self.SYNCHRONIZE_INTERVAL_HOURS)
         self.scheduler.add_job(self.notify, 'interval', hours=self.NOTIFY_CHECK_INTERVAL_HOURS)
-        self.scheduler.add_job(self.locker_room_assignment_check, 'interval', seconds=LOCKER_ROOM_INTERVAL_SECONDS)
+        self.scheduler.add_job(self.locker_room_assignment_check, 'interval', seconds=self.LOCKER_ROOM_INTERVAL_SECONDS)
 
         if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
             self.scheduler.start()
