@@ -28,7 +28,7 @@ class Synchronizer:
 
     SYNCHRONIZE_INTERVAL_HOURS = 4
     NOTIFY_CHECK_INTERVAL_HOURS = 1
-    LOCKER_ROOM_INTERVAL_MINUTES = 15
+    LOCKER_ROOM_INTERVAL_SECONDS = 15
 
     def __init__(self):
         self.db = None
@@ -46,12 +46,13 @@ class Synchronizer:
         self.scheduler.configure(executors=executors, job_defaults=job_defaults)
         self.scheduler.add_job(self.sync, 'interval', hours=self.SYNCHRONIZE_INTERVAL_HOURS)
         self.scheduler.add_job(self.notify, 'interval', hours=self.NOTIFY_CHECK_INTERVAL_HOURS)
-        self.scheduler.add_job(self.locker_room_assignment_check, 'interval', hours=self.LOCKER_ROOM_INTERVAL_MINUTES)
+        self.scheduler.add_job(self.locker_room_assignment_check, 'interval', seconds=LOCKER_ROOM_INTERVAL_SECONDS)
 
         if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
             self.scheduler.start()
 
     def locker_room_assignment_check(self):
+        write_log('INFO', f'Checking locker room assignments')
         self.db = Database()
 
         locker_room_source, locker_room_soup = self.open_page(f'{self.SHARKS_ICE_BASE_URL}{self.SHARKS_ICE_LOCKROOM_ENDPOINT}')

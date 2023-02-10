@@ -311,7 +311,6 @@ class LockerRoomPageParser:
         """
         rows = table.find_all('tr')
         column_names = self.table_row_contents(rows[self.TABLE_DATA_COLUMN_HEADERS_INDEX])
-        print(column_names)
 
         # adjust duplicate column names of "LR" to "Home LR" and "Away LR"
         for i in range(len(column_names)):
@@ -328,15 +327,12 @@ class LockerRoomPageParser:
         for row in rows[self.TABLE_DATA_START_INDEX:]:
 
             details = self.table_row_contents(row)
-            print(details)
 
             lr_assignment = {}
             lr_assignment['Away LR'] = details[column_names.index('Away LR')]
             lr_assignment['Home LR'] = details[column_names.index('Home LR')]
 
             self.locker_rooms[details[column_names.index('Game')]] = lr_assignment
-
-        print(self.locker_rooms)
 
     def get_locker_rooms_for_game(self, game_id):
         """
