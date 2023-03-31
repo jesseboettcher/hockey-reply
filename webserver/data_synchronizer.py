@@ -52,7 +52,6 @@ class Synchronizer:
             self.scheduler.start()
 
     def locker_room_assignment_check(self):
-        write_log('INFO', f'Checking locker room assignments')
         self.db = Database()
 
         locker_room_source, locker_room_soup = self.open_page(f'{self.SHARKS_ICE_BASE_URL}{self.SHARKS_ICE_LOCKROOM_ENDPOINT}')
