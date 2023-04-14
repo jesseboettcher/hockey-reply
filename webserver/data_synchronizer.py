@@ -77,6 +77,10 @@ class Synchronizer:
             send_game_coming_soon(self.db, game)
             game.did_notify_coming_soon = True
 
+            # paranoid extra save updates to game was-notification-sent
+            # because it was not updating for game 382145 on Mar 30 2023 during the day
+            self.db.commit_changes()
+
         # save updates to game was-notification-sent
         self.db.commit_changes()
 
