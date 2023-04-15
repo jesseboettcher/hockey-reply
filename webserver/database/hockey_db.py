@@ -7,10 +7,11 @@ import datetime
 import os
 
 from flask import current_app, g
+import phonenumbers
 from sqlalchemy import create_engine, func, and_, or_
 from sqlalchemy.orm import sessionmaker
 
-from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamPlayer
+from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamGoalie, TeamPlayer
 from webserver.email import send_game_time_changed
 from webserver.logging import write_log
 
@@ -70,6 +71,9 @@ class Database:
         self.session.commit()
 
     ### User methods
+    def get_users(self):
+        return self.session.query(User).all()
+
     def get_user(self, email):
         return self.session.query(User).filter(func.lower(User.email) == email.strip().lower()).first()
 
@@ -119,6 +123,9 @@ class Database:
     def get_team_player(self, team_id, user_id):
         return self.session.query(TeamPlayer).filter(and_(TeamPlayer.team_id == team_id, TeamPlayer.user_id == user_id)).one_or_none()
 
+    def remove_goalie_from_team(self, team_id, goalie_id):
+        self.session.query(TeamGoalie).filter(and_(TeamGoalie.team_id == team_id, TeamGoalie.id == goalie_id)).delete()
+
     ### Game methods
     def get_games(self):
         return self.session.query(Game).all()
@@ -133,7 +140,7 @@ class Database:
         today = datetime.datetime.now()
         soon = today + datetime.timedelta(hours=84)
         return self.session.query(Game).filter(and_(Game.did_notify_coming_soon == False,
-                                                    Game.scheduled_at > today,
+                                                    Game.scheduled_at > today, # TODO >= today
                                                     Game.scheduled_at <= soon)).all()
 
     def add_game(self, game_parser):
@@ -255,3 +262,47 @@ class Database:
         db_reply.modified_at = datetime.datetime.now()
 
         self.session.commit()
+
+class PersonReference:
+    """
+    Class to reference a person by user_id, if registered, or name and phone number otherwise.
+    """
+    def __init__(self, user_id, name, phone_number):
+        if user_id is None:
+            self.user_id = 0
+        else:
+            self.user_id = user_id
+        self.name = name
+
+        if self.user_id > 0:
+            db = get_db()
+            user = db.get_user_by_id(self.user_id)
+
+            if self.name is None:
+                self.name = user.first_name
+
+            if phone_number is None:
+                phone_number = user.phone_number
+
+        if phone_number is None:
+            self.phone_number = None
+        elif isinstance(phone_number, phonenumbers.PhoneNumber):
+            self.phone_number = phone_number
+        else:
+            self.phone_number = phonenumbers.parse(phone_number, "US")
+
+        if self.name == None:
+            self.name = "Unknown"
+
+        assert(self.name is not None)
+
+    def __hash__(self):
+        return hash((self.user_id, self.name, phonenumbers.format_number(self.phone_number, phonenumbers.PhoneNumberFormat.E164)))
+
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, PersonReference):
+            return self.user_id == __value.user_id and self.name == __value.name and self.phone_number == __value.phone_number
+        return False
+
+    def __str__(self) -> str:
+        return f'PersonReference({self.user_id}, {self.name}, {self.phone_number})'

@@ -3,6 +3,7 @@ from flask import Flask, g
 def create_app(testing=False):
     app = Flask(__name__)
 
+    from webserver.api import assistant
     from webserver.api import auth
     from webserver.api import calendar
     from webserver.api import game
@@ -11,6 +12,7 @@ def create_app(testing=False):
     from webserver.api import signaturepdf
     from webserver.api import team
 
+    app.register_blueprint(assistant.blueprint)
     app.register_blueprint(auth.blueprint)
     app.register_blueprint(calendar.blueprint)
     app.register_blueprint(game.blueprint)
@@ -18,6 +20,9 @@ def create_app(testing=False):
     app.register_blueprint(routes.blueprint)
     app.register_blueprint(team.blueprint)
     app.register_blueprint(signaturepdf.blueprint)
+
+    from webserver.assistant import Assistant
+    app.config['assistant'] = Assistant()
 
     from webserver.data_synchronizer import Synchronizer
     app.config['synchronizer'] = Synchronizer()

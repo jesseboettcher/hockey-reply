@@ -8,6 +8,7 @@ echo "\t* Sending scripts"
 rsync deployment/webserver_deploy.sh ec2-user@hockeyreply.com:/home/ec2-user/
 rsync keys/prod_env.txt ec2-user@hockeyreply.com:/home/ec2-user/
 rsync keys/hockey-reply-14e1f0b96738.json ec2-user@hockeyreply.com:/home/ec2-user/keys/
+rsync keys/.env ec2-user@hockeyreply.com:/home/ec2-user/keys/
 ssh ec2-user@hockeyreply.com chmod +x /home/ec2-user/webserver_deploy.sh
 
 # build frontend

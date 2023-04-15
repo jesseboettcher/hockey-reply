@@ -47,6 +47,15 @@ CREATE TABLE team_player(
     joined_at       TIMESTAMP WITH TIME ZONE
 );
 
+CREATE TABLE team_goalie(
+    id              SERIAL     PRIMARY KEY,
+    user_id         INTEGER,
+    team_id         INTEGER,
+    nickname        TEXT,
+    phone_number    TEXT,
+    order           INTEGER
+);
+
 CREATE TABLE users(
     user_id         SERIAL     PRIMARY KEY,
 
