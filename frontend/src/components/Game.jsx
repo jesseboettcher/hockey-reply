@@ -1,50 +1,46 @@
 import dayjs from 'dayjs';
-import { ArrowForwardIcon } from '@chakra-ui/icons'
 import {
-  Center,
-  Checkbox,
-  ChakraProvider,
-  Container,
   Badge,
   Box,
   Button,
+  Center,
+  Checkbox,
+  ChakraProvider,
   extendTheme,
-  IconButton,
+  Heading,
+  Icon,
   Input,
   InputGroup,
   InputRightElement,
-  Text,
-  Link,
-  List,
-  ListIcon,
-  ListItem,
-  Popover,
-  PopoverArrow,
-  PopoverCloseButton,
-  PopoverContent,
-  PopoverTrigger,
-  Select,
+  HStack,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
   SimpleGrid,
   Stack,
   Table,
+  Text,
   Thead,
-  theme,
   Tbody,
   Tr,
   Th,
   Td,
   useColorModeValue,
+  useDisclosure,
   useToast,
-  VStack,
 } from '@chakra-ui/react';
 import React, {useEffect, useRef, useState} from 'react';
+import { MdPersonSearch, MdMessage } from 'react-icons/md'
 import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
 import _ from "lodash";
-
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { checkLogin, getAuthHeader, getData, getPageData } from '../utils';
+import { checkLogin, clearCachedData, getAuthHeader, getData, getPageData } from '../utils';
 import { ReplyBox } from '../components/ReplyBox';
 
 const themeWithBadgeCustomization = extendTheme({
@@ -95,14 +91,19 @@ function Game() {
   const [lastRefresh, setLastRefresh] = React.useState(dayjs())
   const [pageError, setPageError] = React.useState(null)
   const responseReceived = useRef(false);
+  const receivedInitialGoalieConversations = useRef(false);
+  const startedGoalieSearch = useRef(false);
+  const goalieConversationsObject = useRef({});
   const toast = useToast();
 
   const [userIsOnTeam, setUserIsOnTeam] = useState(true);
   const [isUserMembershipPending, setIsUserMembershipPending] = useState(false);
 
   const loadPageData = async () => {
+      clearCachedData(`/api/goalie-searches/${team_id}`);
       const loadDataResult = await getPageData([{url: `/api/game/${game_id}/for-team/${team_id}`, handler: receiveGameData},
-                                                {url: `/api/game/reply/${game_id}/for-team/${team_id}`, handler: receiveReplyData}],
+                                                {url: `/api/game/reply/${game_id}/for-team/${team_id}`, handler: receiveReplyData},
+                                                {url: `/api/goalie-searches/${team_id}`, handler: receiveGoalieConversationsData}],
                                                setLastRefresh);
       if (!loadDataResult) {
         setPageError('Uh, oh. Could not get the latest data.');
@@ -198,6 +199,13 @@ function Game() {
     }
   }
 
+  function receiveGoalieConversationsData(body) {
+    if (_.has(body, 'goalie_searches')) {
+      goalieConversationsObject.current = body;
+      receivedInitialGoalieConversations.current = true;
+    }
+  }
+
   function submitReply(event, user_id, team_id, game_id, response, new_msg, is_goalie) {
 
     if (new_msg) {
@@ -257,6 +265,55 @@ function Game() {
     }
   }
 
+  // Assistant functions
+  function findGoalie() {
+    let data = {
+      team_id: team_id,
+      game_id: game_id
+    };
+
+    startedGoalieSearch.current = true;
+    toast({
+      title: `Starting a Goalie Search...`,
+      status: 'info', isClosable: true,
+    })
+
+    fetch(`/api/find-goalie`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+      body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if ('result' in data && data['result'] === 'error') {
+        toast({
+          title: data['message'],
+          status: 'error', isClosable: true,
+        })
+      }
+      else {
+        goalieConversationsObject.current = data;
+        onOpen();
+      }
+    });
+  }
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  function viewGoalieSearches() {
+    console.log('viewGoalieSearches')
+    fetch(`/api/goalie-searches/${team_id}`, {
+      method: "GET",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+    })
+    .then(response => response.json())
+    .then(data => {
+      goalieConversationsObject.current = data;
+      onOpen();
+    });
+  };
+
   // Precompute some content to include in the rendering
   const isUserCaptain = user['role'] == 'captain';
 
@@ -303,7 +360,34 @@ function Game() {
     no_response_users.push({user_id:next_anonymous_sub_id, name:'Anonymous Sub'});
   }
 
-  return (
+  const enable_assistant_ui = true;
+  let has_goalie_searches = goalieConversationsObject.current.goalie_searches && goalieConversationsObject.current.goalie_searches.some((search)=> search.game_id === Number(game_id));
+  let assistant_find_goalie = enable_assistant_ui && receivedInitialGoalieConversations.current && isUserCaptain && !haveGoalie && !has_goalie_searches && !startedGoalieSearch.current ?
+  <div>
+    <Button size='xs' px={0} mt={1} bg='transparent' my="5px" onClick={findGoalie}>
+      <Badge colorScheme="cyan" width='115px' pt="2px" pb="4px" my="0px"><Icon boxSize={5} mr="4px" mb="-5px" pt="0px" as={MdPersonSearch} />Find Goalie</Badge>
+    </Button>
+  </div> : null;
+
+  let assistant_debug_goalie_search = enable_assistant_ui && receivedInitialGoalieConversations.current && isUserCaptain && has_goalie_searches ?
+  <div>
+    <Button size='xs' px={0} mt={1} bg='transparent' onClick={viewGoalieSearches}>
+      <Badge colorScheme="cyan" width='190px' pt="2px" pb="4px" my="0px"><Icon boxSize={5} mr="4px" mb="-5px" pt="0px" as={MdMessage} />Goalie Conversations</Badge>
+    </Button>
+  </div> : null;
+
+  let goalieStatusBadge = [];
+  goalieStatusBadge[''] = <Badge colorScheme="gray" width='80px' my={2}>&nbsp;&nbsp;</Badge>;
+  goalieStatusBadge['confirmed'] = <Badge colorScheme="green" width='80px' my={2}>confirmed</Badge>;
+  goalieStatusBadge['declined'] = <Badge colorScheme="red" width='80px' my={2}>declined</Badge>;
+  goalieStatusBadge['unknown'] = <Badge colorScheme="gray" width='80px'  my={2}>unknown</Badge>;
+  goalieStatusBadge['need_more_time'] = <Badge colorScheme="blue" width='80px'  my={2}>needs more time</Badge>;
+
+  let chatMessageColors = [];
+  chatMessageColors['assistant'] = 'blue.50';
+  chatMessageColors['user'] = 'gray.50';
+
+return (
     <ChakraProvider theme={themeWithBadgeCustomization}>
       <Header lastRefresh={lastRefresh} pageError={pageError}/>
       <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
@@ -317,6 +401,11 @@ function Game() {
               <Text>&nbsp;</Text>
               <Text>Players: {yesCount} {maybeCountStr}</Text>
               <Text>Goalie: {goalieLabel}</Text>
+              <HStack>
+                {assistant_find_goalie}
+                {assistant_debug_goalie_search}
+                <Badge variant='outline' colorScheme="gray" mt="0px" mr='auto'>BETA</Badge>
+              </HStack>
             </InfoBox>
           }
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
@@ -456,6 +545,47 @@ function Game() {
           </Center>
         }
       </Box>
+
+      <Modal
+          onClose={onClose}
+          isOpen={isOpen}
+          scrollBehavior="inside"
+          size="xl"
+        >
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Goalie Conversations</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              { goalieConversationsObject.current.goalie_searches &&
+                goalieConversationsObject.current.goalie_searches.map((game) => (
+
+                  game.game_id === Number(game_id) && (
+                    <Box key={game.game_id} p='8px' mb={10} >
+                      <Heading size='sm' color='gray.500' textTransform='uppercase'>{game.scheduled_at} &#40;Game {game.game_id}&#41;</Heading>
+                      {
+                        game.subs.map((sub, index) => (
+                          <Box key={index} ml={5} mt={5}>
+                            <Heading size='xs' color='blue.500'>{sub.name} &#40;{sub.phone_number}&#41;</Heading>
+                            { goalieStatusBadge[sub.status] }
+                            {
+                              sub.messages.map((message, index) => (
+                                message.role !== "system" && (
+                                  <Box key={index} ml={5} my={2}>
+                                    <Text px='8px' py='4px' bg={chatMessageColors[message.role]}>{message.content}</Text>
+                                  </Box>)
+                            ))}
+                          </Box>
+                      ))}
+                    </Box>)
+                ))
+              }
+            </ModalBody>
+            <ModalFooter>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
       <Footer></Footer>
     </ChakraProvider>
   );

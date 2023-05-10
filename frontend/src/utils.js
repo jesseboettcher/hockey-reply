@@ -130,6 +130,10 @@ export function getCacheData(key) {
   window.localStorage.getItem(key);
 }
 
+export function clearCachedData(url) {
+  setCacheData(url, null);
+}
+
 function applyCachedData(url, handler) {
 
     const cachedData = getCacheData(url);
