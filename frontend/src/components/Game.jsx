@@ -12,6 +12,7 @@ import {
   Input,
   InputGroup,
   InputRightElement,
+  HStack,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -359,7 +360,7 @@ function Game() {
     no_response_users.push({user_id:next_anonymous_sub_id, name:'Anonymous Sub'});
   }
 
-  const enable_assistant_ui = false;
+  const enable_assistant_ui = true;
   let has_goalie_searches = goalieConversationsObject.current.goalie_searches && goalieConversationsObject.current.goalie_searches.some((search)=> search.game_id === Number(game_id));
   let assistant_find_goalie = enable_assistant_ui && receivedInitialGoalieConversations.current && isUserCaptain && !haveGoalie && !has_goalie_searches && !startedGoalieSearch.current ?
   <div>
@@ -400,8 +401,11 @@ return (
               <Text>&nbsp;</Text>
               <Text>Players: {yesCount} {maybeCountStr}</Text>
               <Text>Goalie: {goalieLabel}</Text>
-              {assistant_find_goalie}
-              {assistant_debug_goalie_search}
+              <HStack>
+                {assistant_find_goalie}
+                {assistant_debug_goalie_search}
+                <Badge variant='outline' colorScheme="gray" mt="0px" mr='auto'>BETA</Badge>
+              </HStack>
             </InfoBox>
           }
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
