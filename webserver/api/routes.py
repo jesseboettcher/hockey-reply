@@ -30,13 +30,13 @@ def receive_sms():
 
     return "", 200
 
-@blueprint.route('/test-sms/<msg>', methods=['GET'])
-def test_sms(msg):
+@blueprint.route('/test-sms/<msg>/<number>', methods=['GET'])
+def test_sms(msg, number):
     '''
     Tests sending an SMS message to the assistant.
     '''
     sms_client = SMS()
-    sms_client.send(['+14082197030'], msg)
+    sms_client.send([number], msg)
     return "", 200
 
 @blueprint.route('/sync')
