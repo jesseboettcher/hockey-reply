@@ -21,7 +21,7 @@ class Synchronizer:
     SHARKS_ICE_BASE_URL = 'https://stats.sharksice.timetoscore.com/'
     SHARKS_ICE_SEASON_ENDPOINTS = [
         'display-stats.php?league=1',
-        # 'display-stats.php?league=1&season=52' # winter 2022 playoffs, overlapped with spring start
+        'display-stats.php?league=1&season=59' # summer 23, not listed as current season yet, but games are posted
     ]
     SHARKS_ICE_TEAM_ENDPOINT = 'display-schedule'
     SHARKS_ICE_LOCKROOM_ENDPOINT = 'display-lr-assignments.php'
