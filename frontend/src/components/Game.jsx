@@ -367,6 +367,7 @@ function Game() {
     <Button size='xs' px={0} mt={1} bg='transparent' my="5px" onClick={findGoalie}>
       <Badge colorScheme="cyan" width='115px' pt="2px" pb="4px" my="0px"><Icon boxSize={5} mr="4px" mb="-5px" pt="0px" as={MdPersonSearch} />Find Goalie</Badge>
     </Button>
+    <Badge variant='outline' colorScheme="gray" ml={2} mr='auto'>BETA</Badge>
   </div> : null;
 
   let assistant_debug_goalie_search = enable_assistant_ui && receivedInitialGoalieConversations.current && isUserCaptain && has_goalie_searches ?
@@ -374,6 +375,7 @@ function Game() {
     <Button size='xs' px={0} mt={1} bg='transparent' onClick={viewGoalieSearches}>
       <Badge colorScheme="cyan" width='190px' pt="2px" pb="4px" my="0px"><Icon boxSize={5} mr="4px" mb="-5px" pt="0px" as={MdMessage} />Goalie Conversations</Badge>
     </Button>
+    <Badge variant='outline' colorScheme="gray" ml={2} mr='auto'>BETA</Badge>
   </div> : null;
 
   let goalieStatusBadge = [];
@@ -404,7 +406,6 @@ return (
               <HStack>
                 {assistant_find_goalie}
                 {assistant_debug_goalie_search}
-                <Badge variant='outline' colorScheme="gray" mt="0px" mr='auto'>BETA</Badge>
               </HStack>
             </InfoBox>
           }
