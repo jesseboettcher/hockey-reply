@@ -214,15 +214,28 @@ class GameParser(BaseParser):
         ''' The Sharks Ice site does not include years on their datetime indicators for games,
             so the year needs to be inferred.
 
-            TODO: This current logic is rickety and needs to be updated
+            This logic will work for seasons over the last few years, but will not for parsing
+            historical ones
         '''
-        year = 0
+        target_day_of_week = date_str.split(' ')[0]
+        target_date_month_day = ' '.join(date_str.split(' ')[1:])
 
-        if season_num != None and season_num >= 52:
-            # 3 seasons a year: winter/spring, summer, fall/winter
-            year = 2022 + int((season_num - 52) / 3)
-        else:
-            write_log('ERROR', f'Unhandled year')
+        current_year = datetime.now().year
+
+        # Create a range of years to check
+        year_range = range(current_year - 3, current_year + 1)
+
+        # Iterate over the years and find the one where the day of week matches the one provided
+        # by the web site parser
+        year = current_year
+
+        for test_year in year_range:
+            date = datetime.strptime(f'{str(test_year)} {target_date_month_day}', "%Y %b %d")
+            day_name = date.strftime("%a")
+
+            if day_name == target_day_of_week:
+                year = test_year
+
         return year
 
     def __repr__(self):
