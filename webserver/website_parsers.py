@@ -220,7 +220,7 @@ class GameParser(BaseParser):
         target_day_of_week = date_str.split(' ')[0]
         target_date_month_day = ' '.join(date_str.split(' ')[1:])
 
-        current_year = datetime.now().year
+        current_year = datetime.datetime.now().year
 
         # Create a range of years to check
         year_range = range(current_year - 3, current_year + 1)
@@ -230,7 +230,7 @@ class GameParser(BaseParser):
         year = current_year
 
         for test_year in year_range:
-            date = datetime.strptime(f'{str(test_year)} {target_date_month_day}', "%Y %b %d")
+            date = datetime.datetime.strptime(f'{str(test_year)} {target_date_month_day}', "%Y %b %d")
             day_name = date.strftime("%a")
 
             if day_name == target_day_of_week:
