@@ -152,7 +152,7 @@ export function Team() {
   const [teamId, setTeamId] = useState(0);
   const [teamName, setTeamName] = useState(null);
   const [players, setPlayers] = useState([]);
-  const [goalieList, setGoalieList] = useState([]);
+  const [goalieList, setGoalieList] = useState({});
   const [user, setUser] = useState(0);
   const [isUserCaptain, setIsUserCaptain] = useState(null);
   const isUserMembershipPending = user['role'] == '';
@@ -613,7 +613,7 @@ export function Team() {
                   </Tr>
                 </Thead>
                 <Tbody fontSize="0.8em">
-                  { goalieList.length > 0 && goalieList['goalies'].map((goalie, index) => (
+                  { 'goalies' in goalieList && goalieList['goalies'].map((goalie, index) => (
                   <Tr key={index}>
                     <Td>
                       <IconButton size='xs' icon={<ArrowUpIcon />} onClick={ () => { updateGoalieOrder(goalie.goalie_id, 'up'); } } mr="10px"/>
