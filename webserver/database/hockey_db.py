@@ -216,16 +216,12 @@ class Database:
             if game is None:
                 continue
 
-            print(f'Found game {game_id}')
-
             home_lr, away_lr = locker_room_parser.get_locker_rooms_for_game(game_id)
 
             if home_lr != game.home_locker_room:
-                print(f'Updating home LR for {game_id} to {home_lr}')
                 game.home_locker_room = home_lr
 
             if away_lr != game.away_locker_room:
-                print(f'Updating away LR for {game_id} to {away_lr}')
                 game.away_locker_room = away_lr
 
         self.session.commit()

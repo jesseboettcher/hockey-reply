@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from webserver.database.hockey_db import Database, get_db
 from webserver.email import send_game_coming_soon
 from webserver.website_parsers import LockerRoomPageParser, TeamPageParser
-from webserver.logging import write_log
+from webserver.logging import print_log, write_log
 
 class Synchronizer:
 
@@ -103,12 +103,12 @@ class Synchronizer:
             
             href = link.get('href')
             if href.find(self.SHARKS_ICE_TEAM_ENDPOINT) == -1:
-                print(f'SKIPPING {link}, not a team page')
+                print_log(f'SKIPPING {link}, not a team page')
                 continue
 
             team_name = link.string.strip()
 
-            print(f'Parsing {team_name} at {link}')
+            print_log(f'Parsing {team_name} at {link}')
             team_source, team_soup = self.open_team_page(href)
             team_parser = TeamPageParser(team_source, team_soup)
             success = team_parser.parse()
@@ -166,13 +166,13 @@ class Synchronizer:
         success = team_parser.parse()
 
         if not success:
-            print(f'Failed synchronization of website')
+            print_log(f'Failed synchronization of website')
             return
 
         for game in team_parser.games:
             self.db.add_game(game)
 
-        print(f'Synchronization complete')
+        print_log(f'Synchronization complete')
 
     def open_test_file(self, path):
         f = open(path)

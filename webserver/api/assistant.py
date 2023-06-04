@@ -71,12 +71,10 @@ def goalie_searches(team_id_input):
         result = {}
         result['result'] = "USER_NOT_CAPTAIN"
         result['team_id'] = team_id
-        write_log('ERROR', f'api/goalie-searches: unauthorized user attempted to access goalie searches for team {team_id}, user {user.user_id}')
         return result, 200
 
     assistant = Assistant.get_instance()
     searches = assistant.describe_goalie_searches_for_team(team_id)
 
-    print(f'api/goalie-searches: returned goalie searches for team {team_id}')
     write_log('INFO', f'api/goalie-searches: returned goalie searches for team {team_id}')
     return searches, 200
