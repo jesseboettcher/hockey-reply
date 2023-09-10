@@ -165,12 +165,20 @@ class BaseParser:
         output = output + '}'
         return output
 
+def hack_for_game_413541(id):
+    # game 413541 was set to completed at least 10 hours before it started
+    # causing it to disappear from choking hazards upcoming games list. game is Sep 10 @ 430pm PDT
+    if int(self.id) == 413541:
+        return True
+
+    return False
+
 class GameParser(BaseParser):
 
     def __init__(self, game_dict, parsed_season_num):
 
         self.id = self.parse_id(game_dict['Game'])
-        self.completed = 0 if game_dict['Game'].find('*') == -1 else 1
+        self.completed = 0 if game_dict['Game'].find('*') == -1 or hack_for_game_413541(self.id) else 1
 
         # Wed Jan 19
         # 9:45 PM
