@@ -165,10 +165,10 @@ class BaseParser:
         output = output + '}'
         return output
 
-def hack_for_game_413541(id):
+def hack_for_game_413541(game_id):
     # game 413541 was set to completed at least 10 hours before it started
     # causing it to disappear from choking hazards upcoming games list. game is Sep 10 @ 430pm PDT
-    if int(self.id) == 413541:
+    if int(game_id) == 413541:
         return True
 
     return False
