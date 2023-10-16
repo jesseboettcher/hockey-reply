@@ -136,6 +136,9 @@ class Database:
     def get_game_by_id(self, game_id):
         return self.session.query(Game).filter(Game.game_id == game_id).one_or_none()
 
+    def remove_game_by_id(self, game_id):
+        self.session.query(Game).filter(Game.game_id == game_id).delete()
+
     def get_games_coming_soon(self):
         today = datetime.datetime.now()
         soon = today + datetime.timedelta(hours=84)

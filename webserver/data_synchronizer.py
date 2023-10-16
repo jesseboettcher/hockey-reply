@@ -84,14 +84,34 @@ class Synchronizer:
         # save updates to game was-notification-sent
         self.db.commit_changes()
 
+    def check_deleted_games(self):
+        all_games = self.db.get_games()
+
+        for game in all_games:
+            if game.completed:
+                continue
+
+            if game.id not in self.synced_games_list:
+                write_log('INFO', f'Game DELETED game_id {game.id}')
+                # TODO
+                # self.db.remove_game_by_id(game.id)
+                # notify teams
+
     def sync(self):
         write_log('INFO', f'Synchronization started')
         self.db = Database()
         self.new_games_map = {}
+        self.synced_games_list = []
+
+        any_sync_failures = False
 
         for season in self.SHARKS_ICE_SEASON_ENDPOINTS:
             url = f'{self.SHARKS_ICE_BASE_URL}{season}'
-            self.sync_season(url)
+            if not self.sync_season(url):
+                any_sync_failures = True
+
+        if not any_sync_failures:
+            self.check_deleted_games()
 
         write_log('INFO', f'Synchronization complete')
         return True
@@ -122,6 +142,8 @@ class Synchronizer:
             for game in team_parser.games:
                 game_is_new = self.db.add_game(game)
                 db_game = self.db.get_game_by_id(game.id)
+
+                self.synced_games_list.append(game.id)
 
                 if game_is_new:
                     if not db_game.home_team_id in self.new_games_map:
