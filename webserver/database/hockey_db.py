@@ -166,6 +166,10 @@ class Database:
                 write_log('INFO', f'Game schedule change to {game_parser.datetime} from {old_scheduled_at} for {game.game_id}')
                 send_game_time_changed(self, game, old_scheduled_at)
 
+
+            if game.rink != game_parser.rink:
+                game.rink = game_parser.rink
+
             # Check if team ids match, update if they do not. Teams can change during playoffs
             # when games are posted with one or both of the teams ommitted until games in the
             # earlier rounds have completed.
