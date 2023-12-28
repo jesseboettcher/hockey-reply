@@ -231,7 +231,7 @@ class GameParser(BaseParser):
         current_year = datetime.datetime.now().year
 
         # Create a range of years to check
-        year_range = range(current_year - 3, current_year + 1)
+        year_range = range(current_year - 3, current_year + 2)
 
         # Iterate over the years and find the one where the day of week matches the one provided
         # by the web site parser
