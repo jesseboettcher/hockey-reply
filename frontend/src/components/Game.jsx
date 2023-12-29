@@ -360,7 +360,7 @@ function Game() {
     no_response_users.push({user_id:next_anonymous_sub_id, name:'Anonymous Sub'});
   }
 
-  const enable_assistant_ui = true;
+  const enable_assistant_ui = false;
   let has_goalie_searches = goalieConversationsObject.current.goalie_searches && goalieConversationsObject.current.goalie_searches.some((search)=> search.game_id === Number(game_id));
   let assistant_find_goalie = enable_assistant_ui && receivedInitialGoalieConversations.current && isUserCaptain && !haveGoalie && !has_goalie_searches && !startedGoalieSearch.current ?
   <div>
