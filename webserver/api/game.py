@@ -98,6 +98,10 @@ def get_games(team_id = None):
             user_team_id = game.away_team_id if not user_is_home else game.home_team_id,
 
             user_reply = ''
+            count_yes = 0
+            count_maybe = 0
+            count_no = 0
+            count_goalie = 0
             replies = db.game_replies_for_game(game.game_id, user_team_id)
 
             # Send user role to the front end for the case where the user has not been accepted
@@ -111,7 +115,17 @@ def get_games(team_id = None):
             for reply in replies:
                 if reply.user_id == get_current_user().user_id:
                     user_reply = reply.response
-                    break
+                if reply.response == 'yes':
+                    count_yes += 1
+
+                    if reply.is_goalie:
+                        count_goalie = 1
+
+                if reply.response == 'no':
+                    count_no += 1
+                if reply.response == 'maybe':
+                    count_maybe += 1
+
 
             pacific = ZoneInfo('US/Pacific')
             game_dict = {
@@ -131,7 +145,11 @@ def get_games(team_id = None):
                 'away_goals': game.away_goals,
                 'game_type': game.game_type,
                 'user_reply': user_reply,
-                'user_role': user_role
+                'user_role': user_role,
+                'count_yes': count_yes,
+                'count_no': count_no,
+                'count_maybe': count_maybe,
+                'count_goalie': count_goalie
             }
             result['games'].append(game_dict)
             result['games'] = sorted(result['games'], key=lambda game: game['scheduled_at_dt'])
