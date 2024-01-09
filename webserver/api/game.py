@@ -116,10 +116,11 @@ def get_games(team_id = None):
                 if reply.user_id == get_current_user().user_id:
                     user_reply = reply.response
                 if reply.response == 'yes':
-                    count_yes += 1
 
                     if reply.is_goalie:
                         count_goalie = 1
+                    else:
+                        count_yes += 1 # exclude goalies from main YES count
 
                 if reply.response == 'no':
                     count_no += 1
