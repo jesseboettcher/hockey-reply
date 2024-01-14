@@ -136,6 +136,9 @@ class Database:
     def get_game_by_id(self, game_id):
         return self.session.query(Game).filter(Game.game_id == game_id).one_or_none()
 
+    def remove_game_by_id(self, game_id):
+        self.session.query(Game).filter(Game.game_id == game_id).delete()
+
     def get_games_coming_soon(self):
         today = datetime.datetime.now()
         soon = today + datetime.timedelta(hours=84)
@@ -162,6 +165,10 @@ class Database:
 
                 write_log('INFO', f'Game schedule change to {game_parser.datetime} from {old_scheduled_at} for {game.game_id}')
                 send_game_time_changed(self, game, old_scheduled_at)
+
+
+            if game.rink != game_parser.rink:
+                game.rink = game_parser.rink
 
             # Check if team ids match, update if they do not. Teams can change during playoffs
             # when games are posted with one or both of the teams ommitted until games in the
