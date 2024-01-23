@@ -26,12 +26,23 @@ class TeamPlayer(Base):
     player = relationship("User", back_populates="teams") # TODO rename user
     team = relationship("Team", back_populates="players")
 
+class TeamGoalie(Base):
+    __tablename__ = 'team_goalie'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer)
+    team_id = Column(ForeignKey('team.team_id'))
+    nickname = Column(String, nullable=True)
+    phone_number = Column(String)
+    order = Column(Integer)
+    team = relationship("Team", back_populates="goalies")
+
 class Team(Base):
     __tablename__ = "team"
     team_id = Column(Integer, primary_key=True)
     external_id = Column(Integer, default='0')
     name = Column(String)
     players = relationship ("TeamPlayer", back_populates="team", cascade="all, delete-orphan")
+    goalies = relationship ("TeamGoalie", back_populates="team", cascade="all, delete-orphan")
 
 class Game(Base):
     __tablename__ = "game"
@@ -49,6 +60,8 @@ class Game(Base):
     scoresheet_pdf_url = Column(String)
     did_notify_coming_soon = Column(Boolean, default=False)
     created_at = Column(DateTime)
+    home_locker_room = Column(String)
+    away_locker_room = Column(String)
 
 class GameReply(Base):
     __tablename__ = "game_reply"

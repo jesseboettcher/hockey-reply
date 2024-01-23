@@ -1,11 +1,11 @@
 import { CalendarIcon, DownloadIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import {
+  Badge,
   Box,
   ChakraProvider,
+  HStack,
   Link,
-  List,
   ListItem,
-  ListIcon,
   Tag,
   Text,
   theme,
@@ -122,6 +122,39 @@ from within the message.
 </UnorderedList>
     <br/>
 
+    <HStack>
+      <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Assistant Captain GPT</Text>
+      <Badge variant='outline' colorScheme="gray" mt="0px" mr='auto'>BETA</Badge>
+    </HStack>
+    <Text>
+Assistant Captain GPT is a chat-based assistant that can help you manage your team. It currently supports
+helping team captains find substitute goalies for upcoming games. It is considered BETA while it gets some
+real world testing to identify and work out any issues.
+    </Text>
+    <br/>
+    <Text>
+Interactions with the assistant captain happen both over SMS and in the UI on the site. To use the assistant:
+    </Text>
+<UnorderedList ml={10} my={2}>
+  <ListItem>
+    <b>Build a Goalie List</b> - There is a new section on the team page for goalies (visible to captains only).
+    Add the list of goalies you use for your team. Make sure they are in priority order. It can include both rostered and unrostered players.
+    Your primary goalie should be the first person listed. This is the list and the order that the assistant captain will use to find a goalie, when requested.
+  </ListItem>
+  <ListItem>
+    <b>Find Goalie</b> - Below the goalie status on the page for a specific game, there is a new <Tag color='grey.300'>Find Goalie</Tag> button
+    (visible to captains only and hidden once a goalie is confirmed). Tapping this button will initiate a goalie search.
+  </ListItem>
+  <ListItem><b>
+    Goalie Conversations</b> - After a goalie search has been initiated, below the goalie status there will be a <Tag color='grey.300'>Goalie Conversations</Tag> button.
+    This button will present a dialog displaying all of the message threads between the assistant captain and each of the goalies on your list, as well as their
+    status: <Tag colorScheme='gray'>Unknown</Tag>, <Tag colorScheme='green'>Accepted</Tag>, <Tag colorScheme='red'>Declined</Tag>, <Tag colorScheme='blue'>Needs More Time</Tag>
+  </ListItem>
+  <ListItem>
+    <b>Notifications</b> - Captains will receive SMS updates on each step of the goalie search process: when each sub is contacted and when they accept/decline.
+  </ListItem>
+</UnorderedList>
+    <br/>
 
     <Text fontSize='2xl' fontWeight='medium' color={headerColor}>Contributing</Text>
     <Text>

@@ -16,8 +16,9 @@ CREATE TABLE game(
     scoresheet_html_url TEXT,
     scoresheet_pdf_url TEXT,
     did_notify_coming_soon BOOLEAN,
-
     created_at      TIMESTAMP WITH TIME ZONE,
+    home_locker_room TEXT,
+    away_locker_room TEXT,
 );
 
 CREATE TABLE game_reply(
@@ -44,6 +45,15 @@ CREATE TABLE team_player(
     number          INTEGER,
     pending_status  BOOLEAN,
     joined_at       TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE team_goalie(
+    id              SERIAL     PRIMARY KEY,
+    user_id         INTEGER,
+    team_id         INTEGER,
+    nickname        TEXT,
+    phone_number    TEXT,
+    order           INTEGER
 );
 
 CREATE TABLE users(

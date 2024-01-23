@@ -65,9 +65,9 @@ def get_signin_sheet(team_name_or_id):
     JERSEY_POS_X = 41
     NAME_POS_X = 85
     TEAM_POS_X = 285
-    TEAM_POS_Y = 717
-    FIRST_BOX_Y = 680
-    INCREMENT_Y = -15
+    TEAM_POS_Y = 713
+    FIRST_BOX_Y = 675
+    INCREMENT_Y = -16
 
     current_y = FIRST_BOX_Y
     can.setFont('Helvetica-Bold', 10)

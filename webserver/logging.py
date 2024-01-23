@@ -7,8 +7,10 @@ the site is using these simple logging functions.
 
 TODO: bind to std python logging (and be able to set log level on deployment without code changes)
 '''
+from datetime import datetime
 from flask import current_app
 from google.cloud import logging
+from zoneinfo import ZoneInfo
 
 global_logger = None
 
@@ -23,5 +25,10 @@ def get_logger():
 
 
 def write_log(severity, msg):
+	time_str = datetime.now(ZoneInfo('US/Pacific')).strftime('%Y-%m-%d %H:%M:%S')
 	get_logger().log_text(f'{severity} {msg}')
-	print(f'{severity} {msg}')
+	print(f'{time_str}: {severity} {msg}')
+
+def print_log(msg):
+	time_str = datetime.now(ZoneInfo('US/Pacific')).strftime('%Y-%m-%d %H:%M:%S')
+	print(f'{time_str}: {msg}')

@@ -21,7 +21,7 @@ def calendardays(start, end):
                      microsecond=0)
     count = 0
     while start < end:
-        if count > 50:
+        if count > 365:
             # something is wrong
             return -1
 

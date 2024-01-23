@@ -198,6 +198,12 @@ function Home() {
                             </a>
                           </Text>
                         </a>
+                        <HStack pt="4px">
+                          <Badge colorScheme="green" my="0px">{game['count_yes']}</Badge>
+                          <Badge colorScheme="blue" my="0px">{game['count_maybe']}</Badge>
+                          <Badge colorScheme="red" my="0px">{game['count_no']}</Badge>
+                          <Badge colorScheme="yellow" my="0px">{game['count_goalie'] > 0 ? 'G' : ''}</Badge>
+                        </HStack>
                       </Td>
                       <Td>
                         <Grid container justifyContent="flex-end">

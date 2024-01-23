@@ -1,5 +1,6 @@
 import {
-  ArrowForwardIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
   CalendarIcon,
   ChatIcon,
   ChevronDownIcon,
@@ -19,11 +20,19 @@ import {
   Button,
   Center,
   ChakraProvider,
+  FormControl,
+  FormLabel,
   HStack,
   Icon,
   Input,
   IconButton,
-  Link,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalCloseButton,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Popover,
   PopoverArrow,
   PopoverCloseButton,
@@ -119,9 +128,6 @@ export function Team() {
 
   // Remove Player alert
   const [playerPendingRemoval, setPlayerPendingRemoval] = React.useState({})
-  const { isAlertOpen, onAlertOpen, onAlertClose } = useDisclosure()
-  const [openAlert, setOpenAlert] = React.useState(false)
-  const cancelAlertRef = React.useRef()
 
   // Player number updates
   const submitPlayerChangesTimer = React.useRef();
@@ -134,12 +140,19 @@ export function Team() {
   const open = (user) => setOpenPopover(user);
   const close = () => setOpenPopover(0);
 
+  // Add Goalie Modal
+  const pendingNewGoalie = React.useRef({});
+  const [isAddGoalieModalOpen, setIsAddGoalieModalOpen] = React.useState(false)
+  const OpenAddGoalieModal = (user) => { pendingNewGoalie.current = {}; setIsAddGoalieModalOpen(true); }
+  const CloseAddGoalieModal = () => setIsAddGoalieModalOpen(false);
+
   // Fetched data
   const [userIsOnTeam, setUserIsOnTeam] = useState(false);
   const [team, setTeam] = useState([]);
   const [teamId, setTeamId] = useState(0);
   const [teamName, setTeamName] = useState(null);
   const [players, setPlayers] = useState([]);
+  const [goalieList, setGoalieList] = useState({});
   const [user, setUser] = useState(0);
   const [isUserCaptain, setIsUserCaptain] = useState(null);
   const isUserMembershipPending = user['role'] == '';
@@ -201,6 +214,7 @@ export function Team() {
     setTeamId(body['team_id']);
     setTeamName(body['team_name'])
     getData(`/api/team/${body['team_id']}`, setTeam);
+    getData(`/api/goalies/${body['team_id']}`, setGoalieList);
   }
 
   function cancelRemovePlayer() {
@@ -322,6 +336,73 @@ export function Team() {
     });
     onClose();
   };
+
+  function submitAddGoalie() {
+
+    CloseAddGoalieModal();
+
+    if (!pendingNewGoalie.current.hasOwnProperty('user_id')) {
+      pendingNewGoalie.current['user_id'] = 0; // Unrostered
+    }
+
+    let data = {
+      team_id: teamId,
+      user_id: pendingNewGoalie.current['user_id'],
+      nickname: pendingNewGoalie.current['nickname'],
+      phone_number: pendingNewGoalie.current['phone_number'],
+    };
+
+    fetch(`/api/add-goalie`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status === 200) {
+        window.location.reload();
+      }
+    });
+  };
+
+  function updateGoalieOrder(goalie_id, direction) {
+    let data = {
+      team_id: teamId,
+      goalie_id: goalie_id,
+      direction: direction
+    };
+
+    fetch(`/api/update-goalie-order`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status === 200) {
+        window.location.reload();
+      }
+    });
+  }
+
+  function removeGoalie(goalie_id) {
+    let data = {
+      team_id: teamId,
+      goalie_id: goalie_id,
+    };
+
+    fetch(`/api/remove-goalie`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.status === 200) {
+        window.location.reload();
+      }
+    });
+  }
 
   function submitPendingPlayerNumberChanges() {
 
@@ -517,19 +598,61 @@ export function Team() {
               </Table>
             }
           </Center>
-            { userIsOnTeam && isUserCaptain != null && !isUserMembershipPending &&
-              <Center mt="10px">
-                <Button my={4} size='sm' onClick={ () => {
-                    let myself = {};
-                    myself.user_id = user.user_id;
-                    myself.name = "yourself";
-                    myself.email = null;
-                    setPlayerPendingRemoval(myself);
-                    onOpen();
-                  } }>Leave Team</Button>
-              </Center>
-            }
-      </Box>
+
+          { isUserCaptain && players /* make sure data has loaded */ &&
+          <>
+            <Center>
+              <Table size="sml" maxWidth="600px" mt="50px" mx="20px">
+                <Thead fontSize="0.6em">
+                  <Tr>
+                    <Th w="5%"></Th>
+                    <Th w="35%">Goalie</Th>
+                    <Th w="25%">Nickname</Th>
+                    <Th w="25%">Phone Number</Th>
+                    <Th w="15%"></Th>
+                  </Tr>
+                </Thead>
+                <Tbody fontSize="0.8em">
+                  { 'goalies' in goalieList && goalieList['goalies'].map((goalie, index) => (
+                  <Tr key={index}>
+                    <Td>
+                      <IconButton size='xs' icon={<ArrowUpIcon />} onClick={ () => { updateGoalieOrder(goalie.goalie_id, 'up'); } } mr="10px"/>
+                      <IconButton size='xs' icon={<ArrowDownIcon />} onClick={ () => { updateGoalieOrder(goalie.goalie_id, 'down'); } } mr="10px"/>
+                    </Td>
+                    <Td>
+                      <Text size='xs'>{goalie.name}</Text>
+                    </Td>
+                    <Td>
+                      <Text size='xs'>{goalie.nickname}</Text>
+                    </Td>
+                    <Td>
+                      <Text size='xs'>{goalie.phone_number}</Text>
+                    </Td>
+                    <Td>
+                      <Button my={2} size='xs' onClick={ () => { removeGoalie(goalie.goalie_id); } }>Remove</Button>
+                    </Td>
+                  </Tr>
+                ))}
+                </Tbody>
+              </Table>
+            </Center>
+            <Button my={2} size='xs' onClick={ () => {OpenAddGoalieModal()} }>Add Goalie</Button>
+          </>
+          }
+ 
+          { userIsOnTeam && isUserCaptain != null && !isUserMembershipPending &&
+            <Center mt="40px">
+              <Button my={4} size='sm' onClick={ () => {
+                  let myself = {};
+                  myself.user_id = user.user_id;
+                  myself.name = "yourself";
+                  myself.email = null;
+                  setPlayerPendingRemoval(myself);
+                  onOpen();
+                } }>Leave Team</Button>
+            </Center>
+          }
+    </Box>
 
       <AlertDialog
         isOpen={isOpen}
@@ -564,6 +687,45 @@ export function Team() {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+
+      <>
+        <Modal
+          isOpen={isAddGoalieModalOpen}
+          onClose={ () => CloseAddGoalieModal() }
+        >
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Add Goalie</ModalHeader>
+            <ModalCloseButton />
+
+            <ModalBody pb={6}>
+              <FormControl>
+                <FormLabel>User</FormLabel>
+                <Select size='xs' mb={4} onChange={e => { pendingNewGoalie.current['user_id']= e.target.value }}>
+                <option value='0'>Unrostered</option>
+                  <option disabled></option>
+                  { players && players.map((player, index) => (
+                  <option key={index} value={player.user_id}>{player.name}</option>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl>
+                <FormLabel>Nickname</FormLabel>
+                <Input size='xs' placeholder='' onChange={e => { pendingNewGoalie.current['nickname']= e.target.value }}/>
+              </FormControl>
+              <FormControl mt={4}>
+                <FormLabel>Phone Number</FormLabel>
+                <Input size='xs' placeholder='' onChange={e => { pendingNewGoalie.current['phone_number']= e.target.value }}/>
+              </FormControl>
+            </ModalBody>
+
+            <ModalFooter>
+              <Button colorScheme='blue' mr={3} onClick={ () => submitAddGoalie() }>Save</Button>
+              <Button onClick={ () => { pendingNewGoalie.current = {}; CloseAddGoalieModal() }}>Cancel</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
 
       <Footer/>
     </ChakraProvider>

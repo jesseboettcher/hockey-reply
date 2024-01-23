@@ -7,10 +7,11 @@ import datetime
 import os
 
 from flask import current_app, g
+import phonenumbers
 from sqlalchemy import create_engine, func, and_, or_
 from sqlalchemy.orm import sessionmaker
 
-from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamPlayer
+from webserver.database.alchemy_models import Game, GameReply, Team, User, TeamGoalie, TeamPlayer
 from webserver.email import send_game_time_changed
 from webserver.logging import write_log
 
@@ -70,6 +71,9 @@ class Database:
         self.session.commit()
 
     ### User methods
+    def get_users(self):
+        return self.session.query(User).all()
+
     def get_user(self, email):
         return self.session.query(User).filter(func.lower(User.email) == email.strip().lower()).first()
 
@@ -119,6 +123,9 @@ class Database:
     def get_team_player(self, team_id, user_id):
         return self.session.query(TeamPlayer).filter(and_(TeamPlayer.team_id == team_id, TeamPlayer.user_id == user_id)).one_or_none()
 
+    def remove_goalie_from_team(self, team_id, goalie_id):
+        self.session.query(TeamGoalie).filter(and_(TeamGoalie.team_id == team_id, TeamGoalie.id == goalie_id)).delete()
+
     ### Game methods
     def get_games(self):
         return self.session.query(Game).all()
@@ -129,11 +136,14 @@ class Database:
     def get_game_by_id(self, game_id):
         return self.session.query(Game).filter(Game.game_id == game_id).one_or_none()
 
+    def remove_game_by_id(self, game_id):
+        self.session.query(Game).filter(Game.game_id == game_id).delete()
+
     def get_games_coming_soon(self):
         today = datetime.datetime.now()
         soon = today + datetime.timedelta(hours=84)
         return self.session.query(Game).filter(and_(Game.did_notify_coming_soon == False,
-                                                    Game.scheduled_at > today,
+                                                    Game.scheduled_at > today, # TODO >= today
                                                     Game.scheduled_at <= soon)).all()
 
     def add_game(self, game_parser):
@@ -156,17 +166,21 @@ class Database:
                 write_log('INFO', f'Game schedule change to {game_parser.datetime} from {old_scheduled_at} for {game.game_id}')
                 send_game_time_changed(self, game, old_scheduled_at)
 
+
+            if game.rink != game_parser.rink:
+                game.rink = game_parser.rink
+
             # Check if team ids match, update if they do not. Teams can change during playoffs
             # when games are posted with one or both of the teams ommitted until games in the
             # earlier rounds have completed.
             parsed_home_team = self.get_team(game_parser.home_team)
             parsed_away_team = self.get_team(game_parser.away_team)
 
-            if parsed_away_team.team_id != game.away_team_id:
+            if parsed_away_team and parsed_away_team.team_id != game.away_team_id:
                 write_log('INFO', f'Away team changed from {game.away_team_id} to {parsed_away_team.team_id} for {game.game_id}')
                 game.away_team_id = parsed_away_team.team_id
 
-            if parsed_home_team.team_id != game.home_team_id:
+            if parsed_home_team and parsed_home_team.team_id != game.home_team_id:
                 write_log('INFO', f'Home team changed from {game.home_team_id} to {parsed_home_team.team_id} for {game.game_id}')
                 game.home_team_id = parsed_home_team.team_id
 
@@ -201,6 +215,24 @@ class Database:
         self.session.add(game)
         self.session.commit()
 
+    def update_locker_rooms(self, locker_room_parser):
+
+        for game_id in locker_room_parser.get_games_with_locker_rooms():
+
+            game = self.session.query(Game).filter(Game.game_id == game_id).one_or_none()
+            if game is None:
+                continue
+
+            home_lr, away_lr = locker_room_parser.get_locker_rooms_for_game(game_id)
+
+            if home_lr != game.home_locker_room:
+                game.home_locker_room = home_lr
+
+            if away_lr != game.away_locker_room:
+                game.away_locker_room = away_lr
+
+        self.session.commit()
+
     ### Reply methods
     def game_replies_for_game(self, game_id, team_id):
         return self.session.query(GameReply).filter(and_(GameReply.game_id == game_id, GameReply.team_id == team_id)).all()
@@ -233,3 +265,47 @@ class Database:
         db_reply.modified_at = datetime.datetime.now()
 
         self.session.commit()
+
+class PersonReference:
+    """
+    Class to reference a person by user_id, if registered, or name and phone number otherwise.
+    """
+    def __init__(self, user_id, name, phone_number):
+        if user_id is None:
+            self.user_id = 0
+        else:
+            self.user_id = user_id
+        self.name = name
+
+        if self.user_id > 0:
+            db = get_db()
+            user = db.get_user_by_id(self.user_id)
+
+            if self.name is None:
+                self.name = user.first_name
+
+            if phone_number is None:
+                phone_number = user.phone_number
+
+        if phone_number is None:
+            self.phone_number = None
+        elif isinstance(phone_number, phonenumbers.PhoneNumber):
+            self.phone_number = phone_number
+        else:
+            self.phone_number = phonenumbers.parse(phone_number, "US")
+
+        if self.name == None:
+            self.name = "Unknown"
+
+        assert(self.name is not None)
+
+    def __hash__(self):
+        return hash((self.user_id, self.name, phonenumbers.format_number(self.phone_number, phonenumbers.PhoneNumberFormat.E164)))
+
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, PersonReference):
+            return self.user_id == __value.user_id and self.name == __value.name and self.phone_number == __value.phone_number
+        return False
+
+    def __str__(self) -> str:
+        return f'PersonReference({self.user_id}, {self.name}, {self.phone_number})'

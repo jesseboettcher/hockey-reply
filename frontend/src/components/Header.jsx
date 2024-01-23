@@ -93,7 +93,6 @@ export const Logo = props => {
       >
         Hockey Reply
       </Link>
-        <Badge variant='outline' colorScheme="gray" mt="8px" mr='auto'>BETA</Badge>
       </Center>
         { lastRefreshString && !props.pageError &&
           <Text fontSize='xs'>{lastRefreshString}</Text>

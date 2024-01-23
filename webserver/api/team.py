@@ -9,7 +9,7 @@ import sys
 
 from flask import Blueprint, current_app, g, make_response, request
 
-from webserver.database.alchemy_models import User, Team, TeamPlayer
+from webserver.database.alchemy_models import User, Team, TeamPlayer, TeamGoalie
 from webserver.database.hockey_db import get_db, get_current_user
 from webserver.email import send_player_join_request, send_team_role_change, send_removed_from_team
 from webserver.logging import write_log
@@ -118,6 +118,12 @@ def get_team_players(team_name_or_id=None):
         team = db.get_team(team_name_or_id.replace('-', ' '))
         if team:
             team_id = team.team_id
+        else:
+            # try again for teams with hypens in the name
+            team = db.get_team(team_name_or_id)
+            if team:
+                team_id = team.team_id
+
 
     team = db.get_team_by_id(team_id)
 
@@ -395,4 +401,210 @@ def remove_player():
     if removed_user.user_id != get_current_user().user_id:
         send_removed_from_team(team, removed_user, get_current_user())
 
+    return make_response({ 'result' : 'success' })
+
+@blueprint.route('/goalies/<team_id_input>', methods=['GET'])
+def goalies(team_id_input):
+    """
+    Get the goalies for a team
+    """
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
+    db = get_db()
+
+    team_id = int(team_id_input)
+    team = db.get_team_by_id(team_id)
+
+    if not team:
+        write_log('ERROR', f'api/goalies: team {team_id} not found')
+        return {'result': 'error'}, 400
+
+    # get current user and check for authorization to accept join requests
+    logged_in_user_player_obj = find_player(team, get_current_user().user_id)
+
+    # check for privileges to make changes
+    if not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain':
+        write_log('ERROR', f'api/goalies: logged in user does not have permissions')
+        return {'result': 'error'}, 400
+
+    goalies = []
+    for goalie in team.goalies:
+
+        user_full_name = 'Unrostered'
+        if goalie.user_id != 0:
+            user = db.get_user_by_id(goalie.user_id)
+            user_full_name = user.first_name
+            if user.last_name:
+                user_full_name += f' {user.last_name}'
+
+        goalies.append({
+            'goalie_id': goalie.id,
+            'user_id': goalie.user_id,
+            'name': user_full_name,
+            'nickname': goalie.nickname,
+            'phone_number': goalie.phone_number,
+            'order': goalie.order
+        })
+
+    # sort by order field
+    response = {}
+    response['goalies'] = sorted(goalies, key=lambda x: x['order'])
+
+    return response, 200
+
+@blueprint.route('/add-goalie', methods=['POST'])
+def add_goalie():
+    """
+    Add a goalie to a team
+    """
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
+    db = get_db()
+
+    # check for required fields
+    if 'team_id' not in request.json or \
+       'user_id' not in request.json or \
+       'nickname' not in request.json or \
+       'phone_number' not in request.json:
+
+        write_log('ERROR', f'api/add-goalie: missing request fields')
+        return {'result': 'error'}, 400
+
+    team = db.get_team_by_id(request.json['team_id'])
+
+    if not team:
+        write_log('ERROR', f'api/add-goalie: team {request.json["team_id"]} not found')
+        return {'result': 'error'}, 400
+
+    # get current user and check for authorization to accept join requests
+    logged_in_user_player_obj = find_player(team, get_current_user().user_id)
+
+    # check for privileges to make changes
+    if not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain':
+        write_log('ERROR', f'api/add-goalie: logged in user does not have permissions')
+        return {'result': 'error'}, 400
+
+    new_goalie = TeamGoalie(user_id=request.json['user_id'],
+                            team_id=request.json['team_id'],
+                            nickname=request.json['nickname'],
+                            phone_number=request.json['phone_number'],
+                            order=len(team.goalies))
+    team.goalies.append(new_goalie)
+    db.commit_changes()
+
+    write_log('INFO', f'api/add-goalie: added goalie {request.json["nickname"]} to team {request.json["team_id"]}')
+    return make_response({ 'result' : 'success' })
+
+@blueprint.route('/update-goalie-order', methods=['POST'])
+def update_goalie_order():
+    """
+    Update the order of the goalies on a team
+    """
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
+    db = get_db()
+
+    # check for required fields
+    if 'team_id' not in request.json or \
+       'goalie_id' not in request.json or \
+       'direction' not in request.json:
+
+        write_log('ERROR', f'api/update-goalie-order: missing request fields')
+        return {'result': 'error'}, 400
+
+    team = db.get_team_by_id(request.json['team_id'])
+
+    if not team:
+        write_log('ERROR', f'api/update-goalie-order: team {request.json["team_id"]} not found')
+        return {'result': 'error'}, 400
+
+    # get current user and check for authorization to accept join requests
+    logged_in_user_player_obj = find_player(team, get_current_user().user_id)
+
+    # check for privileges to make changes
+    if not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain':
+        write_log('ERROR', f'api/update-goalie-order: logged in user does not have permissions')
+        return {'result': 'error'}, 400
+
+    # find the goalie
+    goalie_to_update = None
+    for goalie in team.goalies:
+        if goalie.id == request.json['goalie_id']:
+            goalie_to_update = goalie
+            break
+
+    if not goalie_to_update:
+        write_log('ERROR', f'api/update-goalie-order: goalie not found')
+        return {'result': 'error'}, 400
+
+    # update the order
+    if request.json['direction'] == 'up':
+        if goalie_to_update.order == 0:
+            write_log('ERROR', f'api/update-goalie-order: goalie already at top')
+            return {'result': 'error'}, 400
+        else:
+            goalie_to_update.order -= 1
+    elif request.json['direction'] == 'down':
+        if goalie_to_update.order == len(team.goalies) - 1:
+            write_log('ERROR', f'api/update-goalie-order: goalie already at bottom')
+            return {'result': 'error'}, 400
+        else:
+            goalie_to_update.order += 1
+    else:
+        write_log('ERROR', f'api/update-goalie-order: invalid direction')
+        return {'result': 'error'}, 400
+
+    # update the order of the other goalies
+    for goalie in team.goalies:
+        if goalie.id != request.json['goalie_id']:
+            if request.json['direction'] == 'up':
+                if goalie.order == goalie_to_update.order:
+                    goalie.order += 1
+            elif request.json['direction'] == 'down':
+                if goalie.order == goalie_to_update.order:
+                    goalie.order -= 1
+
+    db.commit_changes()
+
+    write_log('INFO', f'api/update-goalie-order: updated goalie order for team {request.json["team_id"]} to {goalie_to_update.order}')
+    return make_response({ 'result' : 'success' })
+
+@blueprint.route('/remove-goalie', methods=['POST'])
+def remove_goalie():
+    """
+    Remove a goalie from a team
+    """
+    if not check_login():
+        return { 'result' : 'needs login' }, 400
+
+    db = get_db()
+
+    # check for required fields
+    if 'team_id' not in request.json or \
+       'goalie_id' not in request.json:
+
+        write_log('ERROR', f'api/remove-goalie: missing request fields')
+        return {'result': 'error'}, 400
+
+    team = db.get_team_by_id(request.json['team_id'])
+
+    if not team:
+        write_log('ERROR', f'api/remove-goalie: team {request.json["team_id"]} not found')
+        return {'result': 'error'}, 400
+
+    # get current user and check for authorization to accept join requests
+    logged_in_user_player_obj = find_player(team, get_current_user().user_id)
+
+    # check for privileges to make changes
+    if not logged_in_user_player_obj or logged_in_user_player_obj.role != 'captain':
+        write_log('ERROR', f'api/remove-goalie: logged in user does not have permissions')
+        return {'result': 'error'}, 400
+
+    db.remove_goalie_from_team(request.json['team_id'], request.json['goalie_id'])
+    db.commit_changes()
+
+    write_log('INFO', f'api/remove-goalie: removed goalie {request.json["goalie_id"]} from team {request.json["team_id"]}')
     return make_response({ 'result' : 'success' })
