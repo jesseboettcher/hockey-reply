@@ -35,3 +35,23 @@ Using python version 3.9.5:
 
 # testing
 * run backend tests: `python -m unittest`
+
+# screenshots
+
+Check out the the [docs](https://hockeyreply.com/docs) for a full feature list and explanations of how things work.
+
+The homepage shows your latest upcoming games, and a preview of yes/no/goalie status of your teammates.
+<div>
+ <img src="https://github.com/jesseboettcher/hockey-reply/blob/master/frontend/public/game_details.jpg?raw=true" width="500"/>
+</div> <br/>
+
+
+The game detail page lets you know who replied what and other specifics like your teams' locker room assignment.
+<div>
+ <img src="https://github.com/jesseboettcher/hockey-reply/blob/master/frontend/public/games_list.jpg?raw=true" width="500"/>
+</div> <br/>
+
+Notifications come through email. You'll receive a heads up when a game is upcoming. Other notifications are sent for important changes.
+<div>
+ <img src="https://github.com/jesseboettcher/hockey-reply/blob/master/frontend/public/email_notification.jpg?raw=true" width="500"/>
+</div> <br/>
