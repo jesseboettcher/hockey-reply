@@ -1,0 +1,3 @@
+${name} has requested to join your team, ${team}. To add ${name} to the team, or decline the request, visit the team page.
+
+-Hockey Reply

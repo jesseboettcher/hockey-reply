@@ -1,0 +1,5 @@
+${name},
+
+Your role on ${team} has been updated by ${updated_by}. You are now: ${role}
+
+-Hockey Reply

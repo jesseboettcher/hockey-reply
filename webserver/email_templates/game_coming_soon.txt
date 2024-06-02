@@ -1,0 +1,16 @@
+${name}, a friendly REMINDER you have an upcoming game with ${team} :
+		
+TIME: ${scheduled_at} (in ${scheduled_how_soon})
+RINK: ${rink}
+VS: ${vs}
+
+Your current reply is: ${reply}
+
+Body count so far:
+Goalie: ${goalie}
+Players: ${confirmed_players}
+
+Can you make it?
+See you on the ice!
+
+-Hockey Reply
