@@ -35,7 +35,7 @@ class EmailTemplate(Enum):
     REPLY_CHANGED      = 'd-a837b5fd27544b688ce72a5315f6bd65'
 
 FROM_ADDRESS = 'jesse@hockeyreply.com'
-USE_AWS = False
+USE_AWS = True
 
 client = boto3.client('ses', region_name='us-west-2')
 
