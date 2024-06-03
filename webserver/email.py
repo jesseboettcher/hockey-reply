@@ -9,6 +9,8 @@ from enum import Enum
 import html
 import os
 from string import Template
+import time
+from typing import List, Dict
 from zoneinfo import ZoneInfo
 
 import boto3
@@ -20,7 +22,7 @@ from webserver.utils import timeuntil
 
 class EmailTemplate(Enum):
     # name -> corresponds to template filenames
-    # e.g. forgot_password.html, forgot_password.txt, forgot_password.subject
+    # e.g. forgot_password.html, forgot_password.txt, forgot_password.subj
     #
     # value -> corresponds to SendGrid template ID
 
@@ -37,11 +39,11 @@ USE_AWS = False
 
 client = boto3.client('ses', region_name='us-west-2')
 
-def send_email(template, data, to_emails):
+def send_email(template: EmailTemplate, data: Dict, to_emails: List[str]):
     ''' Sends out email. All emails funnel through this function
     '''
     if USE_AWS:
-        send_email_aws(template, data, to_emails)
+        send_email_aws(template, data, to_emails, 1)
     else:
         send_email_sendgrid(template, data, to_emails)
 
@@ -59,7 +61,7 @@ def send_email_sendgrid(template, data, to_emails):
     except Exception as e:
         print(e)
 
-def send_email_aws(template, data, to_emails):
+def send_email_aws(template, data, to_emails, delay_on_err_sec):
     text_content = None
     html_content = None
     subj_content = None
@@ -98,11 +100,19 @@ def send_email_aws(template, data, to_emails):
                 }
             }
         )
-        print(f"Email sent! Message ID: {response['MessageId']}")
     except NoCredentialsError:
         print("Error: No AWS credentials found.")
     except PartialCredentialsError:
         print("Error: Incomplete AWS credentials found.")
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'Throttling':
+
+            MAX_DELAY = 10
+            if delay_on_err_sec <= MAX_DELAY:
+                time.sleep(delay_on_err_sec)
+                send_email_aws(template, data, to_emails, delay_on_err_sec * 2)
+            else:
+                write_log('ERROR', f'Aborting email because exceeded max delay: {template.name}')
     except Exception as e:
         print(f"Error: {e}")
 
