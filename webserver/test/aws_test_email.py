@@ -73,7 +73,7 @@ def send_email_aws_test(template, data, to_emails):
 
 # Example usage
 subject = "Test Email !"
-to_addresses = ["jesse@hockeyreply.com"]
+to_addresses = ["jesse.boettcher@gmail.com"]
 from_address = "jesse@hockeyreply.com"
 
 d = {}
@@ -100,5 +100,5 @@ d['role'] = 'inmate'
 # send_email_aws(EmailTemplate.JOIN_REQUEST, d, ["jesse@hockeyreply.com"])
 # send_email_aws(EmailTemplate.ROLE_UPDATED, d, ["jesse@hockeyreply.com"])
 # send_email_aws(EmailTemplate.REMOVED_FROM_TEAM, d, ["jesse@hockeyreply.com"])
-send_email_aws_test(EmailTemplate.REPLY_CHANGED, d, ["jesse@hockeyreply.com"])
+send_email_aws_test(EmailTemplate.REPLY_CHANGED, d, to_addresses)
 

@@ -14,7 +14,7 @@ from typing import List, Dict
 from zoneinfo import ZoneInfo
 
 import boto3
-from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from webserver.logging import write_log
@@ -39,7 +39,7 @@ USE_AWS = True
 
 client = boto3.client('ses', region_name='us-west-2')
 
-def send_email(template: EmailTemplate, data: Dict, to_emails: List[str]):
+def send_email(template: EmailTemplate, data: Dict, to_emails):
     ''' Sends out email. All emails funnel through this function
     '''
     if USE_AWS:
@@ -62,6 +62,10 @@ def send_email_sendgrid(template, data, to_emails):
         print(e)
 
 def send_email_aws(template, data, to_emails, delay_on_err_sec):
+
+    if not isinstance(to_emails, list):
+        to_emails = [to_emails]
+
     text_content = None
     html_content = None
     subj_content = None
