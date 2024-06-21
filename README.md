@@ -18,7 +18,6 @@ Using python version 3.9.5:
   * `export SECRET_KEY=[insert key]`
   * `export AWS_ACCESS_KEY_ID=[key]`
   * `export AWS_SECRET_ACCESS_KEY=[key]`
-
   * `flask run`
 * frontend
   * `cd frontend`
