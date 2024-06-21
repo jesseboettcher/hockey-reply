@@ -16,7 +16,9 @@ Using python version 3.9.5:
   * `export GOOGLE_APPLICATION_CREDENTIALS=[path to creds]`
   * `export POSTGRES_PASSWORD=[insert password here]`
   * `export SECRET_KEY=[insert key]`
-  * `export SENDGRID_API_KEY=[insert api key]`
+  * `export AWS_ACCESS_KEY_ID=[key]`
+  * `export AWS_SECRET_ACCESS_KEY=[key]`
+
   * `flask run`
 * frontend
   * `cd frontend`
@@ -29,7 +31,7 @@ Using python version 3.9.5:
 # deployments
 * database: AWS postgres
 * logging: Google Cloud Logging
-* email: SendGrid
+* email: AWS Simple Email Service
 * to deploy latest to prod:
   * `./deployment/deployall.sh`
 
