@@ -1,0 +1,5 @@
+${name},
+
+You've been removed from ${team} by ${updated_by}.
+
+-Hockey Reply

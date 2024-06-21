@@ -5,38 +5,120 @@ Contains all of the methods for outgoing communication from the service. Current
 Maybe include SMS in the future.
 '''
 from datetime import datetime, timezone
+from enum import Enum
+import html
 import os
+from string import Template
+import time
+from typing import List, Dict
 from zoneinfo import ZoneInfo
 
+import boto3
+from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from webserver.logging import write_log
 from webserver.utils import timeuntil
 
-FROM_ADDRESS = 'jesse@hockeyreply.com'
-TEMPLATE_FORGOT_PASSWORD = 'd-16832cb2df954c6cba5cfc41db35a4e1'
-TEMPLATE_GAME_COMING_SOON = 'd-b94dc2cebcec407caf3c8e03789d4c34'
-TEMPLATE_GAME_TIME_CHANGED = 'd-a252a5f879964f9c88725f31475915a4'
-TEMPLATE_JOIN_REQUEST = 'd-f3ad573de30f425aac2657377e7f06af'
-TEMPLATE_ROLE_UPDATED = 'd-683a41dc2a694123815a1fe3ea8a7881'
-TEMPLATE_REMOVED_FROM_TEAM = 'd-0e95577f623d4b5ca53307296856c0f9'
-TEMPLATE_REPLY_CHANGED = 'd-a837b5fd27544b688ce72a5315f6bd65'
+class EmailTemplate(Enum):
+    # name -> corresponds to template filenames
+    # e.g. forgot_password.html, forgot_password.txt, forgot_password.subj
+    #
+    # value -> corresponds to SendGrid template ID
 
-def send_email(template, data, to_emails):
-    ''' Sends out email to sendgrid. All emails funnel through this function
+    FORGOT_PASSWORD    = 'd-16832cb2df954c6cba5cfc41db35a4e1'
+    GAME_COMING_SOON   = 'd-b94dc2cebcec407caf3c8e03789d4c34'
+    GAME_TIME_CHANGED  = 'd-a252a5f879964f9c88725f31475915a4'
+    JOIN_REQUEST       = 'd-f3ad573de30f425aac2657377e7f06af'
+    ROLE_UPDATED       = 'd-683a41dc2a694123815a1fe3ea8a7881'
+    REMOVED_FROM_TEAM  = 'd-0e95577f623d4b5ca53307296856c0f9'
+    REPLY_CHANGED      = 'd-a837b5fd27544b688ce72a5315f6bd65'
+
+FROM_ADDRESS = 'jesse@hockeyreply.com'
+USE_AWS = True
+
+client = boto3.client('ses', region_name='us-west-2')
+
+def send_email(template: EmailTemplate, data: Dict, to_emails):
+    ''' Sends out email. All emails funnel through this function
     '''
+    if USE_AWS:
+        send_email_aws(template, data, to_emails, 1)
+    else:
+        send_email_sendgrid(template, data, to_emails)
+
+def send_email_sendgrid(template, data, to_emails):
     message = Mail(
         from_email=FROM_ADDRESS,
         to_emails=to_emails)
 
     message.dynamic_template_data = data
-    message.template_id = template
+    message.template_id = template.value
 
     try:
         sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         response = sg.send(message)
     except Exception as e:
         print(e)
+
+def send_email_aws(template, data, to_emails, delay_on_err_sec):
+
+    if not isinstance(to_emails, list):
+        to_emails = [to_emails]
+
+    text_content = None
+    html_content = None
+    subj_content = None
+    with open(f'webserver/email_templates/{template.name.lower()}.html', 'r') as f:
+        html_content = f.read()
+    with open(f'webserver/email_templates/{template.name.lower()}.txt', 'r') as f:
+        text_content = f.read()
+    with open(f'webserver/email_templates/{template.name.lower()}.subj', 'r') as f:
+        subj_content = f.read()
+
+    html_escaped = html.escape(html_content)
+    html_populated = Template(html_content).substitute(data)
+    text_populated = Template(text_content).substitute(data)
+    subj_populated = Template(subj_content).substitute(data)
+
+    try:
+        response = client.send_email(
+            Source=FROM_ADDRESS,
+            Destination={
+                'ToAddresses': to_emails
+            },
+            Message={
+                'Subject': {
+                    'Data': subj_populated,
+                    'Charset': 'UTF-8'
+                },
+                'Body': {
+                    'Text': {
+                        'Data': text_populated,
+                        'Charset': 'UTF-8'
+                    },
+                    'Html': {
+                        'Data': html_populated,
+                        'Charset': 'UTF-8'
+                    }
+                }
+            }
+        )
+    except NoCredentialsError:
+        print("Error: No AWS credentials found.")
+    except PartialCredentialsError:
+        print("Error: Incomplete AWS credentials found.")
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'Throttling':
+
+            MAX_DELAY = 10
+            if delay_on_err_sec <= MAX_DELAY:
+                time.sleep(delay_on_err_sec)
+                send_email_aws(template, data, to_emails, delay_on_err_sec * 2)
+            else:
+                write_log('ERROR', f'Aborting email because exceeded max delay: {template.name}')
+    except Exception as e:
+        print(f"Error: {e}")
 
 def send_welcome():
     ''' TODO send an abbreviated version of the docs?
@@ -47,7 +129,7 @@ def send_forgot_password(email, token):
     email_data = {
         'token': token
     }
-    send_email(TEMPLATE_FORGOT_PASSWORD, email_data, email)
+    send_email(EmailTemplate.FORGOT_PASSWORD, email_data, email)
 
 def send_game_schedule_change():
     pass
@@ -71,7 +153,7 @@ def send_reply_was_changed(db, user, team, game, reply, updated_by_user):
         'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p")
     }
 
-    send_email(TEMPLATE_REPLY_CHANGED, email_data, user.email)
+    send_email(EmailTemplate.REPLY_CHANGED, email_data, user.email)
     write_log('INFO', f'Notify reply was changed for {user.email}')
 
 def send_removed_from_team(team, removed_user, updated_by_user):
@@ -83,7 +165,7 @@ def send_removed_from_team(team, removed_user, updated_by_user):
         'updated_by': updated_by_user.first_name,
     }
 
-    send_email(TEMPLATE_REMOVED_FROM_TEAM, email_data, removed_user.email)
+    send_email(EmailTemplate.REMOVED_FROM_TEAM, email_data, removed_user.email)
     write_log('INFO', f'Notify role change to {removed_user.email}')
 
 def send_team_role_change(team, updated_player, updated_by_user):
@@ -108,7 +190,7 @@ def send_team_role_change(team, updated_player, updated_by_user):
         'role': role
     }
 
-    send_email(TEMPLATE_ROLE_UPDATED, email_data, updated_player.player.email)
+    send_email(EmailTemplate.ROLE_UPDATED, email_data, updated_player.player.email)
     write_log('INFO', f'Notify role change to {updated_player.player.email}')
 
 def send_player_join_request(requesting_player, team):
@@ -126,7 +208,7 @@ def send_player_join_request(requesting_player, team):
         if player.role == 'captain':
             to_emails.append(player.player.email)
 
-    send_email(TEMPLATE_JOIN_REQUEST, email_data, to_emails)
+    send_email(EmailTemplate.JOIN_REQUEST, email_data, to_emails)
     write_log('INFO', f'Notify join request {requesting_player.player.email} to {to_emails}')
 
 def send_game_coming_soon(db, game):
@@ -177,7 +259,7 @@ def send_game_coming_soon(db, game):
                 'goalie': goalie
             }
 
-            send_email(TEMPLATE_GAME_COMING_SOON, email_data, user.email)
+            send_email(EmailTemplate.GAME_COMING_SOON, email_data, user.email)
             write_log('INFO', f'Notify coming soon {game.game_id} to {user.email}')
 
 def send_game_time_changed(db, game, old_scheduled_at):
@@ -208,5 +290,5 @@ def send_game_time_changed(db, game, old_scheduled_at):
                 'old_scheduled_at': old_scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
             }
 
-            send_email(TEMPLATE_GAME_TIME_CHANGED, email_data, user.email)
+            send_email(EmailTemplate.GAME_TIME_CHANGED, email_data, user.email)
             write_log('INFO', f'Notify game time changed to {game.scheduled_at} from {old_scheduled_at} for {game.game_id} to {user.email}')

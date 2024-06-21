@@ -1,0 +1,6 @@
+${name}, the schedule has been updated with a CHANGE for your game with ${team} :
+
+TIME: ${scheduled_at} (was ${old_scheduled_at})
+VS: ${vs}
+
+-Hockey Reply

@@ -1,0 +1,7 @@
+${name}, the captain changed your reply for an upcoming game with ${team} :
+
+TIME: ${scheduled_at} (was ${old_scheduled_at})
+VS: ${vs}
+Your reply: ${reply}
+
+-Hockey Reply

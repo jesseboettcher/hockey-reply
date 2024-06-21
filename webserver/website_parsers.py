@@ -238,7 +238,12 @@ class GameParser(BaseParser):
         year = current_year
 
         for test_year in year_range:
-            date = datetime.datetime.strptime(f'{str(test_year)} {target_date_month_day}', "%Y %b %d")
+
+            try: # in case we try something invalid: Feb 29th on a non-leap year
+                date = datetime.datetime.strptime(f'{str(test_year)} {target_date_month_day}', "%Y %b %d")
+            except:
+                continue
+
             day_name = date.strftime("%a")
 
             if day_name == target_day_of_week:

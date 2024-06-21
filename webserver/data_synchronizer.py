@@ -53,11 +53,14 @@ class Synchronizer:
     def locker_room_assignment_check(self):
         self.db = Database()
 
-        locker_room_source, locker_room_soup = self.open_page(f'{self.SHARKS_ICE_BASE_URL}{self.SHARKS_ICE_LOCKROOM_ENDPOINT}')
-        locker_room_parser = LockerRoomPageParser(locker_room_source, locker_room_soup)
-        locker_room_parser.parse()
+        try:
+            locker_room_source, locker_room_soup = self.open_page(f'{self.SHARKS_ICE_BASE_URL}{self.SHARKS_ICE_LOCKROOM_ENDPOINT}')
+            locker_room_parser = LockerRoomPageParser(locker_room_source, locker_room_soup)
+            locker_room_parser.parse()
 
-        self.db.update_locker_rooms(locker_room_parser)
+            self.db.update_locker_rooms(locker_room_parser)
+        except:
+            pass
 
     def notify(self):
         ''' notify runs periodically to the check the datetime of upcoming games
