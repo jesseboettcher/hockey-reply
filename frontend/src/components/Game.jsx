@@ -42,6 +42,7 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, clearCachedData, getAuthHeader, getData, getPageData } from '../utils';
 import { ReplyBox } from '../components/ReplyBox';
+import Chat from '../components/Chat';
 
 const themeWithBadgeCustomization = extendTheme({
   colors: {
@@ -53,7 +54,7 @@ const themeWithBadgeCustomization = extendTheme({
   },
 })
 
-function InfoBox(props: React.PropsWithChildren<MyProps>) {
+function InfoBox(props) {
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
   const infoBoxBorderColor = useColorModeValue('#DDE5EB', '#495563')
 
@@ -99,6 +100,11 @@ function Game() {
   const [userIsOnTeam, setUserIsOnTeam] = useState(true);
   const [isUserMembershipPending, setIsUserMembershipPending] = useState(false);
 
+  const [messages, setMessages] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
+  const messagePollingInterval = useRef(null);
+
   const loadPageData = async () => {
       clearCachedData(`/api/goalie-searches/${team_id}`);
       const loadDataResult = await getPageData([{url: `/api/game/${game_id}/for-team/${team_id}`, handler: receiveGameData},
@@ -129,7 +135,54 @@ function Game() {
       loadPageData();
       fetchedData.current = true;
     }
-  });
+
+    // Initial message load
+    if (game_id && team_id) {
+      getData(`/api/chat/messages/${game_id}/for-team/${team_id}`, receiveMessageData, true);
+
+      // Start polling for new messages
+      messagePollingInterval.current = setInterval(() => {
+        const params = lastMessageTimestamp ? `?since=${lastMessageTimestamp}` : '';
+        getData(
+          `/api/chat/messages/${game_id}/for-team/${team_id}${params}`,
+          receiveMessageData,
+          true
+        );
+      }, 30000); // Poll every 30 seconds
+    }
+
+    return () => {
+      if (messagePollingInterval.current) {
+        clearInterval(messagePollingInterval.current);
+      }
+    };
+  }, [game_id, team_id, lastMessageTimestamp]);
+
+  // Add message handling function
+  function receiveMessageData(body) {
+    if (body.messages && body.messages.length > 0) {
+      // Sort messages by timestamp
+      const sortedMessages = [...messages, ...body.messages].sort((a, b) =>
+        a.created_at - b.created_at
+      );
+
+      // Remove duplicates based on message_id
+      const uniqueMessages = sortedMessages.filter((message, index, self) =>
+        index === self.findIndex((m) => m.message_id === message.message_id)
+      );
+
+      setMessages(uniqueMessages);
+
+      // Update last timestamp for polling
+      const latestMessage = uniqueMessages[uniqueMessages.length - 1];
+      if (latestMessage) {
+        setLastMessageTimestamp(latestMessage.created_at);
+      }
+    }
+    if (body.players) {
+      setPlayers(body.players);
+    }
+  }
 
   function receiveReplyData(body) {
     let serverReplies = body;
@@ -429,14 +482,14 @@ return (
                   <Input
                     pr='4.5rem'
                     type='text'
-                    placeholder='Message'
+                    placeholder='Status note...'
                     onChange={(e) => setMessage(e.target.value)}
                     value={message}
                     key="main"
                   />
                   <InputRightElement width='4.5rem'>
                     <Button h='1.75rem' size='sm' type="submit">
-                      Send
+                      Set
                     </Button>
                   </InputRightElement>
                 </InputGroup>
@@ -455,7 +508,6 @@ return (
               <Text fontSize="lg">You are not on this team.</Text>
             </Box>
           }
-
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
           <Center>
             <Table size="sml" maxWidth="1200px" mt="50px" mx="20px">
@@ -505,6 +557,22 @@ return (
               </Tbody>
             </Table>
           </Center>
+          }
+          {userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
+          <Center>
+            <Table maxWidth="1200px" mt="20px" mx="20px">
+              <Tbody>
+                <Tr><Td p={0}>
+                  <Chat
+                    messages={messages}
+                    players={players}
+                    user={user}
+                    setMessages={setMessages}
+                  />
+              </Td></Tr>
+            </Tbody>
+          </Table>
+        </Center>
           }
           { userIsOnTeam && !isUserMembershipPending && responseReceived.current &&
           <Center>

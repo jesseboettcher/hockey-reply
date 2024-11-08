@@ -20,7 +20,7 @@ import {
 import React, {useState} from 'react';
 import { FaMoon, FaSun } from 'react-icons/fa';
 
-export function ReplyBox(props: React.PropsWithChildren<MyProps>) {
+export function ReplyBox(props) {
 
   let replyBadge = {};
   let editIcon = props.editable ? <EditIcon mr="4px" mb="2px" /> : null;
@@ -75,13 +75,13 @@ export function ReplyBox(props: React.PropsWithChildren<MyProps>) {
                         <Input
                           pr='4.5rem'
                           type='text'
-                          placeholder='Message'
+                          placeholder='Status note...'
                           onChange={(e) => setReplyMessage(e.target.value)}
                           key="main"
                         />
                         <InputRightElement width='4.5rem'>
                           <Button h='1.75rem' size='sm' type="submit">
-                            Send
+                            Set
                           </Button>
                         </InputRightElement>
                       </InputGroup>
