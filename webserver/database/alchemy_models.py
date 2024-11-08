@@ -117,3 +117,31 @@ class User(Base):
 
     def verify_password(self, password):
         return check_password_hash(self._password, f"{password}{self.salt}")
+
+class GameChatMessage(Base):
+    __tablename__ = "game_chat_message"
+    message_id = Column(Integer, primary_key=True)
+    game_id = Column(Integer, ForeignKey("game.game_id"))
+    team_id = Column(Integer, ForeignKey("team.team_id"))
+    user_id = Column(Integer, ForeignKey("users.user_id"))
+    parent_message_id = Column(Integer, ForeignKey("game_chat_message.message_id"))
+    content = Column(String)
+    created_at = Column(DateTime)
+    edited_at = Column(DateTime)
+    is_deleted = Column(Boolean, default=False)
+
+    # Relationships
+    reactions = relationship("GameChatReaction", back_populates="message")
+    replies = relationship("GameChatMessage",
+                         backref=backref("parent", remote_side=[message_id]))
+
+class GameChatReaction(Base):
+    __tablename__ = "game_chat_reaction"
+    reaction_id = Column(Integer, primary_key=True)
+    message_id = Column(Integer, ForeignKey("game_chat_message.message_id"))
+    user_id = Column(Integer, ForeignKey("users.user_id"))
+    emoji = Column(String)
+    created_at = Column(DateTime)
+
+    # Relationships
+    message = relationship("GameChatMessage", back_populates="reactions")

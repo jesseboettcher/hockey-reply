@@ -11,6 +11,7 @@ def create_app(testing=False):
     from webserver.api import routes
     from webserver.api import signaturepdf
     from webserver.api import team
+    from webserver.api.chat import blueprint as chat_blueprint
 
     app.register_blueprint(assistant.blueprint)
     app.register_blueprint(auth.blueprint)
@@ -20,6 +21,7 @@ def create_app(testing=False):
     app.register_blueprint(routes.blueprint)
     app.register_blueprint(team.blueprint)
     app.register_blueprint(signaturepdf.blueprint)
+    app.register_blueprint(chat_blueprint)
 
     from webserver.assistant import Assistant
     app.config['assistant'] = Assistant()

@@ -32,6 +32,40 @@ CREATE TABLE game_reply(
     modified_at     TIMESTAMP WITH TIME ZONE
 );
 
+-- Game chat messages
+CREATE TABLE game_chat_message (
+    message_id         SERIAL PRIMARY KEY,
+    game_id            INTEGER NOT NULL REFERENCES game(game_id),
+    team_id            INTEGER NOT NULL REFERENCES team(team_id),
+    user_id            INTEGER NOT NULL REFERENCES users(user_id),
+    parent_message_id  INTEGER REFERENCES game_chat_message(message_id),
+    content            TEXT NOT NULL,
+    created_at         TIMESTAMP WITH TIME ZONE NOT NULL,
+    edited_at          TIMESTAMP WITH TIME ZONE,
+    is_deleted         BOOLEAN DEFAULT FALSE
+);
+
+-- Message reactions (emoji)
+CREATE TABLE game_chat_reaction (
+    reaction_id        SERIAL PRIMARY KEY,
+    message_id         INTEGER NOT NULL REFERENCES game_chat_message(message_id),
+    user_id            INTEGER NOT NULL REFERENCES users(user_id),
+    emoji              TEXT NOT NULL,
+    created_at         TIMESTAMP WITH TIME ZONE NOT NULL,
+    UNIQUE (message_id, user_id, emoji)
+);
+
+-- Create indexes for common queries
+CREATE INDEX idx_game_chat_message_game_team
+    ON game_chat_message(game_id, team_id);
+
+CREATE INDEX idx_game_chat_message_parent
+    ON game_chat_message(parent_message_id)
+    WHERE parent_message_id IS NOT NULL;
+
+CREATE INDEX idx_game_chat_reaction_message
+    ON game_chat_reaction(message_id);
+
 CREATE TABLE team(
     team_id         SERIAL     PRIMARY KEY,
     external_id     INTEGER    DEFAULT 0,
