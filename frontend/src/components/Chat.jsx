@@ -261,9 +261,6 @@ export default function Chat({ messages, setMessages, players, user }) {
                 {players[message.user_id]}
               </Text>
               <HStack spacing={2}>
-                <Text fontSize="xs" color={timeColor}>
-                  {formatTimestamp(message.created_at)}
-                </Text>
                 <IconButton
                   icon={<EditIcon />}
                   size="xs"
@@ -286,6 +283,9 @@ export default function Chat({ messages, setMessages, players, user }) {
                   onClick={() => handleDelete(message.message_id)}
                   aria-label="Delete message"
                 />
+                <Text fontSize="xs" color={timeColor}>
+                  {formatTimestamp(message.created_at)}
+                </Text>
               </HStack>
             </Stack>
             {editingMessageId === message.message_id ? (
