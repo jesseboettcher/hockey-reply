@@ -13,6 +13,7 @@ import {
   useColorModeValue,
   IconButton,
   HStack,
+  Tooltip,
 } from '@chakra-ui/react';
 import { DeleteIcon, EditIcon } from '@chakra-ui/icons'
 import React, { useState } from 'react';
@@ -328,19 +329,27 @@ export default function Chat({ messages, setMessages, players, user }) {
             {message.reactions.length > 0 && (
               <Stack direction="row" mt={2} spacing={1} wrap="wrap">
                 {Object.entries(getReactionCounts(message.reactions)).map(([emoji, data]) => (
-                  <Button
+                  <Tooltip
                     key={emoji}
-                    size="xs"
-                    variant={data.users.includes(user.user_id) ? "outline" : "solid"}
-                    colorScheme={data.users.includes(user.user_id) ? "blue" : "gray"}
-                    onClick={() => handleReaction(message.message_id, emoji)}
-                    py={0}
-                    height="27px"
-                    minW="45px"
-                    fontSize=".9em"
+                    label={data.users.map(userId => players[userId]).join('\n')}
+                    placement="top"
+                    openDelay={500}
+                    hasArrow
+                    whiteSpace="pre"
                   >
-                    {emoji} <Text as="span" ml={2} fontSize="0.8em">{data.count}</Text>
-                  </Button>
+                    <Button
+                      size="xs"
+                      variant={data.users.includes(user.user_id) ? "outline" : "solid"}
+                      colorScheme={data.users.includes(user.user_id) ? "blue" : "gray"}
+                      onClick={() => handleReaction(message.message_id, emoji)}
+                      py={0}
+                      height="27px"
+                      minW="45px"
+                      fontSize=".9em"
+                    >
+                      {emoji} <Text as="span" ml={2} fontSize="0.8em">{data.count}</Text>
+                    </Button>
+                  </Tooltip>
                 ))}
                 <Popover
                   isOpen={showEmojiPicker && selectedMessageId === message.message_id}
