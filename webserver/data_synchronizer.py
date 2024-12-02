@@ -27,7 +27,7 @@ class Synchronizer:
 
     SYNCHRONIZE_INTERVAL_HOURS = 4
     NOTIFY_CHECK_INTERVAL_HOURS = 1
-    LOCKER_ROOM_INTERVAL_SECONDS = 15
+    LOCKER_ROOM_INTERVAL_SECONDS = 300
 
     def __init__(self):
         self.db = None
