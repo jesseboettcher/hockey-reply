@@ -86,7 +86,7 @@ def get_signin_sheet(team_name_or_id):
                            'last_name': player.player.last_name,
                            'number': player.number if player.number else ''
                         })
-    players = sorted(players, key=lambda player: player['last_name'])
+    players = sorted(players, key=lambda player: player['last_name'].lower())
 
     # Draw the player info
     for player in players:
