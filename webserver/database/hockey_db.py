@@ -244,7 +244,9 @@ class Database:
         ''' Game replies, messages, and the goalie flag are stored in the same record. The users
             may not update each of them at the same time, so this must handle updates.
         '''
-        db_reply = self.session.query(GameReply).filter(and_(GameReply.game_id == game_id, GameReply.user_id == user_id)).one_or_none()
+        db_reply = self.session.query(GameReply).filter(and_(GameReply.game_id == game_id,
+                                                             GameReply.user_id == user_id,
+                                                             GameReply.team_id == team_id)).one_or_none()
 
         if db_reply is None:
             db_reply = GameReply(game_id=game_id,

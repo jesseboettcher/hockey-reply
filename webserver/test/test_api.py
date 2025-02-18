@@ -62,16 +62,16 @@ class BasicTestCase(unittest.TestCase):
             user.password = '12345678'
             db.add_user(user)
 
-            team = db.get_team(self.TEAM_TEST_NAME)
-            join_team_as_player = TeamPlayer(
-                                             team_id=team.team_id,
-                                             role='captain',
-                                             pending_status=False,
-                                             joined_at=datetime.datetime.now()
-                                            )
-            join_team_as_player.player = user
-            team.players.append(join_team_as_player)
-            db.commit_changes()
+        team = db.get_team(self.TEAM_TEST_NAME)
+        join_team_as_player = TeamPlayer(
+                                         team_id=team.team_id,
+                                         role='captain',
+                                         pending_status=False,
+                                         joined_at=datetime.datetime.now()
+                                        )
+        join_team_as_player.player = user
+        team.players.append(join_team_as_player)
+        db.commit_changes()
 
         self.user_id = user.user_id
 

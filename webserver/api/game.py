@@ -334,7 +334,7 @@ def game_reply(game_id, team_id):
         if 'is_goalie' in request.json:
             is_goalie = request.json['is_goalie']
 
-        # check if logged in user == user_id || loged in user == captain on team
+        # check if logged in user == user_id || logged in user == captain on team
         team_player = db.get_team_player(team_id, user_id)
         if (team_player is None or team_player.role == '') and not is_anonymous_sub(user_id):
             write_log('ERROR', f'api/reply: player is not on team')
