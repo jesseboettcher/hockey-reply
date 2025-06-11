@@ -119,7 +119,13 @@ class TeamPageParser:
             game_dict = dict(zip(column_names, game_details))
             game_parser = GameParser(game_dict, self.season_num)
 
+            if not game_parser.parse_success:
+                # a game was skipped in a non-fatal way
+                continue
+
             self.games.append(game_parser)
+
+        return True
 
     def parse_players(self, table):
         rows = table.find_all('tr')
@@ -133,6 +139,8 @@ class TeamPageParser:
 
             self.player_stats.append(player_dict)
 
+        return True
+
     def parse_goalies(self, table):
         rows = table.find_all('tr')
         column_names = self.table_row_contents(rows[self.TABLE_DATA_COLUMN_HEADERS_INDEX])
@@ -144,6 +152,8 @@ class TeamPageParser:
             player_dict = dict(zip(column_names, player_details))
 
             self.goalie_stats.append(player_dict)
+
+        return True
 
 class BaseParser:
     def __init__(self):
@@ -185,11 +195,24 @@ class GameParser(BaseParser):
         SEASON_NUM = parsed_season_num
         year = self.calculate_year(game_dict['Date'], SEASON_NUM)
 
+
         # Noon formatting breaks the parser. Replace with a valid time string
         time_str = game_dict['Time'].replace('12 Noon', '12:00 PM')
 
-        dt = datetime.datetime.strptime(f'{year} {game_dict["Date"]} {time_str}',
-                                                  f'%Y %a %b %d %I:%M %p')
+        try:
+            dt = datetime.datetime.strptime(f'{year} {game_dict["Date"]} {time_str}',
+                                                      f'%Y %a %b %d %I:%M %p')
+        except:
+            if game_dict['Game'] == '536764':
+                # This game has an invalid date 2025 Wed Feb 29 9:00 PM
+                pass
+            else:
+                # if it was not a known issue, log a monitored message
+                write_log('ERROR', f'Failed synchronization of game {game_dict}')
+
+            self.parse_success = False
+            return
+
         pacific = ZoneInfo('US/Pacific')
 
         self.datetime = dt.replace(tzinfo=pacific)
@@ -211,6 +234,8 @@ class GameParser(BaseParser):
                 self.shootout = 1
         except:
             pass
+
+        self.parse_success = True
 
     def parse_id(self, id_str):
         id_str = id_str.replace('*', '') # completed games
