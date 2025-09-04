@@ -293,6 +293,13 @@ def game_reply(game_id, team_id):
         result['replies'] = list(replies_dict.values())
 
         # Collect the players who have not yet responded
+        no_response = []
+        role_sort_order = {
+            "captain": 0,
+            "full": 0,      # captain and full are treated equally
+            "half": 1,
+            "sub": 2
+        }
         team = db.get_team_by_id(team_id)
         for player in team.players:
             if player.user_id not in replies_dict and player.role != '':
@@ -301,7 +308,16 @@ def game_reply(game_id, team_id):
                     'user_id': player.user_id,
                     'name': f'{player.player.first_name} {player.player.last_name} ({player.role})'
                 }
-                result['no_response'].append(reply_dict)
+                no_response.append((player, reply_dict))
+
+        # Sort by role priority first, then by first name
+        no_response.sort(
+            key=lambda x: (
+                role_sort_order.get(x[0].role, 99),
+                f"{x[0].player.first_name.lower()} {x[0].player.last_name.lower()}"
+            )
+        )
+        result['no_response'] = [reply_dict for _, reply_dict in no_response]
 
         # Add the logged in user information
         if not current_app.config['TESTING']:

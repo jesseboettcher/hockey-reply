@@ -218,17 +218,6 @@ function Game() {
       return 0;
     });
 
-    // Sort not replied (put logged in user on top)
-    serverReplies['no_response'] = serverReplies['no_response'].sort(function(a, b) {
-      if (a['user_id'] == serverReplies['user']['user_id']) {
-        return -1;
-      }
-      if (b['user_id'] == serverReplies['user']['user_id']) {
-        return 1;
-      }
-      return a['name'].localeCompare(b['name']);
-    });
-
     let userReply = serverReplies['replies'].find(item => item.user_id == serverReplies['user']['user_id']);
     serverReplies.user.reply = userReply
 
