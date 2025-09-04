@@ -592,7 +592,22 @@ return (
                           />
                       </Td>
                       <Td py="6px">
-                        {reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}
+                        {reply.user_id == user['user_id']
+                          ? <b>You ({user['role']})</b>
+                          : (
+                              <span
+                                style={{
+                                  opacity:
+                                    reply.name.toLowerCase().includes("(sub)") ||
+                                    reply.name === "Anonymous Sub"
+                                      ? 0.4
+                                      : 1,
+                                }}
+                              >
+                                {reply.name}
+                              </span>
+                            )
+                        }
                       </Td>
                     </Tr>
 
