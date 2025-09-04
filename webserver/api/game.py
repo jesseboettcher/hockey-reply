@@ -3,7 +3,7 @@ game
 
 All the webserver APIs for querying games and player replies.
 '''
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import os
 import sys
 from zoneinfo import ZoneInfo
@@ -95,7 +95,20 @@ def get_games(team_id = None):
             if is_logged_in_user_in_team(game.home_team_id, False):
                 user_is_home = True
 
-            user_team_id = game.away_team_id if not user_is_home else game.home_team_id,
+            user_team_id = game.away_team_id if not user_is_home else game.home_team_id
+
+            # Logged-in user's TeamPlayer row for *this* team
+            tp = db.get_team_player(user_team_id, get_current_user().user_id)
+            game_time_display_offset = int(getattr(tp, "game_time_display_offset", 0) or 0)
+
+            # Build display times in Pacific, then apply offset (minutes)
+            pacific = ZoneInfo('US/Pacific')
+            scheduled_pacific = game.scheduled_at.astimezone(pacific)
+            scheduled_pacific_adj = scheduled_pacific + timedelta(minutes=game_time_display_offset)
+
+            # Recompute “how soon” against *adjusted* time
+            now_pacific = datetime.now(timezone.utc).astimezone(pacific)
+            scheduled_how_soon_adj = timeuntil(now_pacific, scheduled_pacific_adj).replace(' ', ' ')
 
             user_reply = ''
             count_yes = 0
@@ -132,8 +145,8 @@ def get_games(team_id = None):
             game_dict = {
                 'game_id' : game.game_id,
                 'scheduled_at_dt': game.scheduled_at,
-                'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-                'scheduled_how_soon': timeuntil(datetime.now(timezone.utc).astimezone(pacific), game.scheduled_at.astimezone(pacific)).replace(' ', ' '),
+                'scheduled_at': scheduled_pacific_adj.strftime("%a, %b %d @ %I:%M %p"),
+                'scheduled_how_soon': scheduled_how_soon_adj,
                 'completed': game.completed,
                 'rink': game.rink,
                 'level': game.level,
@@ -150,7 +163,8 @@ def get_games(team_id = None):
                 'count_yes': count_yes,
                 'count_no': count_no,
                 'count_maybe': count_maybe,
-                'count_goalie': count_goalie
+                'count_goalie': count_goalie,
+                'game_time_display_offset': game_time_display_offset,
             }
             result['games'].append(game_dict)
             result['games'] = sorted(result['games'], key=lambda game: game['scheduled_at_dt'])
@@ -192,6 +206,22 @@ def get_game(game_id, team_id):
     if player:
         user_role = player.role
 
+    # existing player fetch
+    user_role = None
+    player = get_db().get_team_player(team_id, get_current_user().user_id)
+    if player:
+        user_role = player.role
+
+    # Per-user offset (minutes)
+    game_time_display_offset = int(getattr(player, "game_time_display_offset", 0) or 0)
+
+    pacific = ZoneInfo('US/Pacific')
+    scheduled_pacific = game.scheduled_at.astimezone(pacific)
+    scheduled_pacific_adj = scheduled_pacific + timedelta(minutes=game_time_display_offset)
+
+    now_pacific = datetime.now(timezone.utc).astimezone(pacific)
+    scheduled_how_soon_adj = timeuntil(now_pacific, scheduled_pacific_adj).replace(' ', ' ')
+
     user_reply = ''
     if user_role != '':
         replies = db.game_replies_for_game(game_id, team_id)
@@ -206,8 +236,8 @@ def get_game(game_id, team_id):
     pacific = ZoneInfo('US/Pacific')
     game_dict = {
         'game_id' : game.game_id,
-        'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-        'scheduled_how_soon': timeuntil(datetime.now(timezone.utc).astimezone(pacific), game.scheduled_at.astimezone(pacific)).replace(' ', ' '),
+        'scheduled_at': scheduled_pacific_adj.strftime("%a, %b %d @ %I:%M %p"),
+        'scheduled_how_soon': scheduled_how_soon_adj,
         'completed': game.completed,
         'rink': game.rink,
         'level': game.level,
@@ -224,7 +254,8 @@ def get_game(game_id, team_id):
         'locker_room': game.home_locker_room if game.home_team_id == team_id else game.away_locker_room,
         'is_user_membership_pending': True if user_role == '' else False,
         'is_user_on_team': is_logged_in_user_in_team(team_id, False),
-        'user_reply': user_reply
+        'user_reply': user_reply,
+        'game_time_display_offset': game_time_display_offset
     }
     result['games'].append(game_dict)
 

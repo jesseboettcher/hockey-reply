@@ -4,7 +4,7 @@ email
 Contains all of the methods for outgoing communication from the service. Currently just email.
 Maybe include SMS in the future.
 '''
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 import html
 import os
@@ -137,10 +137,32 @@ def send_game_schedule_change():
 def send_new_games():
     pass
 
+def display_time_for_user(db, team_id: int, user_id: int, dt_utc) -> tuple[str, str, int]:
+    """
+    Returns (scheduled_at_display, scheduled_how_soon_display, offset_minutes)
+    applying the logged user's TeamPlayer.game_time_display_offset for that team.
+    """
+    pacific = ZoneInfo('US/Pacific')
+    offset = 0
+    tp = db.get_team_player(team_id, user_id)
+    if tp and getattr(tp, "game_time_display_offset", None) is not None:
+        try:
+            offset = int(tp.game_time_display_offset or 0)
+        except Exception:
+            offset = 0
+
+    base = dt_utc.astimezone(pacific)
+    adj = base + timedelta(minutes=offset)
+    now_pacific = datetime.now(timezone.utc).astimezone(pacific)
+    how_soon = timeuntil(now_pacific, adj).replace(' ', ' ')  # keep NBSP behavior
+    return adj.strftime("%a, %b %d @ %I:%M %p"), how_soon, offset
+
 def send_reply_was_changed(db, user, team, game, reply, updated_by_user):
     ''' Notify that your reply was changed by someone else (captain)
     '''
     vs_team = db.get_team_by_id(game.home_team_id if team.team_id == game.away_team_id else game.away_team_id)
+
+    scheduled_at_disp, _how_soon, _off = display_time_for_user(db, team.team_id, user.user_id, game.scheduled_at)
 
     pacific = ZoneInfo('US/Pacific')
     email_data = {
@@ -150,7 +172,7 @@ def send_reply_was_changed(db, user, team, game, reply, updated_by_user):
         'game_id': game.game_id,
         'vs': vs_team.name,
         'reply': reply.capitalize(),
-        'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p")
+        'scheduled_at': scheduled_at_disp
     }
 
     send_email(EmailTemplate.REPLY_CHANGED, email_data, user.email)
@@ -244,14 +266,19 @@ def send_game_coming_soon(db, game):
 
             pacific = ZoneInfo('US/Pacific')
             user = db.get_user_by_id(player.user_id)
+
+            scheduled_at_disp, how_soon_disp, _off = display_time_for_user(
+                db, team.team_id, user.user_id, game.scheduled_at
+            )
+
             email_data = {
                 'name': user.first_name,
                 'user_id': user.user_id,
                 'game_id': game.game_id,
                 'user_team_id': team.team_id,
                 'team': team.name,
-                'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-                'scheduled_how_soon': timeuntil(datetime.now(timezone.utc).astimezone(pacific), game.scheduled_at.astimezone(pacific)).replace(' ', ' '),
+                'scheduled_at': scheduled_at_disp,
+                'scheduled_how_soon': how_soon_disp,
                 'rink': game.rink,
                 'vs': vs_team.name,
                 'reply': user_reply.capitalize(),
@@ -279,6 +306,15 @@ def send_game_time_changed(db, game, old_scheduled_at):
 
             pacific = ZoneInfo('US/Pacific')
             user = db.get_user_by_id(player.user_id)
+
+            # per-user adjusted display times (apply same offset to old & new)
+            scheduled_at_disp, _how_soon_new, _off = display_time_for_user(
+                db, team.team_id, user.user_id, game.scheduled_at
+            )
+            old_scheduled_at_disp, _how_soon_old, _off2 = display_time_for_user(
+                db, team.team_id, user.user_id, old_scheduled_at
+            )
+
             email_data = {
                 'name': user.first_name,
                 'user_id': user.user_id,
@@ -286,8 +322,8 @@ def send_game_time_changed(db, game, old_scheduled_at):
                 'user_team_id': team.team_id,
                 'team': team.name,
                 'vs': vs_team.name,
-                'scheduled_at': game.scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
-                'old_scheduled_at': old_scheduled_at.astimezone(pacific).strftime("%a, %b %d @ %I:%M %p"),
+                'scheduled_at': scheduled_at_disp,
+                'old_scheduled_at': old_scheduled_at_disp,
             }
 
             send_email(EmailTemplate.GAME_TIME_CHANGED, email_data, user.email)

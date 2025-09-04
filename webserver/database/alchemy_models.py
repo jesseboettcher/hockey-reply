@@ -25,6 +25,7 @@ class TeamPlayer(Base):
     joined_at = Column(DateTime)
     player = relationship("User", back_populates="teams") # TODO rename user
     team = relationship("Team", back_populates="players")
+    game_time_display_offset = Column(Integer, default=0)
 
 class TeamGoalie(Base):
     __tablename__ = 'team_goalie'

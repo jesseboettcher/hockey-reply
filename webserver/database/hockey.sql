@@ -78,7 +78,8 @@ CREATE TABLE team_player(
     role            TEXT,
     number          INTEGER,
     pending_status  BOOLEAN,
-    joined_at       TIMESTAMP WITH TIME ZONE
+    joined_at       TIMESTAMP WITH TIME ZONE,
+    game_time_display_offset INTEGER  DEFAULT 0
 );
 
 CREATE TABLE team_goalie(
