@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { AddIcon } from '@chakra-ui/icons';
 import {
   Badge,
   Box,
@@ -13,6 +14,7 @@ import {
   InputGroup,
   InputRightElement,
   HStack,
+  IconButton,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -24,6 +26,9 @@ import {
   Stack,
   Table,
   Text,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Thead,
   Tbody,
   Tr,
@@ -38,6 +43,7 @@ import { MdPersonSearch, MdMessage } from 'react-icons/md'
 import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
 import _ from "lodash";
+import EmojiPicker from 'emoji-picker-react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, clearCachedData, getAuthHeader, getData, getPageData } from '../utils';
@@ -72,6 +78,15 @@ function InfoBox(props) {
     )
 }
 
+function getReactionCounts(reactions) {
+  return (reactions || []).reduce((acc, reaction) => {
+    acc[reaction.emoji] = acc[reaction.emoji] || { count: 0, users: [] };
+    acc[reaction.emoji].count += 1;
+    acc[reaction.emoji].users.push(reaction.user_id);
+    return acc;
+  }, {});
+}
+
 function Game() {
 
   let { game_id, team_id } = useParams();
@@ -99,11 +114,15 @@ function Game() {
 
   const [userIsOnTeam, setUserIsOnTeam] = useState(true);
   const [isUserMembershipPending, setIsUserMembershipPending] = useState(false);
+  const [activeReplyReactionPicker, setActiveReplyReactionPicker] = useState(null);
 
   const [messages, setMessages] = useState([]);
   const [players, setPlayers] = useState([]);
   const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
   const messagePollingInterval = useRef(null);
+  const replyReactionBg = useColorModeValue('gray.100', 'gray.700');
+  const replyReactionActiveBg = useColorModeValue('blue.100', 'blue.700');
+  const emojiPickerScheme = useColorModeValue('light', 'dark');
 
   const loadPageData = async () => {
       clearCachedData(`/api/goalie-searches/${team_id}`);
@@ -192,6 +211,10 @@ function Game() {
     }
 
     // Sort replies
+    serverReplies['replies'] = serverReplies['replies'].map((reply) => ({
+      ...reply,
+      reactions: reply.reactions || []
+    }));
     serverReplies['replies'] = serverReplies['replies'].sort(function(a, b) {
 
       // Push no replies all the way to the bottom so the order is yes -> maybe -> no
@@ -305,6 +328,65 @@ function Game() {
     if (_.get(userReply, 'response', '') != '') {
       submitReply(null, user.user_id, team_id, game_id, null, null, isGoalieChecked);
     }
+  }
+
+  function handleReplyReaction(replyId, emoji) {
+    const reply = _.get(replies, 'replies', []).find((item) => item.reply_id === replyId);
+    if (!reply) {
+      return;
+    }
+
+    const existingReaction = (reply.reactions || []).find(
+      (reaction) => reaction.emoji === emoji && reaction.user_id === user.user_id
+    );
+    const method = existingReaction ? 'DELETE' : 'POST';
+
+    fetch('/api/game/reply/reaction', {
+      method: method,
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuthHeader()},
+      body: JSON.stringify({
+        reply_id: replyId,
+        team_id: team_id,
+        emoji: emoji
+      })
+    })
+    .then((response) => {
+      if (response.status === 200) {
+        setReplies((currentReplies) => ({
+          ...currentReplies,
+          replies: (currentReplies.replies || []).map((currentReply) => {
+            if (currentReply.reply_id !== replyId) {
+              return currentReply;
+            }
+
+            const currentReactions = currentReply.reactions || [];
+            if (existingReaction) {
+              return {
+                ...currentReply,
+                reactions: currentReactions.filter(
+                  (reaction) => !(reaction.emoji === emoji && reaction.user_id === user.user_id)
+                )
+              };
+            }
+
+            return {
+              ...currentReply,
+              reactions: [...currentReactions, {
+                emoji: emoji,
+                user_id: user.user_id,
+                created_at: Date.now() / 1000
+              }]
+            };
+          })
+        }));
+      } else {
+        setPageError('Uh, oh. Could not update the reaction.');
+      }
+    })
+    .catch(() => {
+      setPageError('Uh, oh. Could not update the reaction.');
+    });
   }
 
   // Assistant functions
@@ -532,11 +614,58 @@ return (
                           replyBadge['goalie']
                         }
                       </Td>
-                      <Td py="6px">{reply.user_id == user['user_id'] ? <b>You ({user['role']})</b> : reply.name}
-                        <Stack>
+                      <Td py="6px">
+                        <HStack spacing={3} align='center' mb={reply.message || (reply.reactions || []).length ? 1 : 0}>
+                          {reply.user_id == user['user_id']
+                            ? <Text as='span' fontWeight='bold'>{`You (${user['role']})`}</Text>
+                            : <Text as='span'>{reply.name}</Text>
+                          }
+                          <Popover
+                            isOpen={activeReplyReactionPicker === reply.reply_id}
+                            onClose={() => setActiveReplyReactionPicker(null)}
+                          >
+                            <PopoverTrigger>
+                              <IconButton
+                                aria-label='Add reply reaction'
+                                size='xs'
+                                minW='18px'
+                                w='18px'
+                                h='18px'
+                                icon={<AddIcon boxSize={2} />}
+                                onClick={() => setActiveReplyReactionPicker(
+                                  activeReplyReactionPicker === reply.reply_id ? null : reply.reply_id
+                                )}
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent width='auto'>
+                              <EmojiPicker
+                                onEmojiClick={(emojiData) => {
+                                  handleReplyReaction(reply.reply_id, emojiData.emoji);
+                                  setActiveReplyReactionPicker(null);
+                                }}
+                                theme={emojiPickerScheme}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </HStack>
+                        <Stack spacing={2}>
                           { reply.message &&
                           <Text color='gray.500'>"{reply.message}"</Text>
                           }
+                          <HStack spacing={2} flexWrap='wrap'>
+                            {Object.entries(getReactionCounts(reply.reactions)).map(([emoji, data]) => (
+                              <Button
+                                key={`${reply.reply_id}-${emoji}`}
+                                size='sm'
+                                variant='ghost'
+                                bg={data.users.includes(user.user_id) ? replyReactionActiveBg : replyReactionBg}
+                                onClick={() => handleReplyReaction(reply.reply_id, emoji)}
+                              >
+                                <Text as="span" fontSize="1.4rem" lineHeight="1">{emoji}</Text>
+                                <Text as="span" ml={2} fontSize="0.8em">{data.count}</Text>
+                              </Button>
+                            ))}
+                          </HStack>
                         </Stack>
                       </Td>
                     </Tr>

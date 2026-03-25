@@ -12,7 +12,7 @@ import unittest
 
 from webserver import create_app
 from webserver.database.hockey_db import get_db, setup_test_db
-from webserver.database.alchemy_models import Game, TeamPlayer, User
+from webserver.database.alchemy_models import Game, GameReplyReaction, TeamPlayer, User
 
 class BasicTestCase(unittest.TestCase):
 
@@ -122,6 +122,10 @@ class BasicTestCase(unittest.TestCase):
     def setUp(self):
         db = get_db()
         self.ensure_test_user_on_team(db)
+        db.session.query(GameReplyReaction).filter(
+            GameReplyReaction.user_id == self.app.config['TESTING_USER'].user_id
+        ).delete()
+        db.commit_changes()
 
     @classmethod
     def tearDownClass(self):
@@ -179,3 +183,42 @@ class BasicTestCase(unittest.TestCase):
         response = self.client.get(f'/api/game/reply/{self.GAME_TEST_ID}/for-team/{self.team_id}', content_type='application/json')
         self.assertEqual(response.status_code, 200)
         print(response.get_data())
+
+    def test_toggle_reply_reaction(self):
+        db = get_db()
+        db.set_game_reply(self.GAME_TEST_ID, self.team_id, self.user_id, 'yes', None, False)
+        reply = db.game_reply_for_game_and_user(self.GAME_TEST_ID, self.team_id, self.user_id)
+        self.assertIsNotNone(reply)
+
+        response = self.client.post('/api/game/reply/reaction',
+                                    content_type='application/json',
+                                    data=json.dumps({
+                                        "reply_id": reply.reply_id,
+                                        "team_id": self.team_id,
+                                        "emoji": "🔥"
+                                    }))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(f'/api/game/reply/{self.GAME_TEST_ID}/for-team/{self.team_id}',
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        reply_payload = next(item for item in payload['replies'] if item['reply_id'] == reply.reply_id)
+        self.assertEqual(len(reply_payload['reactions']), 1)
+        self.assertEqual(reply_payload['reactions'][0]['emoji'], '🔥')
+
+        response = self.client.delete('/api/game/reply/reaction',
+                                      content_type='application/json',
+                                      data=json.dumps({
+                                          "reply_id": reply.reply_id,
+                                          "team_id": self.team_id,
+                                          "emoji": "🔥"
+                                      }))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(f'/api/game/reply/{self.GAME_TEST_ID}/for-team/{self.team_id}',
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        reply_payload = next(item for item in payload['replies'] if item['reply_id'] == reply.reply_id)
+        self.assertEqual(reply_payload['reactions'], [])
