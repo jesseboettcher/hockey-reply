@@ -30,6 +30,7 @@ class EmailTemplate(Enum):
     GAME_COMING_SOON   = 'd-b94dc2cebcec407caf3c8e03789d4c34'
     GAME_TIME_CHANGED  = 'd-a252a5f879964f9c88725f31475915a4'
     JOIN_REQUEST       = 'd-f3ad573de30f425aac2657377e7f06af'
+    NEW_GAMES          = ''
     ROLE_UPDATED       = 'd-683a41dc2a694123815a1fe3ea8a7881'
     REMOVED_FROM_TEAM  = 'd-0e95577f623d4b5ca53307296856c0f9'
     REPLY_CHANGED      = 'd-a837b5fd27544b688ce72a5315f6bd65'
@@ -134,8 +135,64 @@ def send_forgot_password(email, token):
 def send_game_schedule_change():
     pass
 
-def send_new_games():
-    pass
+def send_new_games(db, team_id: int, game_ids: List[int]):
+    team = db.get_team_by_id(team_id)
+    if team is None:
+        return
+
+    games = []
+    for game_id in sorted(set(game_ids)):
+        game = db.get_game_by_id(game_id)
+        if game is None:
+            continue
+
+        vs_team_id = game.home_team_id if team_id == game.away_team_id else game.away_team_id
+        vs_team = db.get_team_by_id(vs_team_id)
+        games.append((game, vs_team))
+
+    games.sort(key=lambda entry: entry[0].scheduled_at)
+
+    if len(games) == 0:
+        return
+
+    open_path = f'http://hockeyreply.com/team/{team.team_id}'
+    open_label = 'Open Team'
+    if len(games) == 1:
+        open_path = f'http://hockeyreply.com/game/{games[0][0].game_id}/for-team/{team.team_id}'
+        open_label = 'Open Game'
+
+    for player in team.players:
+
+        if player.role == '':
+            continue
+
+        user = db.get_user_by_id(player.user_id)
+        if user is None or not user.email:
+            continue
+
+        games_text = []
+        for game, vs_team in games:
+            scheduled_at_disp, how_soon_disp, _off = display_time_for_user(
+                db, team.team_id, user.user_id, game.scheduled_at
+            )
+            vs_name = vs_team.name if vs_team else 'TBD'
+            games_text.append(
+                f'{scheduled_at_disp} ({how_soon_disp}) vs {vs_name}'
+            )
+
+        email_data = {
+            'name': user.first_name or 'Hey',
+            'team': team.name,
+            'game_count': f'{len(games)}',
+            'games_label': 'game' if len(games) == 1 else 'games',
+            'verb': 'has' if len(games) == 1 else 'have',
+            'games_text': '\n'.join(games_text),
+            'open_path': open_path,
+            'open_label': open_label,
+        }
+
+        send_email(EmailTemplate.NEW_GAMES, email_data, user.email)
+        write_log('INFO', f'Notify new games {game_ids} for team {team.team_id} to {user.email}')
 
 def display_time_for_user(db, team_id: int, user_id: int, dt_utc) -> tuple[str, str, int]:
     """

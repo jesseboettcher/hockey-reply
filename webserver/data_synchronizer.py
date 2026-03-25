@@ -12,7 +12,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from bs4 import BeautifulSoup
 
 from webserver.database.hockey_db import Database, get_db
-from webserver.email import send_game_coming_soon
+from webserver.email import send_game_coming_soon, send_new_games
 from webserver.website_parsers import LockerRoomPageParser, TeamPageParser
 from webserver.logging import print_log, write_log
 
@@ -68,8 +68,9 @@ class Synchronizer:
         write_log('INFO', f'Notify sync')
         self.db = Database()
 
-        for team_id in self.new_games_map.keys():
-            write_log('INFO', f'Games added {self.new_games_map[team_id]}')
+        for team_id, game_ids in self.new_games_map.items():
+            write_log('INFO', f'Games added {game_ids}')
+            send_new_games(self.db, team_id, game_ids)
         self.new_games_map = {}
 
         coming_soon = self.db.get_games_coming_soon()

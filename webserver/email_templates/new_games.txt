@@ -1,0 +1,8 @@
+${name}, ${game_count} new ${games_label} ${verb} been added for ${team}.
+
+${games_text}
+
+Tap below to check the schedule details:
+${open_path}
+
+-Hockey Reply

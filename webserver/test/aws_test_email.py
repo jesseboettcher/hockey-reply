@@ -1,10 +1,24 @@
+import json
+from pathlib import Path
 import boto3
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 from enum import Enum
 import html
 from string import Template
 
-client = boto3.client('ses', region_name='us-west-2')
+def load_secrets():
+    secrets_path = Path(__file__).resolve().parents[2] / 'secrets.json'
+    with open(secrets_path, 'r') as f:
+        return json.load(f)
+
+def get_ses_client():
+    secrets = load_secrets()
+    return boto3.client(
+        'ses',
+        region_name='us-west-2',
+        aws_access_key_id=secrets['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=secrets['AWS_SECRET_ACCESS_KEY'],
+    )
 
 class EmailTemplate(Enum):
     # name -> corresponds to template filenames
@@ -16,6 +30,7 @@ class EmailTemplate(Enum):
     GAME_COMING_SOON   = 'd-b94dc2cebcec407caf3c8e03789d4c34'
     GAME_TIME_CHANGED  = 'd-a252a5f879964f9c88725f31475915a4'
     JOIN_REQUEST       = 'd-f3ad573de30f425aac2657377e7f06af'
+    NEW_GAMES          = ''
     ROLE_UPDATED       = 'd-683a41dc2a694123815a1fe3ea8a7881'
     REMOVED_FROM_TEAM  = 'd-0e95577f623d4b5ca53307296856c0f9'
     REPLY_CHANGED      = 'd-a837b5fd27544b688ce72a5315f6bd65'
@@ -23,6 +38,7 @@ class EmailTemplate(Enum):
 def send_email_aws_test(template, data, to_emails):
     ''' Sends out email via AWS. All emails funnel through this function
     '''
+    client = get_ses_client()
 
     text_content = None
     html_content = None
@@ -73,7 +89,7 @@ def send_email_aws_test(template, data, to_emails):
 
 # Example usage
 subject = "Test Email !"
-to_addresses = ["jesse.boettcher@gmail.com"]
+to_addresses = INSERT_ARRAY_OF_EMAILS
 from_address = "jesse@hockeyreply.com"
 
 d = {}
@@ -94,11 +110,18 @@ d['old_scheduled_at'] = 'tomorrow'
 d['team_id'] = 'c0ed'
 d['updated_by'] = 'the sheriff'
 d['role'] = 'inmate'
+d['game_count'] = '2'
+d['games_label'] = 'games'
+d['verb'] = 'have'
+d['games_text'] = '''Tue, Mar 24 @ 10:30 PM (in 2 days) vs Barracuda
+Thu, Mar 26 @ 09:45 PM (in 4 days) vs Penguins'''
+d['open_path'] = 'http://hockeyreply.com/team/134'
+d['open_label'] = 'Open Team'
 # send_email_aws(EmailTemplate.GAME_COMING_SOON, d, ["jesse@hockeyreply.com"])
 # send_email_aws(EmailTemplate.FORGOT_PASSWORD, d, ["jesse@hockeyreply.com"])
 # send_email_aws(EmailTemplate.GAME_TIME_CHANGED, d, ["jesse@hockeyreply.com"])
 # send_email_aws(EmailTemplate.JOIN_REQUEST, d, ["jesse@hockeyreply.com"])
+# send_email_aws(EmailTemplate.NEW_GAMES, d, ["jesse.boettcher@gmail.com"])
 # send_email_aws(EmailTemplate.ROLE_UPDATED, d, ["jesse@hockeyreply.com"])
 # send_email_aws(EmailTemplate.REMOVED_FROM_TEAM, d, ["jesse@hockeyreply.com"])
-send_email_aws_test(EmailTemplate.REPLY_CHANGED, d, to_addresses)
-
+send_email_aws_test(EmailTemplate.NEW_GAMES, d, to_addresses)
