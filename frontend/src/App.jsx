@@ -1,5 +1,6 @@
 import {
   ChakraProvider,
+  theme,
 } from '@chakra-ui/react';
 import React from 'react';
 import {
@@ -29,7 +30,7 @@ TagManager.initialize(tagManagerArgs)
 
 function App() {
   return (
-    <ChakraProvider>
+    <ChakraProvider theme={theme}>
       <Router>
         <Routes>
           <Route path='/' element={<Home />} />

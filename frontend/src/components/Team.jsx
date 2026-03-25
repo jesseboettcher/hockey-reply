@@ -19,13 +19,13 @@ import {
   Box,
   Button,
   Center,
-  ChakraProvider,
   FormControl,
   FormLabel,
   HStack,
   Icon,
   Input,
   IconButton,
+  Link,
   Modal,
   ModalBody,
   ModalContent,
@@ -47,7 +47,6 @@ import {
   Td,
   Thead,
   Text,
-  theme,
   useColorModeValue,
   useDisclosure,
   useToast,
@@ -58,7 +57,6 @@ import React, {useEffect, useRef, useState} from 'react';
 import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
 
-import { ButtonWithTip } from '../components/ButtonWithTip';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, getAuthHeader, getData } from '../utils';
@@ -105,17 +103,75 @@ export function PlayerInfo(props: React.PropsWithChildren<MyProps>) {
           </a>
           }
           { props.usaHockeyNumber &&
-          <a onClick={usaHockeyAction} style={{cursor: 'pointer'}}>
+          <Box as='button' type='button' onClick={usaHockeyAction} style={{cursor: 'pointer'}}>
             <Box _hover={{color: hoverColor}}>
               <IconButton size='xs' icon={<CopyIcon />} mr="10px"/>
               {props.usaHockeyNumber}
             </Box>
-          </a>
+          </Box>
           }
         </Stack>
 
       </PopoverContent>
     </Popover>
+  );
+}
+
+function TeamActionItem(props: React.PropsWithChildren<MyProps>) {
+  const actionHoverBg = useColorModeValue('blackAlpha.50', 'whiteAlpha.50');
+  const labelColor = useColorModeValue('gray.800', 'gray.100');
+  const iconColor = useColorModeValue('blue.600', 'blue.200');
+  const iconBg = useColorModeValue('transparent', '#495563');
+  const subtextColor = useColorModeValue('gray.500', 'gray.300');
+
+  const content = (
+    <HStack
+      spacing={3}
+      align='center'
+      px={3}
+      py={2}
+      borderRadius='md'
+      _hover={{ bg: actionHoverBg }}
+      transition='background 0.2s ease'
+    >
+      <Box
+        display='inline-flex'
+        alignItems='center'
+        justifyContent='center'
+        w='28px'
+        h='28px'
+        borderRadius='md'
+        bg={iconBg}
+        color={iconColor}
+        flexShrink={0}
+      >
+        {React.cloneElement(props.icon, { boxSize: 4 })}
+      </Box>
+      <Box textAlign='left'>
+        <Text fontSize='sm' fontWeight='medium' lineHeight='short' color={labelColor}>
+          {props.label}
+        </Text>
+        { props.description &&
+          <Text fontSize='xs' color={subtextColor}>
+            {props.description}
+          </Text>
+        }
+      </Box>
+    </HStack>
+  );
+
+  if (props.onClick) {
+    return (
+      <Box as='button' type='button' width='100%' onClick={props.onClick}>
+        {content}
+      </Box>
+    );
+  }
+
+  return (
+    <Link href={props.href} width='100%' _hover={{ textDecoration: 'none' }}>
+      {content}
+    </Link>
   );
 }
 
@@ -157,6 +213,10 @@ export function Team() {
   const [isUserCaptain, setIsUserCaptain] = useState(null);
   const isUserMembershipPending = user['role'] == '';
   const calendar_url = team.teams ? team.teams[0].calendar_url : null;
+  const actionCardBg = useColorModeValue('gray.50', '#303841');
+  const actionCardBorder = useColorModeValue('gray.200', '#495563');
+  const actionCardHeading = useColorModeValue('gray.500', 'gray.400');
+  const actionCardShadow = useColorModeValue('sm', 'none');
 
   const fetchedData = useRef(false);
   const responseReceived = useRef(false);
@@ -304,7 +364,7 @@ export function Team() {
     .then(response => {
       if (response.status == 200) {
 
-        var filtered = players.filter(function(value, index, arr){ 
+        var filtered = players.filter(function(value, index, arr){
             return value['user_id'] != user_id;
         });
         setPlayers(filtered);
@@ -482,45 +542,63 @@ export function Team() {
   const allEmails = players.map(player => player.email);
 
   return (
-    <ChakraProvider theme={theme}>
+    <>
       <Header react_navigate={navigate}/>
       <Box minH="500px" textAlign="center" fontSize="xl" mt="50px">
           { teamName &&
           <Center>
             <VStack>
               <Text fontSize='xl' fontWeight='medium'>{teamName}</Text>
-              <HStack>
-                <ButtonWithTip
-                  label='Share link to join'
-                  icon={<ExternalLinkIcon/>}
-                  href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${teamName}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${teamName.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}
-                  placement='bottom'
-                  mr={3}
+              <Box
+                bg={actionCardBg}
+                borderWidth='1px'
+                borderColor={actionCardBorder}
+                borderRadius='lg'
+                p={4}
+                mt={2}
+                minW={{ base: '280px', md: '360px' }}
+                boxShadow={actionCardShadow}
+              >
+                <Text
+                  fontSize='xs'
+                  fontWeight='semibold'
+                  color={actionCardHeading}
+                  textTransform='uppercase'
+                  letterSpacing='0.08em'
+                  mb={2}
+                  textAlign='left'
+                >
+                  Team Actions
+                </Text>
+                <VStack spacing={1} align='stretch'>
+                  <TeamActionItem
+                    label='Share link to join'
+                    description='Open an email draft with your team join link.'
+                    icon={<ExternalLinkIcon/>}
+                    href={`mailto:?subject=Join%20my%20team%20on%20Hockey%20Reply!&body=Join%20the%20${teamName}%20on%20Hockey%20Reply%20so%20we%20can%20keep%20track%20of%20who%20is%20playing%20in%20our%20games.%0A%0Ahttps%3A%2F%2Fhockeyreply.com%2Fteam%2F${teamName.replaceAll(' ', '-').toLowerCase()}%0A%0AThanks%21`}
                   />
-                { calendar_url &&
-                <ButtonWithTip
-                  label='Subscribe to the calendar'
-                  icon={<CalendarIcon/>}
-                  href={calendar_url}
-                  placement='bottom'
-                  mr={3}
+                  { calendar_url &&
+                  <TeamActionItem
+                    label='Subscribe to the calendar'
+                    description='Add the team schedule to your calendar app.'
+                    icon={<CalendarIcon/>}
+                    href={calendar_url}
                   />
-                }
-                <ButtonWithTip
-                  label='Download sign-in sheet'
-                  icon={<DownloadIcon/>}
-                  linkDownloadAction={() => downloadSigninSheet()}
-                  placement='bottom'
-                  mr={3}
+                  }
+                  <TeamActionItem
+                    label='Download sign-in sheet'
+                    description='Generate the printable sheet for the rink.'
+                    icon={<DownloadIcon/>}
+                    onClick={() => downloadSigninSheet()}
                   />
-                <ButtonWithTip
-                  label='Email everyone'
-                  icon={<EmailIcon/>}
-                  href={`mailto:${allEmails.join(',')},?subject=${teamName}:`}
-                  placement='bottom'
-                  mr={3}
+                  <TeamActionItem
+                    label='Email everyone'
+                    description='Start a message to the full team roster.'
+                    icon={<EmailIcon/>}
+                    href={`mailto:${allEmails.join(',')},?subject=${teamName}:`}
                   />
-              </HStack>
+                </VStack>
+              </Box>
             </VStack>
             </Center>
           }
@@ -728,7 +806,7 @@ export function Team() {
       </>
 
       <Footer/>
-    </ChakraProvider>
+    </>
   );
 }
 

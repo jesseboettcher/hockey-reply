@@ -6,8 +6,6 @@ import {
   Button,
   Center,
   Checkbox,
-  ChakraProvider,
-  extendTheme,
   Heading,
   Icon,
   Input,
@@ -34,6 +32,7 @@ import {
   Tr,
   Th,
   Td,
+  useColorMode,
   useColorModeValue,
   useDisclosure,
   useToast,
@@ -43,22 +42,12 @@ import { MdPersonSearch, MdMessage } from 'react-icons/md'
 import TagManager from 'react-gtm-module'
 import { useNavigate, useParams } from "react-router-dom";
 import _ from "lodash";
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { checkLogin, clearCachedData, getAuthHeader, getData, getPageData } from '../utils';
 import { ReplyBox } from '../components/ReplyBox';
 import Chat from '../components/Chat';
-
-const themeWithBadgeCustomization = extendTheme({
-  colors: {
-    gold: {
-      100: "#FFF1B9",
-      200: "#FFEDA9",
-      800: "#6E5E01",
-    },
-  },
-})
 
 function InfoBox(props) {
   const infoBoxColor = useColorModeValue('#F0F8FE', '#303841')
@@ -111,6 +100,7 @@ function Game() {
   const startedGoalieSearch = useRef(false);
   const goalieConversationsObject = useRef({});
   const toast = useToast();
+  const { colorMode } = useColorMode();
 
   const [userIsOnTeam, setUserIsOnTeam] = useState(true);
   const [isUserMembershipPending, setIsUserMembershipPending] = useState(false);
@@ -120,9 +110,41 @@ function Game() {
   const [players, setPlayers] = useState([]);
   const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
   const messagePollingInterval = useRef(null);
-  const replyReactionBg = useColorModeValue('gray.100', 'gray.700');
-  const replyReactionActiveBg = useColorModeValue('blue.100', 'blue.700');
-  const emojiPickerScheme = useColorModeValue('light', 'dark');
+  const replyReactionBg = useColorModeValue('gray.100', '#303841');
+  const replyReactionHoverBg = useColorModeValue('gray.200', '#3C4654');
+  const replyReactionBorder = useColorModeValue('gray.200', '#495563');
+  const replyReactionActiveBg = useColorModeValue('blue.50', '#2C4A68');
+  const replyReactionActiveBorder = useColorModeValue('blue.200', '#63B3ED');
+  const replyReactionTextColor = useColorModeValue('gray.700', 'gray.100');
+  const replyReactionCountColor = useColorModeValue('gray.500', 'gray.300');
+  const replyReactionActiveTextColor = useColorModeValue('blue.700', '#E6F4FF');
+  const reactionPickerButtonBg = useColorModeValue('white', '#303841');
+  const reactionPickerButtonBorder = useColorModeValue('gray.200', '#495563');
+  const reactionPickerButtonHoverBg = useColorModeValue('gray.100', '#3C4654');
+  const reactionPickerPopoverBg = useColorModeValue('white', '#303841');
+  const reactionPickerPopoverBorder = useColorModeValue('gray.200', '#495563');
+  const reactionPickerPopoverShadow = useColorModeValue('lg', 'dark-lg');
+  const emojiPickerTheme = colorMode === 'dark' ? Theme.DARK : Theme.LIGHT;
+  const emojiPickerStyle = colorMode === 'dark' ? {
+    '--epr-bg-color': '#303841',
+    '--epr-picker-border-color': '#495563',
+    '--epr-text-color': '#E2E8F0',
+    '--epr-search-input-bg-color': '#1F2937',
+    '--epr-search-input-bg-color-active': '#111827',
+    '--epr-search-input-text-color': '#E2E8F0',
+    '--epr-search-input-placeholder-color': '#A0AEC0',
+    '--epr-category-label-bg-color': '#2D3748E6',
+    '--epr-category-label-text-color': '#E2E8F0',
+    '--epr-preview-border-color': '#495563',
+    '--epr-preview-text-color': '#E2E8F0',
+    '--epr-hover-bg-color': '#3C4654',
+    '--epr-hover-bg-color-reduced-opacity': '#3C465480',
+    '--epr-focus-bg-color': '#475466',
+    '--epr-emoji-variation-picker-bg-color': '#303841',
+    '--epr-emoji-variation-indicator-color': '#718096',
+    '--epr-category-icon-active-color': '#90CDF4',
+    '--epr-skin-tone-picker-menu-color': '#303841F2'
+  } : undefined;
 
   const loadPageData = async () => {
       clearCachedData(`/api/goalie-searches/${team_id}`);
@@ -442,7 +464,19 @@ function Game() {
   const isUserCaptain = user['role'] == 'captain';
 
   let replyBadge = {};
-  replyBadge['goalie'] = <Badge colorScheme="gold" textAlign='center' width='80px' mx={2} my="0px">Goalie</Badge>;
+  replyBadge['goalie'] = (
+    <Badge
+      textAlign='center'
+      width='80px'
+      mx={2}
+      my="0px"
+      bg='yellow.100'
+      color='yellow.800'
+      _dark={{ bg: 'yellow.300', color: 'gray.900' }}
+    >
+      Goalie
+    </Badge>
+  );
 
   let yesCount = 0;
   let maybeCount = 0;
@@ -514,7 +548,7 @@ function Game() {
   chatMessageColors['user'] = 'gray.50';
 
 return (
-    <ChakraProvider theme={themeWithBadgeCustomization}>
+    <>
       <Header lastRefresh={lastRefresh} pageError={pageError}/>
       <Box textAlign="center" fontSize="xl" mt="50px" minH="500px">
           <SimpleGrid maxW="1200px" columns={2} minChildWidth='300px' spacing='40px' mx='auto'>
@@ -632,18 +666,35 @@ return (
                                 w='18px'
                                 h='18px'
                                 icon={<AddIcon boxSize={2} />}
+                                variant='ghost'
+                                bg={reactionPickerButtonBg}
+                                borderWidth='1px'
+                                borderColor={reactionPickerButtonBorder}
+                                color={replyReactionTextColor}
+                                _hover={{ bg: reactionPickerButtonHoverBg }}
+                                _active={{ bg: reactionPickerButtonHoverBg }}
                                 onClick={() => setActiveReplyReactionPicker(
                                   activeReplyReactionPicker === reply.reply_id ? null : reply.reply_id
                                 )}
                               />
                             </PopoverTrigger>
-                            <PopoverContent width='auto'>
+                            <PopoverContent
+                              width='auto'
+                              p={0}
+                              bg={reactionPickerPopoverBg}
+                              borderColor={reactionPickerPopoverBorder}
+                              boxShadow={reactionPickerPopoverShadow}
+                              borderRadius='xl'
+                              overflow='hidden'
+                            >
                               <EmojiPicker
+                                key={emojiPickerTheme}
                                 onEmojiClick={(emojiData) => {
                                   handleReplyReaction(reply.reply_id, emojiData.emoji);
                                   setActiveReplyReactionPicker(null);
                                 }}
-                                theme={emojiPickerScheme}
+                                theme={emojiPickerTheme}
+                                style={emojiPickerStyle}
                               />
                             </PopoverContent>
                           </Popover>
@@ -659,10 +710,28 @@ return (
                                 size='sm'
                                 variant='ghost'
                                 bg={data.users.includes(user.user_id) ? replyReactionActiveBg : replyReactionBg}
+                                color={data.users.includes(user.user_id) ? replyReactionActiveTextColor : replyReactionTextColor}
+                                borderWidth='1px'
+                                borderColor={data.users.includes(user.user_id) ? replyReactionActiveBorder : replyReactionBorder}
+                                borderRadius='full'
+                                px={3}
+                                _hover={{
+                                  bg: data.users.includes(user.user_id) ? replyReactionActiveBg : replyReactionHoverBg
+                                }}
+                                _active={{
+                                  bg: data.users.includes(user.user_id) ? replyReactionActiveBg : replyReactionHoverBg
+                                }}
                                 onClick={() => handleReplyReaction(reply.reply_id, emoji)}
                               >
                                 <Text as="span" fontSize="1.4rem" lineHeight="1">{emoji}</Text>
-                                <Text as="span" ml={2} fontSize="0.8em">{data.count}</Text>
+                                <Text
+                                  as="span"
+                                  ml={2}
+                                  fontSize="0.8em"
+                                  color={data.users.includes(user.user_id) ? replyReactionActiveTextColor : replyReactionCountColor}
+                                >
+                                  {data.count}
+                                </Text>
                               </Button>
                             ))}
                           </HStack>
@@ -789,7 +858,7 @@ return (
         </Modal>
 
       <Footer></Footer>
-    </ChakraProvider>
+    </>
   );
 }
 
