@@ -10,6 +10,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
+  useColorMode,
   useColorModeValue,
   IconButton,
   HStack,
@@ -18,7 +19,7 @@ import {
 import { DeleteIcon, EditIcon } from '@chakra-ui/icons'
 import React, { useState } from 'react';
 import dayjs from 'dayjs';
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
 import Markdown from 'markdown-to-jsx';
 import { useParams } from "react-router-dom";
 import { getAuthHeader } from '../utils';
@@ -29,6 +30,7 @@ export default function Chat({ messages, setMessages, players, user }) {
   const [selectedMessageId, setSelectedMessageId] = useState(null);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editMessageContent, setEditMessageContent] = useState('');
+  const { colorMode } = useColorMode();
 
   // Add game_id and team_id from params
   const { game_id, team_id } = useParams();
@@ -40,7 +42,41 @@ export default function Chat({ messages, setMessages, players, user }) {
   const timeColor = useColorModeValue('gray.400', 'gray.500');
   const messageColor = useColorModeValue('gray.800', 'gray.100');
   const deleteButtonScheme = useColorModeValue('blackAlpha', 'red');
-  const emojiPickerScheme = useColorModeValue('light', 'dark');
+  const reactionBg = useColorModeValue('gray.100', '#303841');
+  const reactionHoverBg = useColorModeValue('gray.200', '#3C4654');
+  const reactionBorder = useColorModeValue('gray.200', '#495563');
+  const reactionActiveBg = useColorModeValue('blue.50', '#2C4A68');
+  const reactionActiveBorder = useColorModeValue('blue.200', '#63B3ED');
+  const reactionTextColor = useColorModeValue('gray.700', 'gray.100');
+  const reactionCountColor = useColorModeValue('gray.500', 'gray.300');
+  const reactionActiveTextColor = useColorModeValue('blue.700', '#E6F4FF');
+  const reactionPickerButtonBg = useColorModeValue('white', '#303841');
+  const reactionPickerButtonBorder = useColorModeValue('gray.200', '#495563');
+  const reactionPickerButtonHoverBg = useColorModeValue('gray.100', '#3C4654');
+  const reactionPickerPopoverBg = useColorModeValue('white', '#303841');
+  const reactionPickerPopoverBorder = useColorModeValue('gray.200', '#495563');
+  const reactionPickerPopoverShadow = useColorModeValue('lg', 'dark-lg');
+  const emojiPickerTheme = colorMode === 'dark' ? Theme.DARK : Theme.LIGHT;
+  const emojiPickerStyle = colorMode === 'dark' ? {
+    '--epr-bg-color': '#303841',
+    '--epr-picker-border-color': '#495563',
+    '--epr-text-color': '#E2E8F0',
+    '--epr-search-input-bg-color': '#1F2937',
+    '--epr-search-input-bg-color-active': '#111827',
+    '--epr-search-input-text-color': '#E2E8F0',
+    '--epr-search-input-placeholder-color': '#A0AEC0',
+    '--epr-category-label-bg-color': '#2D3748E6',
+    '--epr-category-label-text-color': '#E2E8F0',
+    '--epr-preview-border-color': '#495563',
+    '--epr-preview-text-color': '#E2E8F0',
+    '--epr-hover-bg-color': '#3C4654',
+    '--epr-hover-bg-color-reduced-opacity': '#3C465480',
+    '--epr-focus-bg-color': '#475466',
+    '--epr-emoji-variation-picker-bg-color': '#303841',
+    '--epr-emoji-variation-indicator-color': '#718096',
+    '--epr-category-icon-active-color': '#90CDF4',
+    '--epr-skin-tone-picker-menu-color': '#303841F2'
+  } : undefined;
 
   const formatTimestamp = (timestamp) => {
     return dayjs(timestamp * 1000).format('ddd MMM D @ h:mm A');
@@ -339,15 +375,33 @@ export default function Chat({ messages, setMessages, players, user }) {
                   >
                     <Button
                       size="xs"
-                      variant={data.users.includes(user.user_id) ? "outline" : "solid"}
-                      colorScheme={data.users.includes(user.user_id) ? "blue" : "gray"}
+                      variant="ghost"
+                      bg={data.users.includes(user.user_id) ? reactionActiveBg : reactionBg}
+                      color={data.users.includes(user.user_id) ? reactionActiveTextColor : reactionTextColor}
+                      borderWidth='1px'
+                      borderColor={data.users.includes(user.user_id) ? reactionActiveBorder : reactionBorder}
+                      borderRadius='full'
                       onClick={() => handleReaction(message.message_id, emoji)}
-                      py={0}
+                      _hover={{
+                        bg: data.users.includes(user.user_id) ? reactionActiveBg : reactionHoverBg
+                      }}
+                      _active={{
+                        bg: data.users.includes(user.user_id) ? reactionActiveBg : reactionHoverBg
+                      }}
+                      px={3}
                       height="27px"
                       minW="45px"
                       fontSize=".9em"
                     >
-                      {emoji} <Text as="span" ml={2} fontSize="0.8em">{data.count}</Text>
+                      {emoji}
+                      <Text
+                        as="span"
+                        ml={2}
+                        fontSize="0.8em"
+                        color={data.users.includes(user.user_id) ? reactionActiveTextColor : reactionCountColor}
+                      >
+                        {data.count}
+                      </Text>
                     </Button>
                   </Tooltip>
                 ))}
@@ -366,7 +420,10 @@ export default function Chat({ messages, setMessages, players, user }) {
                     <Button
                       size="xs"
                       variant="ghost"
-                      colorScheme="gray"
+                      bg={reactionPickerButtonBg}
+                      borderWidth='1px'
+                      borderColor={reactionPickerButtonBorder}
+                      color={reactionTextColor}
                       onClick={() => {
                         if (!selectedMessageId) {
                           setSelectedMessageId(message.message_id);
@@ -381,13 +438,25 @@ export default function Chat({ messages, setMessages, players, user }) {
                           setShowEmojiPicker(true);
                         }
                       }}
+                      _hover={{ bg: reactionPickerButtonHoverBg }}
+                      _active={{ bg: reactionPickerButtonHoverBg }}
+                      px={3}
                       height="27px"
                     >
                       +
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent width="350px">  {/* Control the width explicitly */}
+                  <PopoverContent
+                    width="350px"
+                    p={0}
+                    bg={reactionPickerPopoverBg}
+                    borderColor={reactionPickerPopoverBorder}
+                    boxShadow={reactionPickerPopoverShadow}
+                    borderRadius='xl'
+                    overflow='hidden'
+                  >
                     <EmojiPicker
+                      key={`${emojiPickerTheme}-with-reactions`}
                       onEmojiClick={(emojiData) => {
                         handleReaction(message.message_id, emojiData.emoji);
                         setShowEmojiPicker(false);
@@ -395,7 +464,8 @@ export default function Chat({ messages, setMessages, players, user }) {
                       }}
                       width="100%"
                       height="350px"
-                      theme={emojiPickerScheme}
+                      theme={emojiPickerTheme}
+                      style={emojiPickerStyle}
                     />
                   </PopoverContent>
                 </Popover>
@@ -418,7 +488,10 @@ export default function Chat({ messages, setMessages, players, user }) {
                   <Button
                     size="xs"
                     variant="ghost"
-                    colorScheme="gray"
+                    bg={reactionPickerButtonBg}
+                    borderWidth='1px'
+                    borderColor={reactionPickerButtonBorder}
+                    color={reactionTextColor}
                     onClick={() => {
                       if (!selectedMessageId) {
                         setSelectedMessageId(message.message_id);
@@ -433,14 +506,25 @@ export default function Chat({ messages, setMessages, players, user }) {
                         setShowEmojiPicker(true);
                       }
                     }}
-                    py={0}
+                    _hover={{ bg: reactionPickerButtonHoverBg }}
+                    _active={{ bg: reactionPickerButtonHoverBg }}
+                    px={3}
                     height="27px"
                   >
                     +
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent width="350px">  {/* Control the width explicitly */}
+                <PopoverContent
+                  width="350px"
+                  p={0}
+                  bg={reactionPickerPopoverBg}
+                  borderColor={reactionPickerPopoverBorder}
+                  boxShadow={reactionPickerPopoverShadow}
+                  borderRadius='xl'
+                  overflow='hidden'
+                >
                   <EmojiPicker
+                    key={`${emojiPickerTheme}-empty-reactions`}
                     onEmojiClick={(emojiData) => {
                       handleReaction(message.message_id, emojiData.emoji);
                       setShowEmojiPicker(false);
@@ -448,7 +532,8 @@ export default function Chat({ messages, setMessages, players, user }) {
                     }}
                     width="100%"
                     height="350px"
-                    theme={emojiPickerScheme}
+                    theme={emojiPickerTheme}
+                    style={emojiPickerStyle}
                   />
                 </PopoverContent>
               </Popover>
