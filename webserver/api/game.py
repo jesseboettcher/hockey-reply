@@ -43,6 +43,23 @@ def is_logged_in_user_in_team(team_id, and_has_been_accepted):
 
     return False
 
+
+def player_display_name(team_player):
+    first_name = team_player.player.first_name or ''
+    last_name = team_player.player.last_name or ''
+    full_name = f'{first_name} {last_name}'.strip()
+
+    if not full_name:
+        full_name = team_player.player.email or 'Unknown Player'
+
+    return f'{full_name} ({team_player.role})'
+
+
+def player_sort_name(team_player):
+    first_name = (team_player.player.first_name or '').lower()
+    last_name = (team_player.player.last_name or '').lower()
+    return f'{first_name} {last_name}'.strip()
+
 @blueprint.route('/games/', methods=['GET'])
 @blueprint.route('/games/<team_id>', methods=['GET'])
 def get_games(team_id = None):
@@ -304,7 +321,7 @@ def game_reply(game_id, team_id):
 
             player_name = 'Anonymous Sub'
             if reply_player:
-                player_name = f'{reply_player.player.first_name} {reply_player.player.last_name} ({reply_player.role})'
+                player_name = player_display_name(reply_player)
 
             if reply.response == None:
                 # this user has a message, but no reponse. Put them in the no_response dictionary
@@ -337,7 +354,7 @@ def game_reply(game_id, team_id):
                 reply_dict = {
                     'reply_id': 0,
                     'user_id': player.user_id,
-                    'name': f'{player.player.first_name} {player.player.last_name} ({player.role})'
+                    'name': player_display_name(player)
                 }
                 no_response.append((player, reply_dict))
 
@@ -345,7 +362,7 @@ def game_reply(game_id, team_id):
         no_response.sort(
             key=lambda x: (
                 role_sort_order.get(x[0].role, 99),
-                f"{x[0].player.first_name.lower()} {x[0].player.last_name.lower()}"
+                player_sort_name(x[0])
             )
         )
         result['no_response'] = [reply_dict for _, reply_dict in no_response]

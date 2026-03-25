@@ -23,14 +23,19 @@ def create_app(testing=False):
     app.register_blueprint(signaturepdf.blueprint)
     app.register_blueprint(chat_blueprint)
 
-    from webserver.assistant import Assistant
-    app.config['assistant'] = Assistant()
-
-    from webserver.data_synchronizer import Synchronizer
-    app.config['synchronizer'] = Synchronizer()
-
     from webserver.logging import write_log
     import os
+    from webserver.assistant import Assistant
+
+    app.config['assistant'] = Assistant()
+
+    # Background jobs are not needed for unit tests and can be blocked in sandboxes.
+    if testing:
+        app.config['synchronizer'] = None
+    else:
+        from webserver.data_synchronizer import Synchronizer
+        app.config['synchronizer'] = Synchronizer()
+
     if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
         commit = ''
 

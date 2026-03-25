@@ -22,6 +22,42 @@ class BasicTestCase(unittest.TestCase):
     USER_TEST_EMAIL = 'a@b.c'
 
     @classmethod
+    def ensure_test_user_on_team(self, db):
+        user = db.get_user(self.USER_TEST_EMAIL)
+
+        if user == None:
+            print(f'Adding test user')
+            user = User(email=self.USER_TEST_EMAIL.strip().lower(),
+                        first_name='Jack',
+                        last_name='Black',
+                        created_at=datetime.datetime.now(),
+                        logged_in_at=datetime.datetime.now(),
+                        admin=False
+                        )
+            user.password = '12345678'
+            db.add_user(user)
+        elif not user.last_name:
+            user.last_name = 'Black'
+
+        team = db.get_team(self.TEAM_TEST_NAME)
+        team_player = db.get_team_player(team.team_id, user.user_id)
+        if team_player is None:
+            join_team_as_player = TeamPlayer(
+                                             team_id=team.team_id,
+                                             role='captain',
+                                             pending_status=False,
+                                             joined_at=datetime.datetime.now()
+                                            )
+            join_team_as_player.player = user
+            team.players.append(join_team_as_player)
+        else:
+            team_player.role = 'captain'
+            team_player.pending_status = False
+
+        db.commit_changes()
+        self.user_id = user.user_id
+
+    @classmethod
     def setUpClass(self):
         self.app = create_app(True)
         self.client = self.app.test_client(self)
@@ -47,33 +83,7 @@ class BasicTestCase(unittest.TestCase):
         self.app.config['TESTING_USER'] = db.get_user_by_id(3);
         assert(self.app.config['TESTING_USER'] != None)
 
-        # user setup
-        user = db.get_user(self.USER_TEST_EMAIL)
-
-        if user == None:
-            print(f'Adding test user')
-            user = User(email=self.USER_TEST_EMAIL.strip().lower(),
-                        first_name='Jack',
-                        last_name='Black',
-                        created_at=datetime.datetime.now(),
-                        logged_in_at=datetime.datetime.now(),
-                        admin=False
-                        )
-            user.password = '12345678'
-            db.add_user(user)
-
-        team = db.get_team(self.TEAM_TEST_NAME)
-        join_team_as_player = TeamPlayer(
-                                         team_id=team.team_id,
-                                         role='captain',
-                                         pending_status=False,
-                                         joined_at=datetime.datetime.now()
-                                        )
-        join_team_as_player.player = user
-        team.players.append(join_team_as_player)
-        db.commit_changes()
-
-        self.user_id = user.user_id
+        self.ensure_test_user_on_team(db)
 
         # game setup
         game = db.get_game_by_id(self.GAME_TEST_ID)
@@ -97,7 +107,21 @@ class BasicTestCase(unittest.TestCase):
             db.add_game_object(game)
 
         game.scheduled_at = game_time
+        game.completed = 0
+        game.rink = 'center'
+        game.level = 'A'
+        game.home_team_id = self.team_id
+        game.away_team_id = self.team_id_2
+        game.home_goals = 0
+        game.away_goals = 0
+        game.game_type = 'Championship'
+        if game.created_at is None:
+            game.created_at = datetime.datetime.now()
         db.commit_changes()
+
+    def setUp(self):
+        db = get_db()
+        self.ensure_test_user_on_team(db)
 
     @classmethod
     def tearDownClass(self):
@@ -155,4 +179,3 @@ class BasicTestCase(unittest.TestCase):
         response = self.client.get(f'/api/game/reply/{self.GAME_TEST_ID}/for-team/{self.team_id}', content_type='application/json')
         self.assertEqual(response.status_code, 200)
         print(response.get_data())
-

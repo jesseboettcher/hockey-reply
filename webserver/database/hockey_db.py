@@ -101,7 +101,7 @@ class Database:
     def get_team_by_id(self, team_id):
         return self.session.query(Team).filter(Team.team_id == team_id).one_or_none()
 
-    def add_team(self, team_name, external_id):
+    def add_team(self, team_name, external_id=0):
         team = self.session.query(Team).filter(Team.name == team_name).one_or_none()
 
         if team is not None:
