@@ -32,6 +32,15 @@ CREATE TABLE game_reply(
     modified_at     TIMESTAMP WITH TIME ZONE
 );
 
+CREATE TABLE game_reply_reaction (
+    reaction_id        SERIAL PRIMARY KEY,
+    reply_id           INTEGER NOT NULL REFERENCES game_reply(reply_id),
+    user_id            INTEGER NOT NULL REFERENCES users(user_id),
+    emoji              TEXT NOT NULL,
+    created_at         TIMESTAMP WITH TIME ZONE NOT NULL,
+    UNIQUE (reply_id, user_id, emoji)
+);
+
 -- Game chat messages
 CREATE TABLE game_chat_message (
     message_id         SERIAL PRIMARY KEY,
@@ -65,6 +74,9 @@ CREATE INDEX idx_game_chat_message_parent
 
 CREATE INDEX idx_game_chat_reaction_message
     ON game_chat_reaction(message_id);
+
+CREATE INDEX idx_game_reply_reaction_reply
+    ON game_reply_reaction(reply_id);
 
 CREATE TABLE team(
     team_id         SERIAL     PRIMARY KEY,

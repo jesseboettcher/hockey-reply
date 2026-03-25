@@ -10,8 +10,9 @@ from zoneinfo import ZoneInfo
 
 from flask import Blueprint, current_app, g, make_response, request
 import humanize
+from sqlalchemy import and_
 
-from webserver.database.alchemy_models import GameReply, User, Team
+from webserver.database.alchemy_models import GameReply, GameReplyReaction, User, Team
 from webserver.database.hockey_db import get_db, get_current_user
 from webserver.email import send_reply_was_changed
 from webserver.logging import write_log
@@ -42,6 +43,31 @@ def is_logged_in_user_in_team(team_id, and_has_been_accepted):
             return True
 
     return False
+
+
+def player_display_name(team_player):
+    first_name = team_player.player.first_name or ''
+    last_name = team_player.player.last_name or ''
+    full_name = f'{first_name} {last_name}'.strip()
+
+    if not full_name:
+        full_name = team_player.player.email or 'Unknown Player'
+
+    return f'{full_name} ({team_player.role})'
+
+
+def player_sort_name(team_player):
+    first_name = (team_player.player.first_name or '').lower()
+    last_name = (team_player.player.last_name or '').lower()
+    return f'{first_name} {last_name}'.strip()
+
+
+def serialize_reply_reaction(reaction):
+    return {
+        'emoji': reaction.emoji,
+        'user_id': reaction.user_id,
+        'created_at': reaction.created_at.timestamp()
+    }
 
 @blueprint.route('/games/', methods=['GET'])
 @blueprint.route('/games/<team_id>', methods=['GET'])
@@ -304,7 +330,7 @@ def game_reply(game_id, team_id):
 
             player_name = 'Anonymous Sub'
             if reply_player:
-                player_name = f'{reply_player.player.first_name} {reply_player.player.last_name} ({reply_player.role})'
+                player_name = player_display_name(reply_player)
 
             if reply.response == None:
                 # this user has a message, but no reponse. Put them in the no_response dictionary
@@ -317,7 +343,8 @@ def game_reply(game_id, team_id):
                 'name': player_name,
                 'response': reply.response,
                 'message': reply.message,
-                'is_goalie': reply.is_goalie
+                'is_goalie': reply.is_goalie,
+                'reactions': [serialize_reply_reaction(reaction) for reaction in reply.reactions]
             }
             replies_dict[reply.user_id] = reply_dict
 
@@ -337,7 +364,7 @@ def game_reply(game_id, team_id):
                 reply_dict = {
                     'reply_id': 0,
                     'user_id': player.user_id,
-                    'name': f'{player.player.first_name} {player.player.last_name} ({player.role})'
+                    'name': player_display_name(player)
                 }
                 no_response.append((player, reply_dict))
 
@@ -345,7 +372,7 @@ def game_reply(game_id, team_id):
         no_response.sort(
             key=lambda x: (
                 role_sort_order.get(x[0].role, 99),
-                f"{x[0].player.first_name.lower()} {x[0].player.last_name.lower()}"
+                player_sort_name(x[0])
             )
         )
         result['no_response'] = [reply_dict for _, reply_dict in no_response]
@@ -420,3 +447,58 @@ def game_reply(game_id, team_id):
 
         write_log('INFO', f'api/game/reply: {user_id} says {response} for game {game_id} set by {get_current_user().user_id}')
         return make_response({ 'result' : 'success' })
+
+
+@blueprint.route('/game/reply/reaction', methods=['POST', 'DELETE'])
+def toggle_reply_reaction():
+    '''
+    POST to add a reaction to a reply, DELETE to remove it.
+    JSON body: {
+        reply_id: int,
+        team_id: int,
+        emoji: string
+    }
+    '''
+    if not check_login():
+        return {'result': 'needs login'}, 400
+
+    data = request.get_json() or {}
+    if 'reply_id' not in data or 'team_id' not in data or 'emoji' not in data:
+        write_log('ERROR', 'api/game/reply/reaction: missing request fields')
+        return {'result': 'error'}, 400
+
+    team_id = int(data['team_id'])
+    reply_id = int(data['reply_id'])
+    emoji = data['emoji']
+
+    if not is_logged_in_user_in_team(team_id, True):
+        return {'result': 'unauthorized'}, 403
+
+    db = get_db()
+    user = get_current_user()
+
+    reply = db.session.query(GameReply).get(reply_id)
+    if not reply or reply.team_id != team_id or reply.response is None:
+        return {'result': 'error'}, 404
+
+    existing = db.session.query(GameReplyReaction).filter(
+        and_(
+            GameReplyReaction.reply_id == reply_id,
+            GameReplyReaction.user_id == user.user_id,
+            GameReplyReaction.emoji == emoji
+        )
+    ).first()
+
+    if request.method == 'POST' and not existing:
+        reaction = GameReplyReaction(
+            reply_id=reply_id,
+            user_id=user.user_id,
+            emoji=emoji,
+            created_at=datetime.now(timezone.utc)
+        )
+        db.session.add(reaction)
+    elif request.method == 'DELETE' and existing:
+        db.session.delete(existing)
+
+    db.session.commit()
+    return {'result': 'success'}

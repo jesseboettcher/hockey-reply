@@ -12,7 +12,7 @@ import unittest
 
 from webserver import create_app
 from webserver.database.hockey_db import get_db, setup_test_db
-from webserver.database.alchemy_models import Game, TeamPlayer, User
+from webserver.database.alchemy_models import Game, GameReplyReaction, TeamPlayer, User
 
 class BasicTestCase(unittest.TestCase):
 
@@ -20,6 +20,42 @@ class BasicTestCase(unittest.TestCase):
     TEAM_TEST_NAME = 'Unit Test'
     TEAM_TEST_NAME_2 = 'Unit Test 2'
     USER_TEST_EMAIL = 'a@b.c'
+
+    @classmethod
+    def ensure_test_user_on_team(self, db):
+        user = db.get_user(self.USER_TEST_EMAIL)
+
+        if user == None:
+            print(f'Adding test user')
+            user = User(email=self.USER_TEST_EMAIL.strip().lower(),
+                        first_name='Jack',
+                        last_name='Black',
+                        created_at=datetime.datetime.now(),
+                        logged_in_at=datetime.datetime.now(),
+                        admin=False
+                        )
+            user.password = '12345678'
+            db.add_user(user)
+        elif not user.last_name:
+            user.last_name = 'Black'
+
+        team = db.get_team(self.TEAM_TEST_NAME)
+        team_player = db.get_team_player(team.team_id, user.user_id)
+        if team_player is None:
+            join_team_as_player = TeamPlayer(
+                                             team_id=team.team_id,
+                                             role='captain',
+                                             pending_status=False,
+                                             joined_at=datetime.datetime.now()
+                                            )
+            join_team_as_player.player = user
+            team.players.append(join_team_as_player)
+        else:
+            team_player.role = 'captain'
+            team_player.pending_status = False
+
+        db.commit_changes()
+        self.user_id = user.user_id
 
     @classmethod
     def setUpClass(self):
@@ -47,33 +83,7 @@ class BasicTestCase(unittest.TestCase):
         self.app.config['TESTING_USER'] = db.get_user_by_id(3);
         assert(self.app.config['TESTING_USER'] != None)
 
-        # user setup
-        user = db.get_user(self.USER_TEST_EMAIL)
-
-        if user == None:
-            print(f'Adding test user')
-            user = User(email=self.USER_TEST_EMAIL.strip().lower(),
-                        first_name='Jack',
-                        last_name='Black',
-                        created_at=datetime.datetime.now(),
-                        logged_in_at=datetime.datetime.now(),
-                        admin=False
-                        )
-            user.password = '12345678'
-            db.add_user(user)
-
-        team = db.get_team(self.TEAM_TEST_NAME)
-        join_team_as_player = TeamPlayer(
-                                         team_id=team.team_id,
-                                         role='captain',
-                                         pending_status=False,
-                                         joined_at=datetime.datetime.now()
-                                        )
-        join_team_as_player.player = user
-        team.players.append(join_team_as_player)
-        db.commit_changes()
-
-        self.user_id = user.user_id
+        self.ensure_test_user_on_team(db)
 
         # game setup
         game = db.get_game_by_id(self.GAME_TEST_ID)
@@ -97,6 +107,24 @@ class BasicTestCase(unittest.TestCase):
             db.add_game_object(game)
 
         game.scheduled_at = game_time
+        game.completed = 0
+        game.rink = 'center'
+        game.level = 'A'
+        game.home_team_id = self.team_id
+        game.away_team_id = self.team_id_2
+        game.home_goals = 0
+        game.away_goals = 0
+        game.game_type = 'Championship'
+        if game.created_at is None:
+            game.created_at = datetime.datetime.now()
+        db.commit_changes()
+
+    def setUp(self):
+        db = get_db()
+        self.ensure_test_user_on_team(db)
+        db.session.query(GameReplyReaction).filter(
+            GameReplyReaction.user_id == self.app.config['TESTING_USER'].user_id
+        ).delete()
         db.commit_changes()
 
     @classmethod
@@ -156,3 +184,41 @@ class BasicTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         print(response.get_data())
 
+    def test_toggle_reply_reaction(self):
+        db = get_db()
+        db.set_game_reply(self.GAME_TEST_ID, self.team_id, self.user_id, 'yes', None, False)
+        reply = db.game_reply_for_game_and_user(self.GAME_TEST_ID, self.team_id, self.user_id)
+        self.assertIsNotNone(reply)
+
+        response = self.client.post('/api/game/reply/reaction',
+                                    content_type='application/json',
+                                    data=json.dumps({
+                                        "reply_id": reply.reply_id,
+                                        "team_id": self.team_id,
+                                        "emoji": "🔥"
+                                    }))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(f'/api/game/reply/{self.GAME_TEST_ID}/for-team/{self.team_id}',
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        reply_payload = next(item for item in payload['replies'] if item['reply_id'] == reply.reply_id)
+        self.assertEqual(len(reply_payload['reactions']), 1)
+        self.assertEqual(reply_payload['reactions'][0]['emoji'], '🔥')
+
+        response = self.client.delete('/api/game/reply/reaction',
+                                      content_type='application/json',
+                                      data=json.dumps({
+                                          "reply_id": reply.reply_id,
+                                          "team_id": self.team_id,
+                                          "emoji": "🔥"
+                                      }))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(f'/api/game/reply/{self.GAME_TEST_ID}/for-team/{self.team_id}',
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        reply_payload = next(item for item in payload['replies'] if item['reply_id'] == reply.reply_id)
+        self.assertEqual(reply_payload['reactions'], [])

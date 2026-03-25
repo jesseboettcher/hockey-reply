@@ -9,11 +9,8 @@ Script to populate database with players, teams, and games for testing.
 To run: python -m webserver.test.create_test_data
 '''
 import datetime
-import json
-import unittest
 
-from webserver import create_app
-from webserver.database.hockey_db import get_db
+from webserver.database.hockey_db import get_db, setup_test_db
 from webserver.database.alchemy_models import Game, TeamPlayer, User
 
 GAME_TEST_ID = 1
@@ -49,8 +46,7 @@ def team_has_player(user_id, players):
 
     return False
 
-app = create_app(True)
-
+setup_test_db()
 db = get_db()
 
 # team setup
@@ -100,8 +96,6 @@ game_time = delta + datetime.datetime.now()
 
 if game == None:
     print(f'Adding test game')
-
-
     game = Game(game_id=GAME_TEST_ID,
                 scheduled_at=game_time,
                 completed=0,
@@ -115,5 +109,15 @@ if game == None:
     db.add_game_object(game)
 
 game.scheduled_at = game_time
+game.completed = 0
+game.rink = 'center'
+game.level = 'A'
+game.home_team_id = team_id
+game.away_team_id = team_id_2
+game.home_goals = 0
+game.away_goals = 0
+game.game_type = 'Championship'
+if game.created_at is None:
+    game.created_at = datetime.datetime.now()
 db.commit_changes()
 print('Commited changes')

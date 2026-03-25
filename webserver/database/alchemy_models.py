@@ -75,6 +75,8 @@ class GameReply(Base):
     message = Column(String)
     modified_at = Column(DateTime)
 
+    reactions = relationship("GameReplyReaction", back_populates="reply")
+
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (UniqueConstraint("google_id"), UniqueConstraint("email"))
@@ -146,3 +148,16 @@ class GameChatReaction(Base):
 
     # Relationships
     message = relationship("GameChatMessage", back_populates="reactions")
+
+class GameReplyReaction(Base):
+    __tablename__ = "game_reply_reaction"
+    __table_args__ = (UniqueConstraint("reply_id", "user_id", "emoji"),)
+
+    reaction_id = Column(Integer, primary_key=True)
+    reply_id = Column(Integer, ForeignKey("game_reply.reply_id"))
+    user_id = Column(Integer, ForeignKey("users.user_id"))
+    emoji = Column(String)
+    created_at = Column(DateTime)
+
+    # Relationships
+    reply = relationship("GameReply", back_populates="reactions")
