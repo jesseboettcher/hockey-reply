@@ -282,6 +282,54 @@ class GameParser(BaseParser):
     def __str__(self):
         print(self.instance_attributes_string())
 
+class ApiGameParser(BaseParser):
+    """
+    Adapts TimeToScore API game JSON to the GameParser shape used by Database.add_game.
+    """
+
+    def __init__(self, game_dict):
+        self.id = int(game_dict['game_id'])
+        self.completed = 1 if game_dict.get('game_status') == 'CLOSED' else 0
+
+        self.parse_success = False
+        timezone = ZoneInfo(game_dict.get('timezn') or 'US/Pacific')
+
+        try:
+            if game_dict.get('date') and game_dict.get('time'):
+                dt = datetime.datetime.strptime(
+                    f'{game_dict["date"]} {game_dict["time"]}',
+                    '%Y-%m-%d %H:%M:%S',
+                )
+                self.datetime = dt.replace(tzinfo=timezone)
+            elif game_dict.get('gmt_time'):
+                dt = datetime.datetime.strptime(
+                    game_dict['gmt_time'].split('.')[0],
+                    '%Y-%m-%d %H:%M:%S',
+                )
+                self.datetime = dt.replace(tzinfo=ZoneInfo('UTC')).astimezone(timezone)
+            else:
+                return
+        except Exception:
+            write_log('ERROR', f'Failed API synchronization of game {game_dict}')
+            return
+
+        self.rink = (game_dict.get('location') or '').strip()
+        self.league = (game_dict.get('league_name') or '').strip()
+        self.level = (game_dict.get('level_name') or game_dict.get('level_ab') or '').strip()
+        self.home_team = (game_dict.get('home_team') or '').strip()
+        self.away_team = (game_dict.get('away_team') or '').strip()
+        self.type = (game_dict.get('gtype_name') or '').strip()
+        self.home_goals = self.parse_goals(game_dict.get('home_goals'))
+        self.away_goals = self.parse_goals(game_dict.get('away_goals'))
+        self.shootout = 1 if game_dict.get('result_flag') == 'S' else 0
+        self.parse_success = bool(self.home_team and self.away_team)
+
+    def parse_goals(self, goals):
+        try:
+            return int(goals)
+        except:
+            return 0
+
 class LockerRoomPageParser:
     """
     Parses a Sharks Ice page for locker room assignments for each game.

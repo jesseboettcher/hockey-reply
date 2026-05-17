@@ -5,7 +5,11 @@ Top level class to pull data from the shark's ice web site, feed it into the htm
 the parser output to update the database with the latest data.
 '''
 import os
+import hashlib
+import hmac
 import requests
+import time
+from urllib.parse import quote_plus
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
@@ -13,12 +17,20 @@ from bs4 import BeautifulSoup
 
 from webserver.database.hockey_db import Database, get_db
 from webserver.email import send_game_coming_soon, send_new_games
-from webserver.website_parsers import LockerRoomPageParser, TeamPageParser
+from webserver.website_parsers import ApiGameParser, LockerRoomPageParser, TeamPageParser
 from webserver.logging import print_log, write_log
 
 class Synchronizer:
 
+    SYNC_SOURCE_API = 'api'
+    SYNC_SOURCE_SCRAPER = 'scraper'
+
     SHARKS_ICE_BASE_URL = 'https://stats.sharksice.timetoscore.com/'
+    SHARKS_ICE_API_BASE_URL = 'https://api.sharksice.timetoscore.com/'
+    SHARKS_ICE_API_KEY = 'web'
+    SHARKS_ICE_API_SECRET = 'i8IC4I8cCLdLGWiKk5Ukw4FfIjBtvOG4'
+    SHARKS_ICE_SYNC_SOURCE = SYNC_SOURCE_API
+    EMPTY_BODY_MD5 = 'd41d8cd98f00b204e9800998ecf8427e'
     SHARKS_ICE_SEASON_ENDPOINTS = [
         'display-stats.php?league=1',
     ]
@@ -122,13 +134,23 @@ class Synchronizer:
     def sync_season(self, url):
 
         source, soup = self.open_season_page(url)
+
+        if self.SHARKS_ICE_SYNC_SOURCE == self.SYNC_SOURCE_API:
+            return self.sync_api_season(soup)
+
+        if self.SHARKS_ICE_SYNC_SOURCE != self.SYNC_SOURCE_SCRAPER:
+            write_log('ERROR', f'Unknown synchronization source {self.SHARKS_ICE_SYNC_SOURCE}')
+            return False
+
+        found_team_links = False
         for link in soup.find_all('a'):
             
             href = link.get('href')
-            if href.find(self.SHARKS_ICE_TEAM_ENDPOINT) == -1:
+            if href is None or href.find(self.SHARKS_ICE_TEAM_ENDPOINT) == -1:
                 print_log(f'SKIPPING {link}, not a team page')
                 continue
 
+            found_team_links = True
             team_name = link.string.strip()
 
             print_log(f'Parsing {team_name} at {link}')
@@ -156,6 +178,142 @@ class Synchronizer:
 
                     self.new_games_map[db_game.home_team_id].append(db_game.game_id)
                     self.new_games_map[db_game.away_team_id].append(db_game.game_id)
+
+        if not found_team_links:
+            write_log('ERROR', f'No legacy team links found at {url}')
+            return False
+
+        return True
+
+    def sync_api_season(self, soup):
+        api_config = self.api_config_from_soup(soup)
+        league_id = api_config.get('league_id', 1)
+
+        leagues_json = self.open_api_json('get_leagues', {'league_id': league_id}, api_config)
+        league = leagues_json['leagues'][0]
+        season_id = league.get('current_season')
+        stat_class = league.get('default_stat_class_tag')
+
+        standings_json = self.open_api_json(
+            'get_standings',
+            {
+                'league_id': league_id,
+                'season_id': season_id,
+                'stat_class': stat_class,
+            },
+            api_config,
+        )
+
+        teams = self.teams_from_standings(standings_json)
+        for team_id, team_name in teams.items():
+            self.db.add_team(team_name, team_id)
+
+            schedule_json = self.open_api_json(
+                'get_schedule',
+                {
+                    'league_id': league_id,
+                    'season_id': season_id,
+                    'team_id': team_id,
+                },
+                api_config,
+            )
+
+            for game_dict in schedule_json.get('games', []):
+                game = ApiGameParser(game_dict)
+                if not game.parse_success:
+                    continue
+
+                game_is_new = self.db.add_game(game)
+                db_game = self.db.get_game_by_id(game.id)
+
+                if game.id not in self.synced_games_list:
+                    self.synced_games_list.append(game.id)
+
+                if game_is_new:
+                    if not db_game.home_team_id in self.new_games_map:
+                        self.new_games_map[db_game.home_team_id] = []
+                    if not db_game.away_team_id in self.new_games_map:
+                        self.new_games_map[db_game.away_team_id] = []
+
+                    self.new_games_map[db_game.home_team_id].append(db_game.game_id)
+                    self.new_games_map[db_game.away_team_id].append(db_game.game_id)
+
+        return True
+
+    def api_config_from_soup(self, soup):
+        root = soup.find(id='standings-root') or soup.find(id='schedule-root') or soup.find(id='team-root')
+        if not root:
+            return {
+                'api_base': self.SHARKS_ICE_API_BASE_URL,
+                'api_key': self.SHARKS_ICE_API_KEY,
+                'api_secret': self.SHARKS_ICE_API_SECRET,
+                'league_id': 1,
+            }
+
+        return {
+            'api_base': root.get('data-api-base') or self.SHARKS_ICE_API_BASE_URL,
+            'api_key': root.get('data-api-key') or self.SHARKS_ICE_API_KEY,
+            'api_secret': self.rot13(root.get('data-api-secret') or '') or self.SHARKS_ICE_API_SECRET,
+            'league_id': int(root.get('data-league') or 1),
+        }
+
+    def teams_from_standings(self, standings_json):
+        teams = {}
+        for league in standings_json.get('standings', {}).get('leagues', []):
+            for level in league.get('levels', []):
+                for conference in level.get('conferences', []):
+                    for team in conference.get('teams', []):
+                        teams[int(team['id'])] = (team.get('team_name') or team.get('name') or '').strip()
+
+        return teams
+
+    def rot13(self, value):
+        result = ''
+        for char in value:
+            if 'a' <= char <= 'z':
+                result += chr(ord('a') + (ord(char) - ord('a') + 13) % 26)
+            elif 'A' <= char <= 'Z':
+                result += chr(ord('A') + (ord(char) - ord('A') + 13) % 26)
+            else:
+                result += char
+
+        return result
+
+    def open_api_json(self, endpoint, params, api_config=None):
+        url = self.api_url(endpoint, params, api_config)
+        req = requests.get(url)
+
+        return req.json()
+
+    def api_url(self, endpoint, params, api_config=None):
+        api_config = api_config or {}
+        api_base = api_config.get('api_base') or self.SHARKS_ICE_API_BASE_URL
+        api_key = api_config.get('api_key') or self.SHARKS_ICE_API_KEY
+        api_secret = api_config.get('api_secret') or self.SHARKS_ICE_API_SECRET
+
+        signed_params = {
+            'auth_key': api_key,
+            'auth_timestamp': str(int(time.time())),
+            'body_md5': self.EMPTY_BODY_MD5,
+        }
+
+        for key, value in (params or {}).items():
+            if value is None or value == '' or value == -1:
+                continue
+            signed_params[key] = str(value)
+
+        query_string = '&'.join(
+            f'{quote_plus(key)}={quote_plus(signed_params[key])}'
+            for key in sorted(signed_params)
+        )
+        to_sign = f'GET\n/{endpoint}\n{query_string}'
+        signature = hmac.new(
+            api_secret.encode(),
+            to_sign.encode(),
+            hashlib.sha256,
+        ).hexdigest()
+
+        return f'{api_base.rstrip("/")}/{endpoint}?{query_string}&auth_signature={signature}'
 
     def open_season_page(self, url):
         req = requests.get(url)
