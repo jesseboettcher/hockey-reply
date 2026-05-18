@@ -5,6 +5,7 @@ Top level class to pull data from the shark's ice web site, feed it into the htm
 the parser output to update the database with the latest data.
 '''
 import os
+import datetime
 import hashlib
 import hmac
 import requests
@@ -55,7 +56,12 @@ class Synchronizer:
         }
         self.scheduler = BackgroundScheduler()
         self.scheduler.configure(executors=executors, job_defaults=job_defaults)
-        self.scheduler.add_job(self.sync, 'interval', hours=self.SYNCHRONIZE_INTERVAL_HOURS)
+        self.scheduler.add_job(
+            self.sync,
+            'interval',
+            hours=self.SYNCHRONIZE_INTERVAL_HOURS,
+            next_run_time=datetime.datetime.now(),
+        )
         self.scheduler.add_job(self.notify, 'interval', hours=self.NOTIFY_CHECK_INTERVAL_HOURS)
         self.scheduler.add_job(self.locker_room_assignment_check, 'interval', seconds=self.LOCKER_ROOM_INTERVAL_SECONDS)
 
@@ -106,10 +112,10 @@ class Synchronizer:
             if game.completed:
                 continue
 
-            if game.id not in self.synced_games_list:
-                write_log('INFO', f'Game DELETED game_id {game.id}')
+            if game.game_id not in self.synced_games_list:
+                write_log('INFO', f'Game DELETED game_id {game.game_id}')
                 # TODO
-                # self.db.remove_game_by_id(game.id)
+                # self.db.remove_game_by_id(game.game_id)
                 # notify teams
 
     def sync(self):

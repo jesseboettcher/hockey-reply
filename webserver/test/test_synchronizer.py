@@ -85,6 +85,20 @@ class SynchronizerTests(unittest.TestCase):
     def make_synchronizer(self):
         return Synchronizer.__new__(Synchronizer)
 
+    @patch('webserver.data_synchronizer.ProcessPoolExecutor')
+    @patch('webserver.data_synchronizer.BackgroundScheduler')
+    def test_scheduler_runs_sync_immediately_after_startup(self, scheduler_cls, process_pool_cls):
+        scheduler = Mock()
+        scheduler_cls.return_value = scheduler
+        process_pool_cls.return_value = Mock()
+
+        Synchronizer()
+
+        sync_job_call = scheduler.add_job.call_args_list[0]
+        self.assertEqual(sync_job_call.args[1], 'interval')
+        self.assertEqual(sync_job_call.kwargs['hours'], Synchronizer.SYNCHRONIZE_INTERVAL_HOURS)
+        self.assertIn('next_run_time', sync_job_call.kwargs)
+
     @unittest.skipUnless(
         os.getenv('RUN_LIVE_TIMETOSCORE_API_TESTS') == '1',
         'set RUN_LIVE_TIMETOSCORE_API_TESTS=1 to call the live TimeToScore API',
@@ -298,6 +312,22 @@ class SynchronizerTests(unittest.TestCase):
         open_team_page_mock.assert_called_once_with('display-schedule?team=4844&season=74')
         sync_api_season_mock.assert_not_called()
         self.assertEqual(synchronizer.db.teams, [('Dumpster Fire', 4844)])
+
+    @patch('webserver.data_synchronizer.write_log')
+    def test_check_deleted_games_uses_database_game_id(self, write_log_mock):
+        synchronizer = self.make_synchronizer()
+        synchronizer.synced_games_list = [575025]
+        synchronizer.db = SimpleNamespace(
+            get_games=Mock(return_value=[
+                SimpleNamespace(game_id=575025, completed=0),
+                SimpleNamespace(game_id=578818, completed=0),
+                SimpleNamespace(game_id=571632, completed=1),
+            ]),
+        )
+
+        synchronizer.check_deleted_games()
+
+        write_log_mock.assert_called_once_with('INFO', 'Game DELETED game_id 578818')
 
     def test_send_new_games_emails_rostered_players(self):
         db = FakeDatabase()
