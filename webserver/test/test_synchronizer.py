@@ -329,6 +329,17 @@ class SynchronizerTests(unittest.TestCase):
 
         write_log_mock.assert_called_once_with('INFO', 'Game DELETED game_id 578818')
 
+    @patch('webserver.data_synchronizer.write_log')
+    @patch('webserver.data_synchronizer.Database')
+    def test_sync_skips_deleted_game_check_by_default(self, database_cls, write_log_mock):
+        synchronizer = self.make_synchronizer()
+
+        with patch.object(synchronizer, 'sync_season', return_value=True), \
+                patch.object(synchronizer, 'check_deleted_games') as check_deleted_games_mock:
+            self.assertTrue(synchronizer.sync())
+
+        check_deleted_games_mock.assert_not_called()
+
     def test_send_new_games_emails_rostered_players(self):
         db = FakeDatabase()
 

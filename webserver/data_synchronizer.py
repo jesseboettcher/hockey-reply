@@ -41,6 +41,7 @@ class Synchronizer:
     SYNCHRONIZE_INTERVAL_HOURS = 4
     NOTIFY_CHECK_INTERVAL_HOURS = 1
     LOCKER_ROOM_INTERVAL_SECONDS = 300
+    CHECK_DELETED_GAMES = False
 
     def __init__(self):
         self.db = None
@@ -131,7 +132,7 @@ class Synchronizer:
             if not self.sync_season(url):
                 any_sync_failures = True
 
-        if not any_sync_failures:
+        if not any_sync_failures and self.CHECK_DELETED_GAMES:
             self.check_deleted_games()
 
         write_log('INFO', f'Synchronization complete')
