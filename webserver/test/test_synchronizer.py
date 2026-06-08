@@ -133,6 +133,26 @@ class SynchronizerTests(unittest.TestCase):
         self.assertIn('next_run_time', locker_room_job_call.kwargs)
         self.assertEqual(locker_room_job_call.kwargs['misfire_grace_time'], Synchronizer.STARTUP_JOB_MISFIRE_GRACE_SECONDS)
 
+    @patch.dict(os.environ, {}, clear=True)
+    @patch('webserver.data_synchronizer.ProcessPoolExecutor')
+    @patch('webserver.data_synchronizer.BackgroundScheduler')
+    def test_local_locker_room_sync_only_schedules_and_starts_locker_room_job(self, scheduler_cls, process_pool_cls):
+        scheduler = Mock()
+        scheduler_cls.return_value = scheduler
+        process_pool_cls.return_value = Mock()
+
+        with patch.object(Synchronizer, 'LOCAL_LOCKER_ROOM_SYNC_ONLY', True):
+            Synchronizer()
+
+        scheduler.start.assert_called_once()
+        self.assertEqual(len(scheduler.add_job.call_args_list), 1)
+        locker_room_job_call = scheduler.add_job.call_args_list[0]
+        self.assertEqual(locker_room_job_call.args[0].__name__, 'locker_room_assignment_check')
+        self.assertEqual(locker_room_job_call.args[1], 'interval')
+        self.assertEqual(locker_room_job_call.kwargs['seconds'], Synchronizer.LOCKER_ROOM_INTERVAL_SECONDS)
+        self.assertIn('next_run_time', locker_room_job_call.kwargs)
+        self.assertEqual(locker_room_job_call.kwargs['misfire_grace_time'], Synchronizer.STARTUP_JOB_MISFIRE_GRACE_SECONDS)
+
     @unittest.skipUnless(
         os.getenv('RUN_LIVE_TIMETOSCORE_API_TESTS') == '1',
         'set RUN_LIVE_TIMETOSCORE_API_TESTS=1 to call the live TimeToScore API',

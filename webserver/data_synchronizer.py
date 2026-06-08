@@ -47,6 +47,7 @@ class Synchronizer:
     LOCKER_ROOM_INTERVAL_SECONDS = 300
     STARTUP_JOB_MISFIRE_GRACE_SECONDS = 60
     CHECK_DELETED_GAMES = False
+    LOCAL_LOCKER_ROOM_SYNC_ONLY = False
 
     def __init__(self):
         self.db = None
@@ -62,14 +63,22 @@ class Synchronizer:
         }
         self.scheduler = BackgroundScheduler()
         self.scheduler.configure(executors=executors, job_defaults=job_defaults)
-        self.scheduler.add_job(
-            self.sync,
-            'interval',
-            hours=self.SYNCHRONIZE_INTERVAL_HOURS,
-            next_run_time=datetime.datetime.now(),
-            misfire_grace_time=self.STARTUP_JOB_MISFIRE_GRACE_SECONDS,
-        )
-        self.scheduler.add_job(self.notify, 'interval', hours=self.NOTIFY_CHECK_INTERVAL_HOURS)
+        if not self.LOCAL_LOCKER_ROOM_SYNC_ONLY:
+            self.scheduler.add_job(
+                self.sync,
+                'interval',
+                hours=self.SYNCHRONIZE_INTERVAL_HOURS,
+                next_run_time=datetime.datetime.now(),
+                misfire_grace_time=self.STARTUP_JOB_MISFIRE_GRACE_SECONDS,
+            )
+            self.scheduler.add_job(self.notify, 'interval', hours=self.NOTIFY_CHECK_INTERVAL_HOURS)
+
+        self.schedule_locker_room_assignment_check()
+
+        if os.getenv('HOCKEY_REPLY_ENV') == 'prod' or self.LOCAL_LOCKER_ROOM_SYNC_ONLY:
+            self.scheduler.start()
+
+    def schedule_locker_room_assignment_check(self):
         self.scheduler.add_job(
             self.locker_room_assignment_check,
             'interval',
@@ -77,9 +86,6 @@ class Synchronizer:
             next_run_time=datetime.datetime.now(),
             misfire_grace_time=self.STARTUP_JOB_MISFIRE_GRACE_SECONDS,
         )
-
-        if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
-            self.scheduler.start()
 
     def locker_room_assignment_check(self):
         self.db = Database()
