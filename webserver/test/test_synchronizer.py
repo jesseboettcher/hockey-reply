@@ -7,8 +7,9 @@ from unittest.mock import Mock, call, patch
 from bs4 import BeautifulSoup
 
 from webserver.data_synchronizer import Synchronizer
+from webserver.database.hockey_db import Database
 from webserver.email import EmailTemplate, send_new_games
-from webserver.website_parsers import ApiGameParser, TeamPageParser
+from webserver.website_parsers import ApiGameParser, LockerRoomPageParser, TeamPageParser
 
 
 class FakeDatabase:
@@ -81,6 +82,32 @@ class FakeSyncDatabase:
         return self.games[game_id]
 
 
+class FakeQuery:
+    def __init__(self, result):
+        self.result = result
+
+    def filter(self, *args):
+        return self
+
+    def one_or_none(self):
+        return self.result
+
+
+class FakeSession:
+    def __init__(self, query_result):
+        self.query_result = query_result
+        self.did_commit = False
+
+    def query(self, model):
+        return FakeQuery(self.query_result)
+
+    def commit(self):
+        self.did_commit = True
+
+    def close(self):
+        pass
+
+
 class SynchronizerTests(unittest.TestCase):
     def make_synchronizer(self):
         return Synchronizer.__new__(Synchronizer)
@@ -98,6 +125,13 @@ class SynchronizerTests(unittest.TestCase):
         self.assertEqual(sync_job_call.args[1], 'interval')
         self.assertEqual(sync_job_call.kwargs['hours'], Synchronizer.SYNCHRONIZE_INTERVAL_HOURS)
         self.assertIn('next_run_time', sync_job_call.kwargs)
+        self.assertEqual(sync_job_call.kwargs['misfire_grace_time'], Synchronizer.STARTUP_JOB_MISFIRE_GRACE_SECONDS)
+
+        locker_room_job_call = scheduler.add_job.call_args_list[2]
+        self.assertEqual(locker_room_job_call.args[1], 'interval')
+        self.assertEqual(locker_room_job_call.kwargs['seconds'], Synchronizer.LOCKER_ROOM_INTERVAL_SECONDS)
+        self.assertIn('next_run_time', locker_room_job_call.kwargs)
+        self.assertEqual(locker_room_job_call.kwargs['misfire_grace_time'], Synchronizer.STARTUP_JOB_MISFIRE_GRACE_SECONDS)
 
     @unittest.skipUnless(
         os.getenv('RUN_LIVE_TIMETOSCORE_API_TESTS') == '1',
@@ -195,6 +229,102 @@ class SynchronizerTests(unittest.TestCase):
         self.assertEqual(parser.away_team, 'Pager Flakes')
         self.assertEqual(parser.home_goals, 0)
 
+    def test_locker_room_parser_handles_current_timetoscore_table(self):
+        html = '''
+            <body>
+                <table class="lr-table">
+                    <thead>
+                        <tr>
+                            <th>Game</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Rink</th>
+                            <th>League</th>
+                            <th>Home</th>
+                            <th>LR</th>
+                            <th>Away</th>
+                            <th>LR</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="lr-game-id">605583</td>
+                            <td>Sun Jun 07</td>
+                            <td>1:15 PM</td>
+                            <td>San Jose Blue (S)</td>
+                            <td>SIAHL@SJ</td>
+                            <td>Home Team One</td>
+                            <td class="lr-lockerroom">G3</td>
+                            <td>Away Team One</td>
+                            <td class="lr-lockerroom">G5</td>
+                        </tr>
+                        <tr>
+                            <td class="lr-game-id">578811</td>
+                            <td>Sun Jun 07</td>
+                            <td>1:30 PM</td>
+                            <td>San Jose Blue (N)</td>
+                            <td>SIAHL@SJ</td>
+                            <td>Home Team Two</td>
+                            <td class="lr-lockerroom">G8</td>
+                            <td>Away Team Two</td>
+                            <td class="lr-lockerroom">G6</td>
+                        </tr>
+                        <tr>
+                            <td class="lr-game-id">578818</td>
+                            <td>Sun, Jun 7th</td>
+                            <td class="lr-time">9:00 PM</td>
+                            <td>San Jose Grey</td>
+                            <td>SIAHL@SJ Division 7B</td>
+                            <td>Dumpster Fire</td>
+                            <td class="lr-lockerroom">G9</td>
+                            <td>JuggerNuggets</td>
+                            <td class="lr-lockerroom">G7</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </body>
+        '''
+        parser = LockerRoomPageParser(
+            'https://stats.sharksice.timetoscore.com/display-lr-assignments.php',
+            BeautifulSoup(html, 'html.parser'),
+        )
+
+        self.assertTrue(parser.parse())
+        self.assertEqual(parser.get_locker_rooms_for_game('605583'), ('G3', 'G5'))
+        self.assertEqual(parser.get_locker_rooms_for_game('578811'), ('G8', 'G6'))
+        self.assertEqual(parser.get_locker_rooms_for_game(578818), ('G9', 'G7'))
+        self.assertIn('578811', parser.get_games_with_locker_rooms())
+
+    @patch('webserver.database.hockey_db.write_log')
+    def test_update_locker_rooms_updates_matching_game_from_parser_string_id(self, write_log_mock):
+        game = SimpleNamespace(
+            game_id=578818,
+            home_locker_room=None,
+            away_locker_room=None,
+        )
+        locker_room_parser = SimpleNamespace(
+            queried_ids=[],
+            get_games_with_locker_rooms=Mock(return_value=['578818']),
+        )
+
+        def get_locker_rooms_for_game(game_id):
+            locker_room_parser.queried_ids.append(game_id)
+            return 'G9', 'G7'
+
+        locker_room_parser.get_locker_rooms_for_game = get_locker_rooms_for_game
+
+        db = Database.__new__(Database)
+        db.session = FakeSession(game)
+        db.engine = SimpleNamespace(dispose=Mock())
+
+        db.update_locker_rooms(locker_room_parser)
+
+        self.assertEqual(locker_room_parser.queried_ids, [578818])
+        self.assertEqual(game.home_locker_room, 'G9')
+        self.assertEqual(game.away_locker_room, 'G7')
+        self.assertTrue(db.session.did_commit)
+        write_log_mock.assert_called_once_with('INFO', 'Locker room sync parsed=1 matched=1 updated=2 missing_games=0')
+
     def test_api_url_signs_request_like_timetoscore_frontend(self):
         synchronizer = self.make_synchronizer()
 
@@ -212,6 +342,119 @@ class SynchronizerTests(unittest.TestCase):
         self.assertEqual(
             url,
             'https://api.sharksice.timetoscore.com/get_leagues?auth_key=web&auth_timestamp=1778527533&body_md5=d41d8cd98f00b204e9800998ecf8427e&league_id=1&auth_signature=d088c14c75f5fba276d0cf17e063384b8cb9b603d7201b7ffb1ce0b7f4e89cd9',
+        )
+
+    def test_api_config_from_soup_reads_timetoscore_proxy_config(self):
+        html = '''
+            <body>
+                <div id="standings-root"
+                     data-league="1"
+                     data-season="0"
+                     data-api-base="https://api.sharksice.timetoscore.com/"
+                     data-api-key=""
+                     data-api-secret=""
+                     data-proxy-base="/test/api-proxy.php"
+                     data-proxy-session="session-token"></div>
+            </body>
+        '''
+
+        synchronizer = self.make_synchronizer()
+        api_config = synchronizer.api_config_from_soup(BeautifulSoup(html, 'html.parser'))
+
+        self.assertEqual(api_config['league_id'], 1)
+        self.assertEqual(
+            api_config['proxy_base'],
+            'https://stats.sharksice.timetoscore.com/test/api-proxy.php',
+        )
+        self.assertEqual(api_config['proxy_session'], 'session-token')
+
+    def test_proxy_api_url_matches_timetoscore_frontend_query_format(self):
+        synchronizer = self.make_synchronizer()
+
+        url = synchronizer.proxy_api_url(
+            'get_schedule',
+            {
+                'season_id': 74,
+                'league_id': 1,
+                'team_id': 4844,
+                'stat_class': '',
+                'empty_value': None,
+                'negative_value': -1,
+            },
+            {
+                'proxy_base': 'https://stats.sharksice.timetoscore.com/test/api-proxy.php',
+            },
+        )
+
+        self.assertEqual(
+            url,
+            'https://stats.sharksice.timetoscore.com/test/api-proxy.php?endpoint=get_schedule&league_id=1&season_id=74&team_id=4844',
+        )
+
+    @patch('webserver.data_synchronizer.requests.get')
+    def test_open_api_json_uses_timetoscore_proxy_when_available(self, requests_get_mock):
+        response = Mock()
+        response.json.return_value = {'leagues': []}
+        requests_get_mock.return_value = response
+
+        synchronizer = self.make_synchronizer()
+
+        result = synchronizer.open_api_json(
+            'get_leagues',
+            {'league_id': 1},
+            {
+                'api_base': 'https://api.sharksice.timetoscore.com/',
+                'api_key': 'web',
+                'api_secret': 'secret',
+                'proxy_base': 'https://stats.sharksice.timetoscore.com/test/api-proxy.php',
+                'proxy_session': 'session-token',
+            },
+        )
+
+        self.assertEqual(result, {'leagues': []})
+        requests_get_mock.assert_called_once()
+        self.assertEqual(
+            requests_get_mock.call_args.args[0],
+            'https://stats.sharksice.timetoscore.com/test/api-proxy.php?endpoint=get_leagues&league_id=1',
+        )
+        self.assertEqual(
+            requests_get_mock.call_args.kwargs['headers']['X-Proxy-Session'],
+            'session-token',
+        )
+
+    @patch('webserver.data_synchronizer.write_log')
+    @patch('webserver.data_synchronizer.requests.get')
+    def test_open_api_json_logs_non_json_response(self, requests_get_mock, write_log_mock):
+        response = Mock()
+        response.status_code = 403
+        response.text = '<html>Forbidden</html>'
+        response.json.side_effect = ValueError('not json')
+        requests_get_mock.return_value = response
+
+        synchronizer = self.make_synchronizer()
+
+        self.assertIsNone(synchronizer.open_api_json('get_leagues', {'league_id': 1}))
+        write_log_mock.assert_called_once_with(
+            'ERROR',
+            'Failed TimeToScore API JSON for get_leagues: status=403 body=<html>Forbidden</html>',
+        )
+
+    @patch('webserver.data_synchronizer.write_log')
+    @patch('webserver.data_synchronizer.requests.get')
+    def test_open_page_uses_browser_like_headers(self, requests_get_mock, write_log_mock):
+        response = Mock()
+        response.status_code = 200
+        response.content = b'<body></body>'
+        response.text = '<body></body>'
+        response.url = 'https://stats.sharksice.timetoscore.com/display-lr-assignments.php'
+        requests_get_mock.return_value = response
+
+        synchronizer = self.make_synchronizer()
+        synchronizer.open_page('https://stats.sharksice.timetoscore.com/display-lr-assignments.php')
+
+        self.assertEqual(
+            requests_get_mock.call_args.kwargs['headers'],
+            Synchronizer.SHARKS_ICE_REQUEST_HEADERS,
         )
 
     def test_sync_season_uses_api_when_configured(self):
@@ -282,6 +525,24 @@ class SynchronizerTests(unittest.TestCase):
                 'Americans': [576574],
                 'Pager Flakes': [576574],
             },
+        )
+
+    @patch('webserver.data_synchronizer.write_log')
+    def test_sync_api_season_returns_false_when_leagues_api_fails(self, write_log_mock):
+        html = '''
+            <body>
+                <div id="standings-root" data-league="1"></div>
+            </body>
+        '''
+        synchronizer = self.make_synchronizer()
+        synchronizer.db = FakeSyncDatabase()
+
+        with patch.object(synchronizer, 'open_api_json', return_value=None):
+            self.assertFalse(synchronizer.sync_api_season(BeautifulSoup(html, 'html.parser')))
+
+        write_log_mock.assert_called_once_with(
+            'ERROR',
+            'Failed synchronization of TimeToScore API get_leagues for league 1',
         )
 
     def test_sync_season_uses_legacy_scraper_when_configured(self):

@@ -359,11 +359,42 @@ class LockerRoomPageParser:
         Returns:
         bool: Always returns True.
         """
-        for table in self.soup.body.find_all('table'):
+        if not self.soup.body:
+            write_log('ERROR', f'Locker room parser found no body at {self.url}')
+            return True
+
+        direct_rows = [
+            row for row in self.soup.body.find_all('tr')
+            if row.find(class_='lr-game-id')
+        ]
+        if direct_rows:
+            self.parse_current_locker_room_rows(direct_rows)
+            return True
+
+        tables = self.soup.body.find_all('table')
+        write_log('INFO', f'Locker room parser diagnostics tables={len(tables)} lr_game_rows=0 title={self.page_title()}')
+        for table in tables:
 
             self.parse_locker_rooms(table)
 
         return True
+
+    def page_title(self):
+        if not self.soup.title:
+            return ''
+
+        return self.cell_contents(self.soup.title)
+
+    def parse_current_locker_room_rows(self, rows):
+        for row in rows:
+            details = self.table_row_contents(row)
+            if len(details) < 9:
+                continue
+
+            self.locker_rooms[details[0]] = {
+                'Home LR': details[6],
+                'Away LR': details[8],
+            }
 
     def cell_contents(self, cell):
         """
@@ -409,6 +440,9 @@ class LockerRoomPageParser:
         :return: None
         """
         rows = table.find_all('tr')
+        if not rows:
+            return
+
         column_names = self.table_row_contents(rows[self.TABLE_DATA_COLUMN_HEADERS_INDEX])
 
         # adjust duplicate column names of "LR" to "Home LR" and "Away LR"
@@ -426,6 +460,8 @@ class LockerRoomPageParser:
         for row in rows[self.TABLE_DATA_START_INDEX:]:
 
             details = self.table_row_contents(row)
+            if not details or len(details) < len(column_names):
+                continue
 
             lr_assignment = {}
             lr_assignment['Away LR'] = details[column_names.index('Away LR')]
@@ -440,6 +476,7 @@ class LockerRoomPageParser:
         :param game_id: The ID of the game to get the locker room numbers for.
         :return: A tuple (home_lr, away_lr) containing the home and away locker room numbers, or (None, None) if the game ID is not found in 'self.locker_rooms'.
         """
+        game_id = str(game_id)
         if game_id not in self.locker_rooms:
             return None, None
 

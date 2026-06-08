@@ -216,22 +216,34 @@ class Database:
         self.session.commit()
 
     def update_locker_rooms(self, locker_room_parser):
+        parsed_count = 0
+        matched_count = 0
+        updated_count = 0
+        missing_count = 0
 
-        for game_id in locker_room_parser.get_games_with_locker_rooms():
+        for parsed_game_id in locker_room_parser.get_games_with_locker_rooms():
+            parsed_count += 1
+            game_id = int(parsed_game_id)
 
             game = self.session.query(Game).filter(Game.game_id == game_id).one_or_none()
             if game is None:
+                missing_count += 1
                 continue
 
+            matched_count += 1
             home_lr, away_lr = locker_room_parser.get_locker_rooms_for_game(game_id)
 
             if home_lr != game.home_locker_room:
                 game.home_locker_room = home_lr
+                updated_count += 1
 
             if away_lr != game.away_locker_room:
                 game.away_locker_room = away_lr
+                updated_count += 1
 
         self.session.commit()
+
+        write_log('INFO', f'Locker room sync parsed={parsed_count} matched={matched_count} updated={updated_count} missing_games={missing_count}')
 
     ### Reply methods
     def game_replies_for_game(self, game_id, team_id):

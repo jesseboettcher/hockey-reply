@@ -10,7 +10,7 @@ import hashlib
 import hmac
 import requests
 import time
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urljoin
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
@@ -31,6 +31,10 @@ class Synchronizer:
     SHARKS_ICE_API_KEY = 'web'
     SHARKS_ICE_API_SECRET = 'i8IC4I8cCLdLGWiKk5Ukw4FfIjBtvOG4'
     SHARKS_ICE_SYNC_SOURCE = SYNC_SOURCE_API
+    SHARKS_ICE_REQUEST_HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7',
+    }
     EMPTY_BODY_MD5 = 'd41d8cd98f00b204e9800998ecf8427e'
     SHARKS_ICE_SEASON_ENDPOINTS = [
         'display-stats.php?league=1',
@@ -41,6 +45,7 @@ class Synchronizer:
     SYNCHRONIZE_INTERVAL_HOURS = 4
     NOTIFY_CHECK_INTERVAL_HOURS = 1
     LOCKER_ROOM_INTERVAL_SECONDS = 300
+    STARTUP_JOB_MISFIRE_GRACE_SECONDS = 60
     CHECK_DELETED_GAMES = False
 
     def __init__(self):
@@ -62,9 +67,16 @@ class Synchronizer:
             'interval',
             hours=self.SYNCHRONIZE_INTERVAL_HOURS,
             next_run_time=datetime.datetime.now(),
+            misfire_grace_time=self.STARTUP_JOB_MISFIRE_GRACE_SECONDS,
         )
         self.scheduler.add_job(self.notify, 'interval', hours=self.NOTIFY_CHECK_INTERVAL_HOURS)
-        self.scheduler.add_job(self.locker_room_assignment_check, 'interval', seconds=self.LOCKER_ROOM_INTERVAL_SECONDS)
+        self.scheduler.add_job(
+            self.locker_room_assignment_check,
+            'interval',
+            seconds=self.LOCKER_ROOM_INTERVAL_SECONDS,
+            next_run_time=datetime.datetime.now(),
+            misfire_grace_time=self.STARTUP_JOB_MISFIRE_GRACE_SECONDS,
+        )
 
         if os.getenv('HOCKEY_REPLY_ENV') == 'prod':
             self.scheduler.start()
@@ -74,12 +86,16 @@ class Synchronizer:
 
         try:
             locker_room_source, locker_room_soup = self.open_page(f'{self.SHARKS_ICE_BASE_URL}{self.SHARKS_ICE_LOCKROOM_ENDPOINT}')
+            write_log(
+                'INFO',
+                f'Locker room fetch source={locker_room_source} tables={len(locker_room_soup.find_all("table"))} rows={len(locker_room_soup.find_all("tr"))}',
+            )
             locker_room_parser = LockerRoomPageParser(locker_room_source, locker_room_soup)
             locker_room_parser.parse()
 
             self.db.update_locker_rooms(locker_room_parser)
-        except:
-            pass
+        except Exception as error:
+            write_log('ERROR', f'Failed locker room assignment check {error}')
 
     def notify(self):
         ''' notify runs periodically to the check the datetime of upcoming games
@@ -197,6 +213,10 @@ class Synchronizer:
         league_id = api_config.get('league_id', 1)
 
         leagues_json = self.open_api_json('get_leagues', {'league_id': league_id}, api_config)
+        if not leagues_json or not leagues_json.get('leagues'):
+            write_log('ERROR', f'Failed synchronization of TimeToScore API get_leagues for league {league_id}')
+            return False
+
         league = leagues_json['leagues'][0]
         season_id = league.get('current_season')
         stat_class = league.get('default_stat_class_tag')
@@ -210,6 +230,9 @@ class Synchronizer:
             },
             api_config,
         )
+        if not standings_json:
+            write_log('ERROR', f'Failed synchronization of TimeToScore API get_standings for league {league_id} season {season_id}')
+            return False
 
         teams = self.teams_from_standings(standings_json)
         for team_id, team_name in teams.items():
@@ -224,6 +247,9 @@ class Synchronizer:
                 },
                 api_config,
             )
+            if not schedule_json:
+                write_log('ERROR', f'Failed synchronization of TimeToScore API get_schedule for team {team_id} season {season_id}')
+                return False
 
             for game_dict in schedule_json.get('games', []):
                 game = ApiGameParser(game_dict)
@@ -255,6 +281,8 @@ class Synchronizer:
                 'api_key': self.SHARKS_ICE_API_KEY,
                 'api_secret': self.SHARKS_ICE_API_SECRET,
                 'league_id': 1,
+                'proxy_base': '',
+                'proxy_session': '',
             }
 
         return {
@@ -262,6 +290,8 @@ class Synchronizer:
             'api_key': root.get('data-api-key') or self.SHARKS_ICE_API_KEY,
             'api_secret': self.rot13(root.get('data-api-secret') or '') or self.SHARKS_ICE_API_SECRET,
             'league_id': int(root.get('data-league') or 1),
+            'proxy_base': urljoin(self.SHARKS_ICE_BASE_URL, root.get('data-proxy-base') or ''),
+            'proxy_session': root.get('data-proxy-session') or '',
         }
 
     def teams_from_standings(self, standings_json):
@@ -287,10 +317,44 @@ class Synchronizer:
         return result
 
     def open_api_json(self, endpoint, params, api_config=None):
-        url = self.api_url(endpoint, params, api_config)
-        req = requests.get(url)
+        api_config = api_config or {}
+        headers = dict(self.SHARKS_ICE_REQUEST_HEADERS)
 
-        return req.json()
+        if api_config.get('proxy_base') and api_config.get('proxy_session'):
+            url = self.proxy_api_url(endpoint, params, api_config)
+            headers['X-Proxy-Session'] = api_config['proxy_session']
+        else:
+            url = self.api_url(endpoint, params, api_config)
+
+        try:
+            req = requests.get(url, headers=headers)
+        except requests.RequestException as error:
+            write_log('ERROR', f'Failed TimeToScore API request for {endpoint}: {error}')
+            return None
+
+        try:
+            return req.json()
+        except ValueError:
+            body_preview = req.text[:300].replace('\n', ' ')
+            write_log('ERROR', f'Failed TimeToScore API JSON for {endpoint}: status={req.status_code} body={body_preview}')
+            return None
+
+    def proxy_api_url(self, endpoint, params, api_config):
+        proxy_params = {
+            'endpoint': endpoint,
+        }
+
+        for key, value in (params or {}).items():
+            if value is None or value == '' or value == -1:
+                continue
+            proxy_params[key] = str(value)
+
+        query_string = '&'.join(
+            f'{quote_plus(key)}={quote_plus(proxy_params[key])}'
+            for key in sorted(proxy_params)
+        )
+
+        return f'{api_config["proxy_base"]}?{query_string}'
 
     def api_url(self, endpoint, params, api_config=None):
         api_config = api_config or {}
@@ -323,7 +387,7 @@ class Synchronizer:
         return f'{api_base.rstrip("/")}/{endpoint}?{query_string}&auth_signature={signature}'
 
     def open_season_page(self, url):
-        req = requests.get(url)
+        req = requests.get(url, headers=self.SHARKS_ICE_REQUEST_HEADERS)
         data = req.content
         soup = BeautifulSoup(data, 'html.parser')
 
@@ -332,16 +396,18 @@ class Synchronizer:
 
     def open_team_page(self, team_endpoint):
         url = f'{self.SHARKS_ICE_BASE_URL}{team_endpoint}'
-        req = requests.get(url)
+        req = requests.get(url, headers=self.SHARKS_ICE_REQUEST_HEADERS)
         data = req.content
         soup = BeautifulSoup(data, 'html.parser')
 
         return url, soup
 
     def open_page(self, url):
-        req = requests.get(url)
+        req = requests.get(url, headers=self.SHARKS_ICE_REQUEST_HEADERS)
         data = req.content
         soup = BeautifulSoup(data, 'html.parser')
+        body_preview = req.text[:120].replace('\n', ' ')
+        write_log('INFO', f'Fetched page {url} status={req.status_code} bytes={len(data)} final_url={req.url} body={body_preview}')
 
         return url, soup
 
