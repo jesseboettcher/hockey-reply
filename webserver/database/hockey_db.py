@@ -95,6 +95,9 @@ class Database:
     def get_teams(self):
         return self.session.query(Team).all()
 
+    def get_rostered_teams(self):
+        return self.session.query(Team).join(TeamPlayer).distinct().all()
+
     def get_team(self, name):
         return self.session.query(Team).filter(func.lower(Team.name) == name.lower()).one_or_none()
 

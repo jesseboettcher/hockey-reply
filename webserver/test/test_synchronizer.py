@@ -1,5 +1,6 @@
 import datetime
 import os
+import requests
 import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
@@ -62,24 +63,47 @@ class FakeDatabase:
 
 
 class FakeSyncDatabase:
-    def __init__(self):
+    def __init__(self, tracked_external_ids=None):
         self.teams = []
         self.games = {}
+        self.added_games = []
+        self.tracked_external_ids = tracked_external_ids or []
 
     def add_team(self, team_name, external_id=0):
         self.teams.append((team_name, external_id))
 
     def add_game(self, game_parser):
         is_new = game_parser.id not in self.games
-        self.games[game_parser.id] = SimpleNamespace(
+        game = SimpleNamespace(
             game_id=game_parser.id,
             home_team_id=game_parser.home_team,
             away_team_id=game_parser.away_team,
         )
+        self.games[game_parser.id] = game
+        self.added_games.append(game)
         return is_new
 
     def get_game_by_id(self, game_id):
         return self.games[game_id]
+
+    def get_teams(self):
+        return [
+            SimpleNamespace(name=f'Tracked {external_id}', external_id=external_id)
+            for external_id in self.tracked_external_ids
+        ]
+
+    def get_rostered_teams(self):
+        return self.get_teams()
+
+    def get_external_ids_by_team_name(self, team_name):
+        return [external_id for name, external_id in self.teams if name == team_name]
+
+    def get_games_for_team_name(self, team_name):
+        return [
+            game
+            for game in self.added_games
+            if game.home_team_id == team_name or game.away_team_id == team_name
+        ]
 
 
 class FakeQuery:
@@ -114,24 +138,24 @@ class SynchronizerTests(unittest.TestCase):
 
     @patch('webserver.data_synchronizer.ProcessPoolExecutor')
     @patch('webserver.data_synchronizer.BackgroundScheduler')
-    def test_scheduler_runs_sync_immediately_after_startup(self, scheduler_cls, process_pool_cls):
+    def test_default_prod_settings_schedule_sync_and_notify_without_locker_rooms(self, scheduler_cls, process_pool_cls):
         scheduler = Mock()
         scheduler_cls.return_value = scheduler
         process_pool_cls.return_value = Mock()
 
         Synchronizer()
 
+        self.assertEqual(len(scheduler.add_job.call_args_list), 2)
         sync_job_call = scheduler.add_job.call_args_list[0]
         self.assertEqual(sync_job_call.args[1], 'interval')
         self.assertEqual(sync_job_call.kwargs['hours'], Synchronizer.SYNCHRONIZE_INTERVAL_HOURS)
         self.assertIn('next_run_time', sync_job_call.kwargs)
         self.assertEqual(sync_job_call.kwargs['misfire_grace_time'], Synchronizer.STARTUP_JOB_MISFIRE_GRACE_SECONDS)
 
-        locker_room_job_call = scheduler.add_job.call_args_list[2]
-        self.assertEqual(locker_room_job_call.args[1], 'interval')
-        self.assertEqual(locker_room_job_call.kwargs['seconds'], Synchronizer.LOCKER_ROOM_INTERVAL_SECONDS)
-        self.assertIn('next_run_time', locker_room_job_call.kwargs)
-        self.assertEqual(locker_room_job_call.kwargs['misfire_grace_time'], Synchronizer.STARTUP_JOB_MISFIRE_GRACE_SECONDS)
+        notify_job_call = scheduler.add_job.call_args_list[1]
+        self.assertEqual(notify_job_call.args[0].__name__, 'notify')
+        self.assertEqual(notify_job_call.args[1], 'interval')
+        self.assertEqual(notify_job_call.kwargs['hours'], Synchronizer.NOTIFY_CHECK_INTERVAL_HOURS)
 
     @patch.dict(os.environ, {}, clear=True)
     @patch('webserver.data_synchronizer.ProcessPoolExecutor')
@@ -152,6 +176,84 @@ class SynchronizerTests(unittest.TestCase):
         self.assertEqual(locker_room_job_call.kwargs['seconds'], Synchronizer.LOCKER_ROOM_INTERVAL_SECONDS)
         self.assertIn('next_run_time', locker_room_job_call.kwargs)
         self.assertEqual(locker_room_job_call.kwargs['misfire_grace_time'], Synchronizer.STARTUP_JOB_MISFIRE_GRACE_SECONDS)
+        self.assertEqual(locker_room_job_call.kwargs['executor'], 'locker_room')
+
+    def test_locker_room_job_uses_dedicated_executor(self):
+        synchronizer = self.make_synchronizer()
+        synchronizer.scheduler = Mock()
+
+        synchronizer.schedule_locker_room_assignment_check()
+
+        locker_room_job_call = synchronizer.scheduler.add_job.call_args
+        self.assertEqual(locker_room_job_call.kwargs['executor'], 'locker_room')
+
+    @patch.dict(os.environ, {}, clear=True)
+    @patch('webserver.data_synchronizer.ProcessPoolExecutor')
+    @patch('webserver.data_synchronizer.BackgroundScheduler')
+    def test_local_timetoscore_sync_only_schedules_sync_notify_and_locker_room_jobs(self, scheduler_cls, process_pool_cls):
+        scheduler = Mock()
+        scheduler_cls.return_value = scheduler
+        process_pool_cls.return_value = Mock()
+
+        with patch.object(Synchronizer, 'LOCAL_TIMETOSCORE_SYNC_ONLY', True):
+            Synchronizer()
+
+        scheduler.start.assert_called_once()
+        self.assertEqual(len(scheduler.add_job.call_args_list), 3)
+        sync_job_call = scheduler.add_job.call_args_list[0]
+        notify_job_call = scheduler.add_job.call_args_list[1]
+        locker_room_job_call = scheduler.add_job.call_args_list[2]
+
+        self.assertEqual(sync_job_call.args[0].__name__, 'sync')
+        self.assertEqual(sync_job_call.args[1], 'interval')
+        self.assertEqual(sync_job_call.kwargs['hours'], Synchronizer.SYNCHRONIZE_INTERVAL_HOURS)
+        self.assertIn('next_run_time', sync_job_call.kwargs)
+        self.assertEqual(sync_job_call.kwargs['misfire_grace_time'], Synchronizer.STARTUP_JOB_MISFIRE_GRACE_SECONDS)
+
+        self.assertEqual(notify_job_call.args[0].__name__, 'notify')
+        self.assertEqual(notify_job_call.args[1], 'interval')
+        self.assertEqual(notify_job_call.kwargs['hours'], Synchronizer.NOTIFY_CHECK_INTERVAL_HOURS)
+
+        self.assertEqual(locker_room_job_call.args[0].__name__, 'locker_room_assignment_check')
+        self.assertEqual(locker_room_job_call.args[1], 'interval')
+        self.assertEqual(locker_room_job_call.kwargs['seconds'], Synchronizer.LOCKER_ROOM_INTERVAL_SECONDS)
+        self.assertIn('next_run_time', locker_room_job_call.kwargs)
+        self.assertEqual(locker_room_job_call.kwargs['misfire_grace_time'], Synchronizer.STARTUP_JOB_MISFIRE_GRACE_SECONDS)
+        self.assertEqual(locker_room_job_call.kwargs['executor'], 'locker_room')
+
+    @patch.dict(os.environ, {'HOCKEY_REPLY_ENV': 'prod'}, clear=True)
+    @patch('webserver.data_synchronizer.ProcessPoolExecutor')
+    @patch('webserver.data_synchronizer.BackgroundScheduler')
+    def test_timetoscore_disabled_prod_schedules_notify_only(self, scheduler_cls, process_pool_cls):
+        scheduler = Mock()
+        scheduler_cls.return_value = scheduler
+        process_pool_cls.return_value = Mock()
+
+        with patch.object(Synchronizer, 'TIMETOSCORE_SYNC_ENABLED', False), \
+                patch.object(Synchronizer, 'NOTIFY_ENABLED', True):
+            Synchronizer()
+
+        scheduler.start.assert_called_once()
+        self.assertEqual(len(scheduler.add_job.call_args_list), 1)
+        notify_job_call = scheduler.add_job.call_args_list[0]
+        self.assertEqual(notify_job_call.args[0].__name__, 'notify')
+        self.assertEqual(notify_job_call.args[1], 'interval')
+        self.assertEqual(notify_job_call.kwargs['hours'], Synchronizer.NOTIFY_CHECK_INTERVAL_HOURS)
+
+    @patch.dict(os.environ, {'HOCKEY_REPLY_ENV': 'prod'}, clear=True)
+    @patch('webserver.data_synchronizer.ProcessPoolExecutor')
+    @patch('webserver.data_synchronizer.BackgroundScheduler')
+    def test_timetoscore_and_notify_disabled_prod_starts_without_jobs(self, scheduler_cls, process_pool_cls):
+        scheduler = Mock()
+        scheduler_cls.return_value = scheduler
+        process_pool_cls.return_value = Mock()
+
+        with patch.object(Synchronizer, 'TIMETOSCORE_SYNC_ENABLED', False), \
+                patch.object(Synchronizer, 'NOTIFY_ENABLED', False):
+            Synchronizer()
+
+        scheduler.start.assert_called_once()
+        scheduler.add_job.assert_not_called()
 
     @unittest.skipUnless(
         os.getenv('RUN_LIVE_TIMETOSCORE_API_TESTS') == '1',
@@ -159,17 +261,19 @@ class SynchronizerTests(unittest.TestCase):
     )
     def test_live_api_prints_dumpster_fire_current_schedule(self):
         synchronizer = self.make_synchronizer()
-        api_config = {
-            'api_base': Synchronizer.SHARKS_ICE_API_BASE_URL,
-            'api_key': Synchronizer.SHARKS_ICE_API_KEY,
-            'api_secret': Synchronizer.SHARKS_ICE_API_SECRET,
-            'league_id': 1,
-        }
+        _, soup = synchronizer.open_season_page(
+            f'{Synchronizer.SHARKS_ICE_BASE_URL}{Synchronizer.SHARKS_ICE_SEASON_ENDPOINTS[0]}'
+        )
+        api_config = synchronizer.api_config_from_soup(soup)
+
+        self.assertTrue(api_config.get('proxy_base'))
+        self.assertTrue(api_config.get('proxy_session'))
 
         leagues_json = synchronizer.open_api_json('get_leagues', {'league_id': 1}, api_config)
+        self.assertIsNotNone(leagues_json)
         league = leagues_json['leagues'][0]
-        season_id = int(league['current_season'])
         stat_class = int(league['default_stat_class_tag'])
+        season_id = api_config.get('season_id') or None
 
         standings_json = synchronizer.open_api_json(
             'get_standings',
@@ -180,6 +284,7 @@ class SynchronizerTests(unittest.TestCase):
             },
             api_config,
         )
+        self.assertIsNotNone(standings_json)
         teams = synchronizer.teams_from_standings(standings_json)
 
         self.assertIn(4844, teams)
@@ -190,12 +295,14 @@ class SynchronizerTests(unittest.TestCase):
             {
                 'league_id': 1,
                 'season_id': season_id,
+                'stat_class': stat_class,
                 'team_id': 4844,
             },
             api_config,
         )
+        self.assertIsNotNone(schedule_json)
 
-        print(f'\nDumpster Fire schedule for season {season_id}:')
+        print(f'\nDumpster Fire schedule for season {season_id or "page default"}:')
         for game in schedule_json.get('games', []):
             away_goals = '-' if game.get('away_goals') is None else game.get('away_goals')
             home_goals = '-' if game.get('home_goals') is None else game.get('home_goals')
@@ -208,6 +315,160 @@ class SynchronizerTests(unittest.TestCase):
 
         if not schedule_json.get('games'):
             print('(no games found)')
+
+    @unittest.skipUnless(
+        os.getenv('RUN_LIVE_TIMETOSCORE_SYNC_TESTS') == '1',
+        'set RUN_LIVE_TIMETOSCORE_SYNC_TESTS=1 to run a live sync with a fake database',
+    )
+    def test_live_sync_season_populates_fake_database_from_timetoscore(self):
+        synchronizer = self.make_synchronizer()
+        synchronizer.db = FakeSyncDatabase()
+        synchronizer.synced_games_list = []
+        synchronizer.new_games_map = {}
+        schedule_game_counts = {}
+        league_schedule_game_count = None
+        live_api_config = None
+
+        season_url = f'{Synchronizer.SHARKS_ICE_BASE_URL}{Synchronizer.SHARKS_ICE_SEASON_ENDPOINTS[0]}'
+        _, season_soup = synchronizer.open_season_page(season_url)
+        preflight_api_config = synchronizer.api_config_from_soup(season_soup)
+        print(
+            'Live preflight API config: '
+            f'league_id={preflight_api_config.get("league_id")} '
+            f'season_id={preflight_api_config.get("season_id")} '
+            f'stat_class={preflight_api_config.get("stat_class")} '
+            f'proxy_base={preflight_api_config.get("proxy_base")} '
+            f'proxy_session={"yes" if preflight_api_config.get("proxy_session") else "no"}'
+        )
+        preflight_leagues_json = synchronizer.open_api_json(
+            'get_leagues',
+            {'league_id': preflight_api_config.get('league_id', 1)},
+            preflight_api_config,
+        )
+        print(f'Live preflight get_leagues: {preflight_leagues_json}')
+        if (preflight_leagues_json or {}).get('error') == 'hourly rate limit exceeded':
+            self.skipTest('TimeToScore hourly rate limit exceeded')
+        self.assertIsNotNone(preflight_leagues_json)
+        self.assertTrue(preflight_leagues_json.get('leagues'))
+
+        synchronizer.db = FakeSyncDatabase(tracked_external_ids=[4844])
+        original_open_api_json = synchronizer.open_api_json
+
+        def open_api_json_with_schedule_counts(endpoint, params, api_config=None):
+            nonlocal league_schedule_game_count, live_api_config
+            if api_config:
+                live_api_config = api_config
+            response = original_open_api_json(endpoint, params, api_config)
+            if endpoint == 'get_schedule':
+                game_count = len((response or {}).get('games', []))
+                if 'team_id' in params:
+                    schedule_game_counts[int(params['team_id'])] = game_count
+                else:
+                    league_schedule_game_count = game_count
+            return response
+
+        with patch.object(synchronizer, 'open_api_json', side_effect=open_api_json_with_schedule_counts):
+            self.assertTrue(
+                synchronizer.sync_season(
+                    season_url
+                )
+            )
+
+        dumpster_fire_external_ids = synchronizer.db.get_external_ids_by_team_name('Dumpster Fire')
+        dumpster_fire_games = synchronizer.db.get_games_for_team_name('Dumpster Fire')
+        dumpster_fire_schedule_count = len(dumpster_fire_games)
+
+        print(
+            f'\nLive sync loaded {len(synchronizer.db.teams)} teams, '
+            f'{len(synchronizer.db.games)} games, '
+            f'{len(synchronizer.db.added_games)} add_game calls, '
+            f'{len(dumpster_fire_games)} Dumpster Fire games'
+        )
+        print(f'Dumpster Fire external ids: {dumpster_fire_external_ids}')
+        print(f'League schedule API game count: {league_schedule_game_count}')
+        print(f'Dumpster Fire synced game count: {dumpster_fire_schedule_count}')
+        self.print_live_schedule_probe(synchronizer, live_api_config, 4844)
+        for game in sorted(dumpster_fire_games, key=lambda game: game.game_id):
+            print(
+                f'Dumpster Fire synced game_id={game.game_id} '
+                f'{game.away_team_id} @ {game.home_team_id}'
+            )
+
+        self.assertIn(4844, dumpster_fire_external_ids)
+        self.assertIsNotNone(dumpster_fire_schedule_count)
+        self.assertGreater(dumpster_fire_schedule_count, 0)
+        self.assertGreater(len(synchronizer.db.teams), 0)
+        self.assertGreater(len(synchronizer.db.games), 0)
+        self.assertGreater(len(dumpster_fire_games), 0)
+        self.assertGreater(len(synchronizer.synced_games_list), 0)
+
+    def print_live_schedule_probe(self, synchronizer, api_config, team_id):
+        if not api_config:
+            print('No live API config captured for schedule probe')
+            return
+
+        leagues_json = synchronizer.open_api_json('get_leagues', {'league_id': api_config.get('league_id', 1)}, api_config)
+        current_season_id = None
+        current_stat_class = None
+        if leagues_json and leagues_json.get('leagues'):
+            current_season_id = leagues_json['leagues'][0].get('current_season')
+            current_stat_class = synchronizer.default_stat_class(leagues_json['leagues'][0], api_config)
+
+        print(
+            'Live API config: '
+            f'league_id={api_config.get("league_id")} '
+            f'season_id={api_config.get("season_id")} '
+            f'stat_class={api_config.get("stat_class")} '
+            f'default_stat_class={current_stat_class} '
+            f'proxy_base={api_config.get("proxy_base")} '
+            f'proxy_session={"yes" if api_config.get("proxy_session") else "no"}'
+        )
+
+        variants = [
+            ('team only', {'team_id': team_id}),
+            ('league + team', {'league_id': api_config.get('league_id', 1), 'team_id': team_id}),
+            ('league + stat class + team', {'league_id': api_config.get('league_id', 1), 'stat_class': current_stat_class, 'team_id': team_id}),
+            ('league + literal stat class 1 + team', {'league_id': api_config.get('league_id', 1), 'stat_class': 1, 'team_id': team_id}),
+            ('page season', {'league_id': api_config.get('league_id', 1), 'season_id': api_config.get('season_id'), 'team_id': team_id}),
+            ('current season', {'league_id': api_config.get('league_id', 1), 'season_id': current_season_id, 'team_id': team_id}),
+            ('current season + stat class', {'league_id': api_config.get('league_id', 1), 'season_id': current_season_id, 'stat_class': current_stat_class, 'team_id': team_id}),
+            ('season zero', {'league_id': api_config.get('league_id', 1), 'season_id': 0, 'team_id': team_id}),
+        ]
+
+        for label, params in variants:
+            schedule_json = synchronizer.open_api_json('get_schedule', params, api_config)
+            games = (schedule_json or {}).get('games', [])
+            first_game = games[0] if games else {}
+            print(
+                f'Dumpster Fire probe {label}: {len(games)} games '
+                f'first_game_id={first_game.get("game_id")} '
+                f'first={first_game.get("away_team", "").strip()} @ {first_game.get("home_team", "").strip()}'
+            )
+
+        try:
+            team_source, team_soup = synchronizer.open_team_page(f'display-schedule?team={team_id}')
+            team_api_config = synchronizer.api_config_from_soup(team_soup)
+            print(
+                f'Dumpster Fire team page {team_source}: '
+                f'league_id={team_api_config.get("league_id")} '
+                f'season_id={team_api_config.get("season_id")} '
+                f'proxy_base={team_api_config.get("proxy_base")} '
+                f'proxy_session={"yes" if team_api_config.get("proxy_session") else "no"}'
+            )
+            team_schedule_json = synchronizer.open_api_json(
+                'get_schedule',
+                {
+                    'league_id': team_api_config.get('league_id', 1),
+                    'season_id': team_api_config.get('season_id') or None,
+                    'stat_class': current_stat_class,
+                    'team_id': team_id,
+                },
+                team_api_config,
+            )
+            team_games = (team_schedule_json or {}).get('games', [])
+            print(f'Dumpster Fire team page config schedule: {len(team_games)} games')
+        except Exception as error:
+            print(f'Dumpster Fire team page probe failed: {error}')
 
     def test_legacy_team_fixture_still_parses(self):
         with open('webserver/test/team.html') as fixture:
@@ -382,11 +643,43 @@ class SynchronizerTests(unittest.TestCase):
         api_config = synchronizer.api_config_from_soup(BeautifulSoup(html, 'html.parser'))
 
         self.assertEqual(api_config['league_id'], 1)
+        self.assertEqual(api_config['season_id'], 0)
+        self.assertEqual(api_config['stat_class'], 0)
         self.assertEqual(
             api_config['proxy_base'],
             'https://stats.sharksice.timetoscore.com/test/api-proxy.php',
         )
         self.assertEqual(api_config['proxy_session'], 'session-token')
+
+    def test_api_config_from_soup_reads_explicit_timetoscore_season(self):
+        html = '''
+            <body>
+                <div id="standings-root"
+                     data-league="1"
+                     data-season="74"></div>
+            </body>
+        '''
+
+        synchronizer = self.make_synchronizer()
+        api_config = synchronizer.api_config_from_soup(BeautifulSoup(html, 'html.parser'))
+
+        self.assertEqual(api_config['season_id'], 74)
+
+    def test_default_stat_class_prefers_league_default_then_config_then_one(self):
+        synchronizer = self.make_synchronizer()
+
+        self.assertEqual(
+            synchronizer.default_stat_class({'default_stat_class_tag': '2'}, {'stat_class': 1}),
+            2,
+        )
+        self.assertEqual(
+            synchronizer.default_stat_class({'default_stat_class_tag': None}, {'stat_class': '3'}),
+            3,
+        )
+        self.assertEqual(
+            synchronizer.default_stat_class({'default_stat_class_tag': None}, {'stat_class': 0}),
+            1,
+        )
 
     def test_proxy_api_url_matches_timetoscore_frontend_query_format(self):
         synchronizer = self.make_synchronizer()
@@ -441,6 +734,10 @@ class SynchronizerTests(unittest.TestCase):
             requests_get_mock.call_args.kwargs['headers']['X-Proxy-Session'],
             'session-token',
         )
+        self.assertEqual(
+            requests_get_mock.call_args.kwargs['timeout'],
+            Synchronizer.SHARKS_ICE_REQUEST_TIMEOUT_SECONDS,
+        )
 
     @patch('webserver.data_synchronizer.write_log')
     @patch('webserver.data_synchronizer.requests.get')
@@ -476,8 +773,119 @@ class SynchronizerTests(unittest.TestCase):
             requests_get_mock.call_args.kwargs['headers'],
             Synchronizer.SHARKS_ICE_REQUEST_HEADERS,
         )
+        self.assertEqual(
+            requests_get_mock.call_args.kwargs['timeout'],
+            Synchronizer.SHARKS_ICE_REQUEST_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status.assert_called_once_with()
+
+    @patch('webserver.data_synchronizer.time.monotonic', side_effect=[100.0, 140.0])
+    @patch('webserver.data_synchronizer.write_log')
+    @patch('webserver.data_synchronizer.Database')
+    def test_locker_room_timeout_is_logged_and_database_is_closed(
+            self, database_cls, write_log_mock, monotonic_mock):
+        synchronizer = self.make_synchronizer()
+        synchronizer.open_page = Mock(side_effect=requests.Timeout('read timed out'))
+
+        synchronizer.locker_room_assignment_check()
+
+        database_cls.return_value.close.assert_called_once_with()
+        write_log_mock.assert_has_calls([
+            call('INFO', 'Locker room assignment check started'),
+            call('ERROR', 'Failed locker room assignment check read timed out'),
+            call('INFO', 'Locker room assignment check finished duration_seconds=40.00'),
+        ])
 
     def test_sync_season_uses_api_when_configured(self):
+        html = '''
+            <body>
+                <div id="standings-root"
+                     data-league="1"
+                     data-api-base="https://api.sharksice.timetoscore.com/"
+                     data-api-key="web"
+                     data-api-secret="v8VP4V8pPYqYTJvXx5Hxj4SsVwOgiBT4"></div>
+            </body>
+        '''
+        api_responses = {
+            'get_leagues': {
+                'leagues': [{
+                    'current_season': 74,
+                    'default_stat_class_tag': 1,
+                }],
+            },
+                'get_standings': {
+                'standings': {
+                    'leagues': [{
+                        'levels': [{
+                            'conferences': [{
+                                'teams': [
+                                    {'id': 323, 'team_name': 'Americans '},
+                                    {'id': 310, 'team_name': 'Pager Flakes '},
+                                ],
+                            }],
+                        }],
+                    }],
+                },
+            },
+            'get_schedule': {
+                'games': [{
+                    'game_id': '576574',
+                    'date': '2026-05-13',
+                    'time': '22:15:00',
+                    'location': 'San Jose Orange (N)',
+                    'home_id': '323',
+                    'away_id': '310',
+                    'home_team': 'Americans ',
+                    'away_team': 'Pager Flakes ',
+                    'home_goals': None,
+                    'away_goals': None,
+                    'level_name': 'Adult Division 1',
+                    'gtype_name': 'Regular',
+                    'league_name': 'SIAHL@SJ',
+                    'timezn': 'America/Los_Angeles',
+                    'result_flag': None,
+                    'game_status': 'NOT STARTED',
+                }],
+            },
+        }
+
+        synchronizer = self.make_synchronizer()
+        synchronizer.db = FakeSyncDatabase()
+        synchronizer.synced_games_list = []
+        synchronizer.new_games_map = {}
+
+        with patch.object(synchronizer, 'open_season_page', return_value=('season', BeautifulSoup(html, 'html.parser'))), \
+                patch.object(synchronizer, 'open_api_json', side_effect=lambda endpoint, params, api_config=None: api_responses[endpoint]) as open_api_json_mock:
+            self.assertTrue(synchronizer.sync_season('https://stats.sharksice.timetoscore.com/display-stats.php?league=1'))
+
+        self.assertEqual(
+            open_api_json_mock.call_args_list[1].args[1],
+            {
+                'league_id': 1,
+                'season_id': None,
+                'stat_class': 1,
+            },
+        )
+        self.assertEqual(
+            open_api_json_mock.call_args_list[2].args[1],
+            {
+                'league_id': 1,
+                'season_id': None,
+                'stat_class': 1,
+            },
+        )
+        self.assertEqual(synchronizer.db.teams, [('Americans', 323), ('Pager Flakes', 310)])
+        self.assertEqual(synchronizer.synced_games_list, [576574])
+        self.assertEqual(
+            synchronizer.new_games_map,
+            {
+                'Americans': [576574],
+                'Pager Flakes': [576574],
+            },
+        )
+
+    @patch('webserver.data_synchronizer.write_log')
+    def test_sync_api_season_filters_league_schedule_to_tracked_teams(self, write_log_mock):
         html = '''
             <body>
                 <div id="standings-root"
@@ -500,8 +908,8 @@ class SynchronizerTests(unittest.TestCase):
                         'levels': [{
                             'conferences': [{
                                 'teams': [
-                                    {'id': 323, 'team_name': 'Americans '},
-                                    {'id': 310, 'team_name': 'Pager Flakes '},
+                                    {'id': 4844, 'team_name': 'Dumpster Fire '},
+                                    {'id': 9999, 'team_name': 'Not Tracked '},
                                 ],
                             }],
                         }],
@@ -509,43 +917,70 @@ class SynchronizerTests(unittest.TestCase):
                 },
             },
             'get_schedule': {
-                'games': [{
-                    'game_id': '576574',
-                    'date': '2026-05-13',
-                    'time': '22:15:00',
-                    'location': 'San Jose Orange (N)',
-                    'home_team': 'Americans ',
-                    'away_team': 'Pager Flakes ',
-                    'home_goals': None,
-                    'away_goals': None,
-                    'level_name': 'Adult Division 1',
-                    'gtype_name': 'Regular',
-                    'league_name': 'SIAHL@SJ',
-                    'timezn': 'America/Los_Angeles',
-                    'result_flag': None,
-                    'game_status': 'NOT STARTED',
-                }],
+                'games': [
+                    {
+                        'game_id': '578889',
+                        'date': '2026-06-14',
+                        'time': '18:30:00',
+                        'location': 'San Jose Grey',
+                        'home_id': '4917',
+                        'away_id': '4844',
+                        'home_team': 'DragonHawks ',
+                        'away_team': 'Dumpster Fire ',
+                        'home_goals': None,
+                        'away_goals': None,
+                        'level_name': 'Adult Division 7B',
+                        'gtype_name': 'Regular',
+                        'league_name': 'SIAHL@SJ',
+                        'timezn': 'America/Los_Angeles',
+                        'result_flag': None,
+                        'game_status': 'NOT STARTED',
+                    },
+                    {
+                        'game_id': '578890',
+                        'date': '2026-06-14',
+                        'time': '20:30:00',
+                        'location': 'San Jose Grey',
+                        'home_id': '9999',
+                        'away_id': '8888',
+                        'home_team': 'Not Tracked ',
+                        'away_team': 'Also Not Tracked ',
+                        'home_goals': None,
+                        'away_goals': None,
+                        'level_name': 'Adult Division 7B',
+                        'gtype_name': 'Regular',
+                        'league_name': 'SIAHL@SJ',
+                        'timezn': 'America/Los_Angeles',
+                        'result_flag': None,
+                        'game_status': 'NOT STARTED',
+                    },
+                ],
             },
         }
-
         synchronizer = self.make_synchronizer()
-        synchronizer.db = FakeSyncDatabase()
+        synchronizer.db = FakeSyncDatabase(tracked_external_ids=[4844])
         synchronizer.synced_games_list = []
         synchronizer.new_games_map = {}
 
-        with patch.object(synchronizer, 'open_season_page', return_value=('season', BeautifulSoup(html, 'html.parser'))), \
-                patch.object(synchronizer, 'open_api_json', side_effect=lambda endpoint, params, api_config=None: api_responses[endpoint]):
-            self.assertTrue(synchronizer.sync_season('https://stats.sharksice.timetoscore.com/display-stats.php?league=1'))
+        with patch.object(synchronizer, 'open_api_json', side_effect=lambda endpoint, params, api_config=None: api_responses[endpoint]) as open_api_json_mock:
+            self.assertTrue(synchronizer.sync_api_season(BeautifulSoup(html, 'html.parser')))
 
-        self.assertEqual(synchronizer.db.teams, [('Americans', 323), ('Pager Flakes', 310)])
-        self.assertEqual(synchronizer.synced_games_list, [576574])
+        schedule_calls = [
+            call_args.args[1]
+            for call_args in open_api_json_mock.call_args_list
+            if call_args.args[0] == 'get_schedule'
+        ]
         self.assertEqual(
-            synchronizer.new_games_map,
-            {
-                'Americans': [576574],
-                'Pager Flakes': [576574],
-            },
+            schedule_calls,
+            [{
+                'league_id': 1,
+                'season_id': None,
+                'stat_class': 1,
+            }],
         )
+        self.assertEqual(synchronizer.db.get_external_ids_by_team_name('Dumpster Fire'), [4844])
+        self.assertEqual(len(synchronizer.db.added_games), 1)
+        self.assertEqual(synchronizer.db.added_games[0].game_id, 578889)
 
     @patch('webserver.data_synchronizer.write_log')
     def test_sync_api_season_returns_false_when_leagues_api_fails(self, write_log_mock):
@@ -562,7 +997,7 @@ class SynchronizerTests(unittest.TestCase):
 
         write_log_mock.assert_called_once_with(
             'ERROR',
-            'Failed synchronization of TimeToScore API get_leagues for league 1',
+            'Failed synchronization of TimeToScore API get_leagues for league 1: None',
         )
 
     def test_sync_season_uses_legacy_scraper_when_configured(self):
