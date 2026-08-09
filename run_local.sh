@@ -5,6 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="${SCRIPT_DIR}/venv"
 SECRETS_FILE="${SCRIPT_DIR}/secrets.json"
+LOCAL_GOOGLE_CREDENTIALS_FILE="${SCRIPT_DIR}/keys/hockey-reply-14e1f0b96738.json"
 
 if [ ! -d "${VENV_DIR}" ]; then
   echo "Missing virtualenv at ${VENV_DIR}" >&2
@@ -13,6 +14,11 @@ fi
 
 if [ ! -f "${SECRETS_FILE}" ]; then
   echo "Missing secrets file at ${SECRETS_FILE}" >&2
+  exit 1
+fi
+
+if [ ! -f "${LOCAL_GOOGLE_CREDENTIALS_FILE}" ]; then
+  echo "Missing Google Cloud credentials at ${LOCAL_GOOGLE_CREDENTIALS_FILE}" >&2
   exit 1
 fi
 
@@ -58,6 +64,7 @@ for key, value in data.items():
 PY
 )"
 
+export GOOGLE_APPLICATION_CREDENTIALS="${LOCAL_GOOGLE_CREDENTIALS_FILE}"
 export FLASK_APP="${FLASK_APP:-webserver}"
 
 exec flask run "$@"
