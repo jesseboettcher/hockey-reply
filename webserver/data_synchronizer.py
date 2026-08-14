@@ -181,11 +181,21 @@ class Synchronizer:
 
         for season in self.SHARKS_ICE_SEASON_ENDPOINTS:
             url = f'{self.SHARKS_ICE_BASE_URL}{season}'
-            if not self.sync_season(url):
+            try:
+                sync_succeeded = self.sync_season(url)
+            except Exception as error:
+                write_log('ERROR', f'Failed synchronization of season at {url}: {error}')
+                sync_succeeded = False
+
+            if not sync_succeeded:
                 any_sync_failures = True
 
         if not any_sync_failures and self.CHECK_DELETED_GAMES:
             self.check_deleted_games()
+
+        if any_sync_failures:
+            write_log('ERROR', 'Synchronization complete with failures')
+            return False
 
         write_log('INFO', f'Synchronization complete')
         return True
@@ -195,7 +205,7 @@ class Synchronizer:
         source, soup = self.open_season_page(url)
 
         if self.SHARKS_ICE_SYNC_SOURCE == self.SYNC_SOURCE_API:
-            return self.sync_api_season(soup)
+            return self.sync_api_season(soup, source)
 
         if self.SHARKS_ICE_SYNC_SOURCE != self.SYNC_SOURCE_SCRAPER:
             write_log('ERROR', f'Unknown synchronization source {self.SHARKS_ICE_SYNC_SOURCE}')
@@ -244,8 +254,8 @@ class Synchronizer:
 
         return True
 
-    def sync_api_season(self, soup):
-        api_config = self.api_config_from_soup(soup)
+    def sync_api_season(self, soup, source_url=None):
+        api_config = self.api_config_from_soup(soup, source_url)
         league_id = api_config.get('league_id', 1)
 
         leagues_json = self.open_api_json('get_leagues', {'league_id': league_id}, api_config)
@@ -350,8 +360,13 @@ class Synchronizer:
 
         return team_ids
 
-    def api_config_from_soup(self, soup):
-        root = soup.find(id='standings-root') or soup.find(id='schedule-root') or soup.find(id='team-root')
+    def api_config_from_soup(self, soup, source_url=None):
+        root = (
+            soup.find(id='standings-root')
+            or soup.find(id='schedule-root')
+            or soup.find(id='team-root')
+            or soup.find(id='scorebug-root')
+        )
         if not root:
             return {
                 'api_base': self.SHARKS_ICE_API_BASE_URL,
@@ -371,7 +386,7 @@ class Synchronizer:
             'league_id': int(root.get('data-league') or 1),
             'season_id': int(root.get('data-season') or 0),
             'stat_class': int(root.get('data-stat-class') or 0),
-            'proxy_base': urljoin(self.SHARKS_ICE_BASE_URL, root.get('data-proxy-base') or ''),
+            'proxy_base': urljoin(source_url or self.SHARKS_ICE_BASE_URL, root.get('data-proxy-base') or ''),
             'proxy_session': root.get('data-proxy-session') or '',
         }
 
@@ -492,7 +507,7 @@ class Synchronizer:
         data = req.content
         soup = BeautifulSoup(data, 'html.parser')
 
-        return url, soup
+        return req.url, soup
 
 
     def open_team_page(self, team_endpoint):
@@ -506,7 +521,7 @@ class Synchronizer:
         data = req.content
         soup = BeautifulSoup(data, 'html.parser')
 
-        return url, soup
+        return req.url, soup
 
     def open_page(self, url):
         req = requests.get(
