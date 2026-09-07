@@ -42,23 +42,21 @@ export const getPageData = async (url_handler_list, setLastRefreshHandler) => {
 
   // getPageData - Retrieve all the data required for a page, multiple endpoints
 
-  let allSucceeded = true;
-
   // Apply cached data separately and immediately, so there are no delays with the async
   // functions, in getting something in front of the user
   for (const url_handler of url_handler_list) {
     applyCachedData(url_handler.url, url_handler.handler);
   }
 
-  for (const url_handler of url_handler_list) {
-    const responseStatus = await getData(url_handler.url, url_handler.handler, true);
-
-    // If user is pending membership, some endpoints will return a 401. Do not show
-    // the load error in that case.
-    if (responseStatus != 200 && responseStatus != 401) {
-      allSucceeded = false;
-    }
-  }
+  // These endpoints are independent. Start them together so cellular round trips
+  // don't stack up before replies can appear. A failed request must not prevent
+  // the other sections from loading.
+  const results = await Promise.allSettled(url_handler_list.map(({url, handler}) =>
+    getData(url, handler, true)
+  ));
+  // Pending memberships can return 401 without indicating a load failure.
+  const allSucceeded = results.every(result => result.status === 'fulfilled' &&
+    (result.value === 200 || result.value === 401));
   if (allSucceeded) {
     setLastRefreshHandler(dayjs());
   }
