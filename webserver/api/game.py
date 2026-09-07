@@ -103,7 +103,9 @@ def get_games(team_id = None):
 
         for game in games:
 
-            if upcomingOnly and (game.completed == 1 or game.scheduled_at < datetime.now(timezone.utc)):
+            # disable completed check because game id 575106 was marked completed a day early
+            # if upcomingOnly and (game.completed == 1 or game.scheduled_at < datetime.now(timezone.utc)):
+            if upcomingOnly and (game.scheduled_at < datetime.now(timezone.utc)):
                 continue
 
             home_team = db.get_team_by_id(game.home_team_id)

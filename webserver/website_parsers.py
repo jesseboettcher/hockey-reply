@@ -282,6 +282,54 @@ class GameParser(BaseParser):
     def __str__(self):
         print(self.instance_attributes_string())
 
+class ApiGameParser(BaseParser):
+    """
+    Adapts TimeToScore API game JSON to the GameParser shape used by Database.add_game.
+    """
+
+    def __init__(self, game_dict):
+        self.id = int(game_dict['game_id'])
+        self.completed = 1 if game_dict.get('game_status') == 'CLOSED' else 0
+
+        self.parse_success = False
+        timezone = ZoneInfo(game_dict.get('timezn') or 'US/Pacific')
+
+        try:
+            if game_dict.get('date') and game_dict.get('time'):
+                dt = datetime.datetime.strptime(
+                    f'{game_dict["date"]} {game_dict["time"]}',
+                    '%Y-%m-%d %H:%M:%S',
+                )
+                self.datetime = dt.replace(tzinfo=timezone)
+            elif game_dict.get('gmt_time'):
+                dt = datetime.datetime.strptime(
+                    game_dict['gmt_time'].split('.')[0],
+                    '%Y-%m-%d %H:%M:%S',
+                )
+                self.datetime = dt.replace(tzinfo=ZoneInfo('UTC')).astimezone(timezone)
+            else:
+                return
+        except Exception:
+            write_log('ERROR', f'Failed API synchronization of game {game_dict}')
+            return
+
+        self.rink = (game_dict.get('location') or '').strip()
+        self.league = (game_dict.get('league_name') or '').strip()
+        self.level = (game_dict.get('level_name') or game_dict.get('level_ab') or '').strip()
+        self.home_team = (game_dict.get('home_team') or '').strip()
+        self.away_team = (game_dict.get('away_team') or '').strip()
+        self.type = (game_dict.get('gtype_name') or '').strip()
+        self.home_goals = self.parse_goals(game_dict.get('home_goals'))
+        self.away_goals = self.parse_goals(game_dict.get('away_goals'))
+        self.shootout = 1 if game_dict.get('result_flag') == 'S' else 0
+        self.parse_success = bool(self.home_team and self.away_team)
+
+    def parse_goals(self, goals):
+        try:
+            return int(goals)
+        except:
+            return 0
+
 class LockerRoomPageParser:
     """
     Parses a Sharks Ice page for locker room assignments for each game.
@@ -311,11 +359,42 @@ class LockerRoomPageParser:
         Returns:
         bool: Always returns True.
         """
-        for table in self.soup.body.find_all('table'):
+        if not self.soup.body:
+            write_log('ERROR', f'Locker room parser found no body at {self.url}')
+            return True
+
+        direct_rows = [
+            row for row in self.soup.body.find_all('tr')
+            if row.find(class_='lr-game-id')
+        ]
+        if direct_rows:
+            self.parse_current_locker_room_rows(direct_rows)
+            return True
+
+        tables = self.soup.body.find_all('table')
+        write_log('INFO', f'Locker room parser diagnostics tables={len(tables)} lr_game_rows=0 title={self.page_title()}')
+        for table in tables:
 
             self.parse_locker_rooms(table)
 
         return True
+
+    def page_title(self):
+        if not self.soup.title:
+            return ''
+
+        return self.cell_contents(self.soup.title)
+
+    def parse_current_locker_room_rows(self, rows):
+        for row in rows:
+            details = self.table_row_contents(row)
+            if len(details) < 9:
+                continue
+
+            self.locker_rooms[details[0]] = {
+                'Home LR': details[6],
+                'Away LR': details[8],
+            }
 
     def cell_contents(self, cell):
         """
@@ -361,6 +440,9 @@ class LockerRoomPageParser:
         :return: None
         """
         rows = table.find_all('tr')
+        if not rows:
+            return
+
         column_names = self.table_row_contents(rows[self.TABLE_DATA_COLUMN_HEADERS_INDEX])
 
         # adjust duplicate column names of "LR" to "Home LR" and "Away LR"
@@ -378,6 +460,8 @@ class LockerRoomPageParser:
         for row in rows[self.TABLE_DATA_START_INDEX:]:
 
             details = self.table_row_contents(row)
+            if not details or len(details) < len(column_names):
+                continue
 
             lr_assignment = {}
             lr_assignment['Away LR'] = details[column_names.index('Away LR')]
@@ -392,6 +476,7 @@ class LockerRoomPageParser:
         :param game_id: The ID of the game to get the locker room numbers for.
         :return: A tuple (home_lr, away_lr) containing the home and away locker room numbers, or (None, None) if the game ID is not found in 'self.locker_rooms'.
         """
+        game_id = str(game_id)
         if game_id not in self.locker_rooms:
             return None, None
 

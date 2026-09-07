@@ -26,9 +26,14 @@ def get_logger():
 
 def write_log(severity, msg):
 	time_str = datetime.now(ZoneInfo('US/Pacific')).strftime('%Y-%m-%d %H:%M:%S')
-	get_logger().log_text(f'{severity} {msg}')
-	print(f'{time_str}: {severity} {msg}')
+	# Always make the message visible in the local process log before attempting the
+	# remote logging call. This keeps diagnostics available if Cloud Logging stalls.
+	print(f'{time_str}: {severity} {msg}', flush=True)
+	try:
+		get_logger().log_text(f'{severity} {msg}')
+	except Exception as error:
+		print(f'{time_str}: ERROR Failed Google log write: {error}', flush=True)
 
 def print_log(msg):
 	time_str = datetime.now(ZoneInfo('US/Pacific')).strftime('%Y-%m-%d %H:%M:%S')
-	print(f'{time_str}: {msg}')
+	print(f'{time_str}: {msg}', flush=True)
